@@ -1,8 +1,12 @@
 import { Command } from './../workflow-graph/model/workflow-action.service';
-import { WorkflowCollabService } from './../workflow-collab/workflow-collab.service';
 import { Injectable } from '@angular/core';
+import * as Y from 'yjs';
 
 
+/* TODO LIST FOR BUGS
+1. Problem with repeatedly adding and deleting a link without letting go, unintended behavior
+2. See if there's a way to only store a previous version of an operator's properties
+after a certain period of time so we don't undo one character at a time */
 
 @Injectable()
 export class UndoRedoService {
@@ -11,27 +15,50 @@ export class UndoRedoService {
   public listenJointCommand: boolean = true;
   // private testGraph: WorkflowGraphReadonly;
 
+  private testDoc = new Y.Doc();
+  private doc2 = new Y.Doc();
   private undoStack: Command[] = [];
   private redoStack: Command[] = [];
 
 
-  constructor(private workflowCollab: WorkflowCollabService) { }
+  constructor() { }
 
   public undoAction(): void {
     // We have a toggle to let our service know to add to the redo stack
-    this.setListenJointCommand(false);
-    this.workflowCollab.undoAction();
-    this.setListenJointCommand(true);
+    if (this.undoStack.length > 0) {
+      const command = this.undoStack.pop();
+      if (command) {
+        this.setListenJointCommand(false);
+        command.undo();
+        this.redoStack.push(command);
+        this.setListenJointCommand(true);
+      }
+    }
   }
 
   public redoAction(): void {
-    this.setListenJointCommand(false);
-    this.workflowCollab.redoAction();
-    this.setListenJointCommand(true);
+    // need to figure out what to keep on the stack and off
+    if (this.redoStack.length > 0) {
+      // set clearRedo to false so when we redo an action, we keep the rest of the stack
+      const command = this.redoStack.pop();
+      if (command) {
+        this.setListenJointCommand(false);
+        if (command.redo) {
+          command.redo();
+        } else {
+          command.execute();
+        }
+        this.undoStack.push(command);
+        this.setListenJointCommand(true);
+      }
+    }
+
   }
 
   public addCommand(command: Command): void {
-    this.workflowCollab.addCommand(command);
+    this.undoStack.push(command);
+    this.redoStack = [];
+
   }
 
   public setListenJointCommand(toggle: boolean): void {

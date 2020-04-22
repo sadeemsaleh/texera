@@ -3,6 +3,7 @@ import { ExecuteWorkflowService } from './../service/execute-workflow/execute-wo
 import { DragDropService } from './../service/drag-drop/drag-drop.service';
 import { WorkflowUtilService } from './../service/workflow-graph/util/workflow-util.service';
 import { WorkflowActionService } from './../service/workflow-graph/model/workflow-action.service';
+import { WorkflowCollabService } from './../service/workflow-collab/workflow-collab.service';
 import { UndoRedoService } from './../service/undo-redo/undo-redo.service';
 import { Component, OnInit } from '@angular/core';
 
@@ -37,6 +38,7 @@ import { WorkflowStatusService } from '../service/workflow-status/workflow-statu
     SaveWorkflowService,
     ValidationWorkflowService,
     WorkflowStatusService,
+    WorkflowCollabService,
   ]
 })
 export class WorkspaceComponent {
@@ -46,7 +48,8 @@ export class WorkspaceComponent {
   // MY BRANCH: Removed saveworkflow for now to see if can be shared between clients
   constructor(
     private resultPanelToggleService: ResultPanelToggleService,
-
+    private workflowCollabService: WorkflowCollabService,
+    // private saveWorkflowService: SaveWorkflowService,
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService
