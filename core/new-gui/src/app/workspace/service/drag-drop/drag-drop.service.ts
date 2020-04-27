@@ -376,7 +376,7 @@ export class DragDropService {
 
     // for each operator, check if in range/has free ports/is on the right side/is closer than prev closest ops/
     operatorList.forEach(operator => {
-      const operatorPosition = this.workflowActionService.getJointGraphWrapper().getOperatorPosition(operator.operatorID);
+      const operatorPosition = this.workflowActionService.getJointGraphWrapper().getElementPosition(operator.operatorID);
       const distanceFromCurrentOperator = Math.sqrt((mouseCoordinate.x - operatorPosition.x) ** 2
         + (mouseCoordinate.y - operatorPosition.y) ** 2);
       if (distanceFromCurrentOperator < DragDropService.SUGGESTION_DISTANCE_THRESHOLD) {

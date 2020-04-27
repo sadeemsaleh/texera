@@ -12,19 +12,23 @@
       'utility-button': executionResultID}" (click)="onClickDownloadExecutionResult()"
       title="download execution result"></i> -->
 
-      <div ngbDropdown class="d-inline-block">
-        <button class="drop-down-button" ngbDropdownToggle [disabled]="!executionResultID">
-          <i class="navbar-brand fa fa-cloud-download drop-down-icon"  [ngClass]="{'utility-button-disabled' : !executionResultID,
-          'utility-button': executionResultID}" id="downloadExcelOptions"
-            title="download execution result"></i>
-        </button>
-        <div class="drop-down-menu" ngbDropdownMenu aria-labelledby="downloadExcelOptions">
-          <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('json')">Json File (*.json)</button>
-          <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('csv')"> CSV File (*.csv)</button>
-          <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('xlsx')">XLSX File (*.xlsx)</button>
-        </div>
+    <div ngbDropdown class="d-inline-block">
+      <button class="drop-down-button" ngbDropdownToggle [disabled]="!executionResultID">
+        <i class="navbar-brand fa fa-cloud-download drop-down-icon"  [ngClass]="{'utility-button-disabled' : !executionResultID,
+        'utility-button': executionResultID}" id="downloadExcelOptions"
+          title="download execution result"></i>
+      </button>
+      <div class="drop-down-menu" ngbDropdownMenu aria-labelledby="downloadExcelOptions">
+        <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('json')">Json File (*.json)</button>
+        <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('csv')"> CSV File (*.csv)</button>
+        <button class="drop-down-item" ngbDropdownItem (click)="onClickDownloadExecutionResult('xlsx')">XLSX File (*.xlsx)</button>
       </div>
+    </div>
 
+    <i class="navbar-brand fa fa-object-group" [ngClass]="{'utility-button-disabled': !operatorsGroupable(), 'utility-button': operatorsGroupable()}"
+      (click)="onClickGroupOperators()" title="group"></i>
+    <i class="navbar-brand fa fa-object-ungroup" [ngClass]="{'utility-button-disabled': !operatorsGroupable(), 'utility-button': operatorsGroupable()}"
+      (click)="onClickGroupOperators()" title="ungroup"></i>
 
   </div>
   <div class="collapse navbar-collapse texera-navigation-execute">

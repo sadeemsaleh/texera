@@ -8,6 +8,7 @@ import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-grap
 
 import { ExecutionResult } from './../../types/execute-workflow.interface';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
+import { GroupOperatorService } from '../../service/group-operator/group-operator.service';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -43,7 +44,8 @@ export class NavigationComponent implements OnInit {
     public tourService: TourService,
     private workflowActionService: WorkflowActionService,
     private workflowStatusService: WorkflowStatusService,
-    public undoRedo: UndoRedoService
+    public undoRedo: UndoRedoService,
+    private groupOperatorService: GroupOperatorService
     ) {
     // return the run button after the execution is finished, either
     //  when the value is valid or invalid
@@ -208,7 +210,7 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
-   * Delete all operators on the graph
+   * Delete all operators on the graph.
    */
   public onClickDeleteAllOperators(): void {
     const allOperatorIDs = this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID);
@@ -220,6 +222,29 @@ export class NavigationComponent implements OnInit {
    */
   public hasOperators(): boolean {
     return this.workflowActionService.getTexeraGraph().getAllOperators().length > 0;
+  }
+
+  /**
+   * Groups highlighted operators on the graph.
+   */
+  public onClickGroupOperators(): void {
+    if (this.operatorsGroupable()) {
+      this.groupOperatorService.groupOperators();
+    }
+  }
+
+  /**
+   * Returns true if there're at least two highlighted operators
+   *  and none of them is already embedded in a group.
+   */
+  public operatorsGroupable(): boolean {
+    const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+    for (const operatorID of highlightedOperators) {
+      if (this.groupOperatorService.getGroupByOperator(operatorID)) {
+        return false;
+      }
+    }
+    return highlightedOperators.length > 1;
   }
 
   /**

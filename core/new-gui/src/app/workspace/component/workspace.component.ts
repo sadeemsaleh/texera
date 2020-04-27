@@ -15,6 +15,7 @@ import { SchemaPropagationService } from '../service/dynamic-schema/schema-propa
 import { ResultPanelToggleService } from '../service/result-panel-toggle/result-panel-toggle.service';
 import { SaveWorkflowService } from '../service/save-workflow/save-workflow.service';
 import { WorkflowStatusService } from '../service/workflow-status/workflow-status.service';
+import { GroupOperatorService } from '../service/group-operator/group-operator.service';
 
 @Component({
   selector: 'texera-workspace',
@@ -37,6 +38,7 @@ import { WorkflowStatusService } from '../service/workflow-status/workflow-statu
     SaveWorkflowService,
     ValidationWorkflowService,
     WorkflowStatusService,
+    GroupOperatorService
   ]
 })
 export class WorkspaceComponent {

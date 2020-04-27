@@ -19,6 +19,7 @@ import { WorkflowStatusService } from '../../service/workflow-status/workflow-st
 import { SuccessProcessStatus } from '../../types/execute-workflow.interface';
 import { OperatorStates } from '../../types/execute-workflow.interface';
 import { environment } from './../../../../environments/environment';
+import { GroupOperatorService } from '../../service/group-operator/group-operator.service';
 
 
 // argument type of callback event on a JointJS Paper
@@ -88,7 +89,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
     private validationWorkflowService: ValidationWorkflowService,
     private jointUIService: JointUIService,
     private workflowStatusService: WorkflowStatusService,
-    private workflowUtilService: WorkflowUtilService
+    private workflowUtilService: WorkflowUtilService,
+    private groupOperatorService: GroupOperatorService
   ) {
 
     // bind validation functions to the same scope as component
@@ -115,7 +117,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
     this.handleViewDeleteOperator();
     this.handleCellHighlight();
     this.handleViewDeleteLink();
+    this.handleViewCollapseGroup();
+    this.handleViewExpandGroup();
     this.handlePaperPan();
+    this.handleGroupResize();
 
     if (environment.executionStatusEnabled) {
       this.handleOperatorStatesChange();
@@ -522,7 +527,6 @@ export class WorkflowEditorComponent implements AfterViewInit {
       );
   }
 
-
   /**
    * Handles the event where the Delete button is clicked for a Link,
    *  and call workflowAction to delete the corresponding link.
@@ -542,13 +546,71 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   /**
+   * Handles the event where the Collapse button is clicked for a Group,
+   *  and call groupOperator to collapse the corresponding group.
+   *
+   * JointJS doesn't have collapse button built-in with a group element,
+   *  the collapse button is Texera's own customized element.
+   * Therefore JointJS doesn't come with default handler for collapse a group,
+   *  we need to handle the callback event `element:collapse`.
+   * The name of this callback event is registered in `JointUIService.getCustomGroupStyleAttrs`
+   */
+  private handleViewCollapseGroup(): void {
+    Observable
+      .fromEvent<JointPaperEvent>(this.getJointPaper(), 'element:collapse')
+      .map(value => value[0])
+      .subscribe(
+        elementView => {
+          const groupID = elementView.model.id.toString();
+          this.groupOperatorService.collapseGroup(groupID, this.getJointPaper());
+        }
+      );
+  }
+
+  /**
+   * Handles the event where the Expand button is clicked for a Group,
+   *  and call groupOperator to expand the corresponding group.
+   *
+   * JointJS doesn't have expand button built-in with a group element,
+   *  the expand button is Texera's own customized element.
+   * Therefore JointJS doesn't come with default handler for expand a group,
+   *  we need to handle the callback event `element:expand`.
+   * The name of this callback event is registered in `JointUIService.getCustomGroupStyleAttrs`
+   */
+  private handleViewExpandGroup(): void {
+    Observable
+      .fromEvent<JointPaperEvent>(this.getJointPaper(), 'element:expand')
+      .map(value => value[0])
+      .subscribe(
+        elementView => {
+          const groupID = elementView.model.id.toString();
+          this.groupOperatorService.expandGroup(groupID, this.getJointPaper());
+        }
+      );
+  }
+
+  /**
    * if the operator is valid , the border of the box will be default
    */
   private handleOperatorValidation(): void {
 
+    // group-operator problem here: when group is collapsed, no joint element can be found
     this.validationWorkflowService.getOperatorValidationStream()
       .subscribe(value =>
         this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.status));
+  }
+
+  /**
+   * Handles the event where a group is resized, and repositions
+   * the group's collapse button.
+   *
+   * Since the collapse button's position is relative to a group's width,
+   * resizing the group will cause the button to be out of place.
+   */
+  private handleGroupResize(): void {
+    this.groupOperatorService.getGroupResizeStream().subscribe(value => {
+      this.jointUIService.repositionGroupCollapseButton(this.getJointPaper(), value.groupID, value.width);
+    });
   }
 
   /**
@@ -661,7 +723,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   /**
    * Deletes the currently highlighted operators when user presses the delete key.
    */
-  private handleOperatorDelete() {
+  private handleOperatorDelete(): void {
     Observable.fromEvent<KeyboardEvent>(document, 'keydown')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .filter(event => event.key === 'Backspace' || event.key === 'Delete')
@@ -674,7 +736,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   /**
    * Highlight all operators on the graph when user presses command/ctrl + A.
    */
-  private handleOperatorSelectAll() {
+  private handleOperatorSelectAll(): void {
     Observable.fromEvent<KeyboardEvent>(document, 'keydown')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .filter(event => (event.metaKey || event.ctrlKey) && event.key === 'a')
@@ -693,7 +755,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
    * triggers the copy event (i.e. presses command/ctrl + c on
    * keyboard or selects copy option from the browser menu).
    */
-  private handleOperatorCopy() {
+  private handleOperatorCopy(): void {
     Observable.fromEvent<ClipboardEvent>(document, 'copy')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
@@ -710,7 +772,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
    * when user triggers the cut event (i.e. presses command/ctrl + x
    * on keyboard or selects cut option from the browser menu).
    */
-  private handleOperatorCut() {
+  private handleOperatorCut(): void {
     Observable.fromEvent<ClipboardEvent>(document, 'cut')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
@@ -730,11 +792,11 @@ export class WorkflowEditorComponent implements AfterViewInit {
    * Utility function to cache the operator's info.
    * @param operatorID
    */
-  private saveOperatorInfo(operatorID: string) {
+  private saveOperatorInfo(operatorID: string): void {
     const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
     if (operator) {
-      const position = this.workflowActionService.getJointGraphWrapper().getOperatorPosition(operatorID);
-      const layer = this.workflowActionService.getJointGraphWrapper().getOperatorLayer(operatorID);
+      const position = this.workflowActionService.getJointGraphWrapper().getElementPosition(operatorID);
+      const layer = this.workflowActionService.getJointGraphWrapper().getCellLayer(operatorID);
       const pastedOperators = [operatorID];
       this.copiedOperators[operatorID] = {operator, position, layer, pastedOperators};
     }
@@ -745,7 +807,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
    * when user triggers the paste event (i.e. presses command/ctrl + v on
    * keyboard or selects paste option from the browser menu).
    */
-  private handleOperatorPaste() {
+  private handleOperatorPaste(): void {
     Observable.fromEvent<ClipboardEvent>(document, 'paste')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
@@ -797,8 +859,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       position = {x: operatorPosition.x + i * this.COPY_OPERATOR_OFFSET,
                   y: operatorPosition.y + i * this.COPY_OPERATOR_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getTexeraGraph().hasOperator(pastedOperators[i]) ||
-          this.workflowActionService.getJointGraphWrapper().getOperatorPosition(pastedOperators[i]).x !== position.x ||
-          this.workflowActionService.getJointGraphWrapper().getOperatorPosition(pastedOperators[i]).y !== position.y)) {
+          this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).x !== position.x ||
+          this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).y !== position.y)) {
         this.copiedOperators[copiedOperatorID].pastedOperators[i] = newOperatorID;
         return this.getNonOverlappingPosition(position, positions);
       }
@@ -819,7 +881,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   private getNonOverlappingPosition(position: Point, positions: Point[]): Point {
     let overlapped = false;
     const operatorPositions = positions.concat(this.workflowActionService.getTexeraGraph().getAllOperators()
-      .map(operator => this.workflowActionService.getJointGraphWrapper().getOperatorPosition(operator.operatorID)));
+      .map(operator => this.workflowActionService.getJointGraphWrapper().getElementPosition(operator.operatorID)));
     do {
       for (const operatorPosition of operatorPositions) {
         if (operatorPosition.x === position.x && operatorPosition.y === position.y) {

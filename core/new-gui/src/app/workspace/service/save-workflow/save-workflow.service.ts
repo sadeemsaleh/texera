@@ -106,7 +106,7 @@ export class SaveWorkflowService {
       this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getOperatorAdvancedOptionChangeSteam(),
-      this.workflowActionService.getJointGraphWrapper().getOperatorPositionChangeEvent()
+      this.workflowActionService.getJointGraphWrapper().getElementPositionChangeEvent()
     ).debounceTime(100).subscribe(() => {
       const workflow = this.workflowActionService.getTexeraGraph();
 
@@ -114,7 +114,8 @@ export class SaveWorkflowService {
       const links = workflow.getAllLinks();
       const operatorPositions: {[key: string]: Point} = {};
       workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
-        this.workflowActionService.getJointGraphWrapper().getOperatorPosition(op.operatorID));
+        this.workflowActionService.getJointGraphWrapper().getElementPosition(op.operatorID));
+        // group-operator problem here: when group is collapsed, can't get element position
 
       const savedWorkflow: SavedWorkflow = {
         operators, operatorPositions, links
@@ -123,8 +124,5 @@ export class SaveWorkflowService {
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
     });
   }
-
-
-
 
 }
