@@ -382,7 +382,7 @@ export class DragDropService {
     let newSuggestionOperator: OperatorPredicate | undefined;
 
     operatorList.forEach(operator => {
-      const operatorPosition = this.workflowActionService.getJointGraphWrapper().getOperatorPosition(operator.operatorID);
+      const operatorPosition = this.workflowActionService.getJointGraphWrapper().getElementPosition(operator.operatorID);
       const distanceFromCurrentOperator = Math.sqrt((mouseCoordinate.x - operatorPosition.x) ** 2
       + (mouseCoordinate.y - operatorPosition.y) ** 2);
 

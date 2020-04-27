@@ -3,6 +3,8 @@ import { Observable } from 'rxjs/Observable';
 import { debounceTime } from 'rxjs/operators';
 import { Point } from '../../../types/workflow-common.interface';
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
+import { JointUIService } from '../../joint-ui/joint-ui.service';
+import { Group } from '../../group-operator/group-operator.service';
 
 type operatorIDsType = { operatorIDs: string[] };
 
@@ -36,6 +38,11 @@ type JointLinkChangeEvent = [
 type JointPositionChangeEvent = [
   joint.dia.Element,
   { x: number, y: number }
+];
+
+type JointLayerChangeEvent = [
+  joint.dia.Element | joint.dia.Link,
+  number
 ];
 
 type PositionInfo = {
@@ -72,7 +79,7 @@ export class JointGraphWrapper {
   public static readonly ZOOM_MINIMUM: number = 0.70;
   public static readonly ZOOM_MAXIMUM: number = 1.30;
 
-  private operatorPositions: Map<string, PositionInfo> = new Map<string, PositionInfo>();
+  private elementPositions: Map<string, PositionInfo> = new Map<string, PositionInfo>();
   private listenPositionChange: boolean = true;
 
   // flag that indicates whether multiselect mode is on
@@ -94,6 +101,9 @@ export class JointGraphWrapper {
   private zoomRatio: number = JointGraphWrapper.INIT_ZOOM_VALUE;
   // panOffset, a point of panning offset alongside x and y axis
   private panOffset: Point = JointGraphWrapper.INIT_PAN_OFFSET;
+
+  // indicates whether or not sync JointJS changes to texera graph
+  private syncTexeraGraph: boolean = false;
 
   /**
    * This will capture all events in JointJS
@@ -120,12 +130,16 @@ export class JointGraphWrapper {
     .map(value => value[0]);
 
 
-  constructor(private jointGraph: joint.dia.Graph, private undoRedoService: UndoRedoService) {
+  constructor(
+    private jointGraph: joint.dia.Graph,
+    private undoRedoService: UndoRedoService,
+    private jointUIService: JointUIService
+  ) {
     // handle if the current highlighted operator is deleted, it should be unhighlighted
     this.handleOperatorDeleteUnhighlight();
     this.jointCellAddStream.filter(cell => cell.isElement()).subscribe(element => {
       const initPosition = {currPos: (element as joint.dia.Element).position(), lastPos: undefined};
-      this.operatorPositions.set(element.id.toString(), initPosition);
+      this.elementPositions.set(element.id.toString(), initPosition);
     });
 
     // handle if the current highlighted operator's position is changed,
@@ -161,29 +175,47 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Returns an Observable stream capturing the operator position change event in JointJS graph.
+   * Returns an Observable stream capturing the element position change event in JointJS graph.
+   * An element can be an operator or a group.
    *
-   * - operatorID: the moved operator's ID
-   * - oldPosition: the operator's position before moving
-   * - newPosition: where the operator is moved to
+   * - elementID: the moved element's ID
+   * - oldPosition: the element's position before moving
+   * - newPosition: where the element is moved to
    */
-  public getOperatorPositionChangeEvent(): Observable<{ operatorID: string, oldPosition: Point, newPosition: Point }> {
+  public getElementPositionChangeEvent(): Observable<{ elementID: string, oldPosition: Point, newPosition: Point }> {
     return Observable
       .fromEvent<JointPositionChangeEvent>(this.jointGraph, 'change:position').map(e => {
-        const operatorID = e[0].id.toString();
-        const oldPosition = this.operatorPositions.get(operatorID);
+        const elementID = e[0].id.toString();
+        const oldPosition = this.elementPositions.get(elementID);
         const newPosition = {x: e[1].x, y: e[1].y};
         if (!oldPosition) {
-          throw new Error(`internal error: cannot find operator position for ${operatorID}`);
+          throw new Error(`internal error: cannot find element position for ${elementID}`);
         }
         if (!oldPosition.lastPos || oldPosition.currPos.x !== newPosition.x || oldPosition.currPos.y !== newPosition.y) {
           oldPosition.lastPos = oldPosition.currPos;
         }
-        this.operatorPositions.set(operatorID, {currPos: newPosition, lastPos: oldPosition.lastPos});
+        this.elementPositions.set(elementID, {currPos: newPosition, lastPos: oldPosition.lastPos});
         return {
-          operatorID: operatorID,
+          elementID: elementID,
           oldPosition: oldPosition.lastPos,
           newPosition: newPosition
+        };
+      });
+  }
+
+  /**
+   * Returns an Observable stream capturing the cell layer change event in JointJS graph.
+   * A cell can be an operator, a link, or a group element.
+   *
+   * - cellID: the moved cell's ID
+   * - newPosition: the cell's new layer
+   */
+  public getCellLayerChangeEvent(): Observable<{ cellID: string, newLayer: number }> {
+    return Observable
+      .fromEvent<JointLayerChangeEvent>(this.jointGraph, 'change:z').map(e => {
+        return {
+          cellID: e[0].id.toString(),
+          newLayer: e[1]
         };
       });
   }
@@ -411,15 +443,16 @@ export class JointGraphWrapper {
   }
 
   /**
-   * This method will get the operator position on the JointJS paper.
+   * This method will get the element position on the JointJS paper.
+   * An element can be an operator or a group.
    */
-  public getOperatorPosition(operatorID: string): Point {
-    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(operatorID);
+  public getElementPosition(elementID: string): Point {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
     if (! cell) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
+      throw new Error(`element with ID ${elementID} doesn't exist`);
     }
     if (! cell.isElement()) {
-      throw new Error(`${operatorID} is not an operator`);
+      throw new Error(`${elementID} is not an element`);
     }
     const element = <joint.dia.Element> cell;
     const position = element.position();
@@ -427,46 +460,137 @@ export class JointGraphWrapper {
   }
 
   /**
-   * This method repositions the operator according to given offsets.
+   * This method repositions the element according to given offsets.
+   * An element can be an operator or a group.
    */
-  public setOperatorPosition(operatorID: string, offsetX: number, offsetY: number): void {
-    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(operatorID);
+  public setElementPosition(elementID: string, offsetX: number, offsetY: number): void {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
     if (! cell) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
+      throw new Error(`element with ID ${elementID} doesn't exist`);
     }
     if (! cell.isElement()) {
-      throw new Error(`${operatorID} is not an operator`);
+      throw new Error(`${elementID} is not an element`);
     }
     const element = <joint.dia.Element> cell;
     element.translate(offsetX, offsetY);
   }
 
   /**
-   * This method gets the operator's layer (z attribute) on the JointJS paper.
+   * This method resizes the element according to given width and height.
+   * An element can be an operator or a group.
    */
-  public getOperatorLayer(operatorID: string): number {
-    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(operatorID);
+  public setElementSize(elementID: string, width: number, height: number): void {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(elementID);
     if (! cell) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
+      throw new Error(`element with ID ${elementID} doesn't exist`);
     }
     if (! cell.isElement()) {
-      throw new Error(`${operatorID} is not an operator`);
+      throw new Error(`${elementID} is not an element`);
+    }
+    const element = <joint.dia.Element> cell;
+    element.resize(width, height);
+  }
+
+  /**
+   * This method gets the cell's layer (z attribute) on the JointJS paper.
+   * A cell can be an operator, a link, or a group element.
+   */
+  public getCellLayer(cellID: string): number {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(cellID);
+    if (! cell) {
+      throw new Error(`cell with ID ${cellID} doesn't exist`);
     }
     return cell.attributes.z;
   }
 
   /**
-   * This method sets the operator's layer (z attribute) to the given layer.
+   * This method sets the cell's layer (z attribute) to the given layer.
+   * A cell can be an operator, a link, or a group element.
    */
-  public setOperatorLayer(operatorID: string, layer: number): void {
-    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(operatorID);
+  public setCellLayer(cellID: string, layer: number): void {
+    const cell: joint.dia.Cell | undefined = this.jointGraph.getCell(cellID);
     if (! cell) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
-    }
-    if (! cell.isElement()) {
-      throw new Error(`${operatorID} is not an operator`);
+      throw new Error(`cell with ID ${cellID} doesn't exist`);
     }
     cell.set('z', layer);
+  }
+
+  /**
+   * Hides operators and links embedded in the given group.
+   * inLinks and outLinks will be reconnected to the group element.
+   *
+   * Sync texera graph is turned off to prevent JointJS graph changes from
+   * propagating to texera graph.
+   *
+   * @param group
+   */
+  public hideOperatorsAndLinks(group: Group): void {
+    this.syncTexeraGraph = true;
+
+    group.links.forEach((linkInfo, linkID) => this.jointGraph.getCell(linkID).remove());
+
+    group.inLinks.forEach((port, linkID) => {
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('target', {id: group.groupID});
+    });
+
+    group.outLinks.forEach((port, linkID) => {
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('source', {id: group.groupID});
+    });
+
+    group.operators.forEach((operatorInfo, operatorID) => this.jointGraph.getCell(operatorID).remove());
+
+    this.syncTexeraGraph = false;
+  }
+
+  /**
+   * Shows operators and links embedded in the group.
+   * inLinks and outLinks will be reconnected back to corresponding operators.
+   *
+   * Sync texera graph is turned off to prevent JointJS graph changes from
+   * propagating to texera graph.
+   *
+   * @param group
+   */
+  public showOperatorsAndLinks(group: Group): void {
+    this.syncTexeraGraph = true;
+
+    const groupJointElement = this.jointGraph.getCell(group.groupID);
+
+    group.operators.forEach((operatorInfo, operatorID) => {
+      const operatorJointElement = this.jointUIService.getJointOperatorElement(operatorInfo.operator, operatorInfo.position);
+      this.jointGraph.addCell(operatorJointElement);
+      this.setCellLayer(operatorID, operatorInfo.layer);
+      groupJointElement.embed(operatorJointElement);
+    });
+
+    group.links.forEach((linkInfo, linkID) => {
+      const jointLinkCell = JointUIService.getJointLinkCell(linkInfo.link);
+      this.jointGraph.addCell(jointLinkCell);
+      this.setCellLayer(linkID, linkInfo.layer);
+      groupJointElement.embed(jointLinkCell);
+    });
+
+    group.inLinks.forEach((port, linkID) => {
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('target', {id: port.operatorID, port: port.portID});
+    });
+
+    group.outLinks.forEach((port, linkID) => {
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('source', {id: port.operatorID, port: port.portID});
+    });
+
+    this.syncTexeraGraph = false;
+  }
+
+  /**
+   * Returns the boolean value that indicates whether
+   * or not sync JointJS changes to texera graph.
+   */
+  public getSyncTexeraGraph(): boolean {
+    return this.syncTexeraGraph;
   }
 
   /**
@@ -530,18 +654,19 @@ export class JointGraphWrapper {
    *  if it is, move other highlighted operators along with it.
    */
   private handleHighlightedOperatorPositionChange(): void {
-    this.getOperatorPositionChangeEvent()
+    // TO-DO: incorporate group position change in multi-select
+    this.getElementPositionChangeEvent()
       .filter(() => this.listenPositionChange)
       .filter(() => this.undoRedoService.listenJointCommand)
-      .filter(movedOperator => this.currentHighlightedOperators.includes(movedOperator.operatorID))
+      .filter(movedOperator => this.currentHighlightedOperators.includes(movedOperator.elementID))
       .subscribe(movedOperator => {
         const offsetX = movedOperator.newPosition.x - movedOperator.oldPosition.x;
         const offsetY = movedOperator.newPosition.y - movedOperator.oldPosition.y;
         this.listenPositionChange = false;
         this.undoRedoService.setListenJointCommand(false);
         this.currentHighlightedOperators
-          .filter(operatorID => operatorID !== movedOperator.operatorID)
-          .forEach(operatorID => this.setOperatorPosition(operatorID, offsetX, offsetY));
+          .filter(operatorID => operatorID !== movedOperator.elementID)
+          .forEach(operatorID => this.setElementPosition(operatorID, offsetX, offsetY));
         this.listenPositionChange = true;
         this.undoRedoService.setListenJointCommand(true);
       });

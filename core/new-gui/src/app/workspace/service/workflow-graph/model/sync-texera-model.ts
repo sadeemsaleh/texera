@@ -31,7 +31,7 @@ export class SyncTexeraModel {
    *  deletes the corresponding operator in Texera workflow graph.
    *
    * Deletion of an operator will also cause its connected links to be deleted as well,
-   *  JointJS automatically hanldes this logic,
+   *  JointJS automatically handles this logic,
    *  therefore we don't handle it to avoid inconsistency (deleting already deleted link).
    *
    * When an operator is deleted, JointJS will trigger the corresponding
@@ -40,7 +40,7 @@ export class SyncTexeraModel {
   private handleJointOperatorDelete(): void {
     this.jointGraphWrapper.getJointOperatorCellDeleteStream()
       .map(element => element.id.toString())
-      .filter(elementID => this.texeraGraph.hasOperator(elementID))
+      .filter(elementID => this.texeraGraph.hasOperator(elementID) && !this.jointGraphWrapper.getSyncTexeraGraph())
       .subscribe(elementID => this.texeraGraph.deleteOperator(elementID));
   }
 
@@ -70,7 +70,7 @@ export class SyncTexeraModel {
      *  and only add valid links to the graph
      */
     this.jointGraphWrapper.getJointLinkCellAddStream()
-      .filter(link => this.isValidJointLink(link))
+      .filter(link => this.isValidJointLink(link) && !this.jointGraphWrapper.getSyncTexeraGraph())
       .map(link => SyncTexeraModel.getOperatorLink(link))
       .subscribe(link => this.texeraGraph.addLink(link));
 
@@ -80,7 +80,7 @@ export class SyncTexeraModel {
      *  then delete the link by the link ID
      */
     this.jointGraphWrapper.getJointLinkCellDeleteStream()
-      .filter(link => this.isValidJointLink(link))
+      .filter(link => this.isValidJointLink(link) && !this.jointGraphWrapper.getSyncTexeraGraph())
       .map(link => SyncTexeraModel.getOperatorLink(link))
       .subscribe(link => this.texeraGraph.deleteLinkWithID(link.linkID));
 
@@ -91,8 +91,9 @@ export class SyncTexeraModel {
      * TODO: finish this documentation
      */
     this.jointGraphWrapper.getJointLinkCellChangeStream()
+      .filter(() => !this.jointGraphWrapper.getSyncTexeraGraph())
       // we intentially want the side effect (delete the link) to happen **before** other operations in the chain
-      .do((link) => {
+      .do(link => {
         const linkID = link.id.toString();
         if (this.texeraGraph.hasLinkWithID(linkID)) { this.texeraGraph.deleteLinkWithID(linkID); }
       })
@@ -104,17 +105,22 @@ export class SyncTexeraModel {
   }
 
   /**
-   * Determines if a jointJS link is valid (both ends are connected to a port of  port).
+   * Determines if a jointJS link is valid (both ends are connected to a port
+   * of operator or are connected to a collapsed group).
    * If a JointJS link's target is still a point (not connected), it's not considered a valid link.
    * @param jointLink
    */
   private isValidJointLink(jointLink: joint.dia.Link): boolean {
     return jointLink && jointLink.attributes &&
       jointLink.attributes.source && jointLink.attributes.target &&
-      jointLink.attributes.source.id && jointLink.attributes.source.port &&
-      jointLink.attributes.target.id && jointLink.attributes.target.port &&
+      jointLink.attributes.source.id && (jointLink.attributes.source.port ||
+        jointLink.attributes.source.id.toString().startsWith('group')) &&
+      jointLink.attributes.target.id && (jointLink.attributes.target.port ||
+        jointLink.attributes.target.id.toString().startsWith('group')) &&
       (this.texeraGraph.hasOperator(jointLink.attributes.source.id.toString()) ||
-      this.texeraGraph.hasOperator(jointLink.attributes.target.id.toString()));
+      this.texeraGraph.hasOperator(jointLink.attributes.target.id.toString()) ||
+      jointLink.attributes.source.id.toString().startsWith('group') &&
+      jointLink.attributes.source.id.toString().startsWith('group'));
       // the above two lines are causing unit test fail in sync-texera-model.spec.ts
       // since if operator is deleted first the link will become invalid and thus undeletable.
   }
@@ -154,5 +160,3 @@ export class SyncTexeraModel {
   }
 
 }
-
-
