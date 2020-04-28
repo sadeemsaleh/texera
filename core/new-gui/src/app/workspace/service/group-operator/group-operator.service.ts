@@ -61,28 +61,27 @@ export class GroupOperatorService {
   }
 
   /**
-   * Groups highlighted operator together.
+   * Groups all given operators together.
    *
-   * If there're less than two highlighted operators,or if any one of the highlighted
+   * If there're less than two operators in the array, or if any one of the
    * operators is already in a group, the action will be ignored.
    *
    * All cells related to the group (including the group itself) will be moved to the front.
+   *
+   * @param operatorIDs
    */
-  public groupOperators(): void {
-    const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    if (highlightedOperators.length < 2) {
+  public groupOperators(operatorIDs: string[]): void {
+    if (operatorIDs.length < 2) {
       return;
     }
-    for (const operatorID of highlightedOperators) {
+    for (const operatorID of operatorIDs) {
       if (this.getGroupByOperator(operatorID)) {
         return;
       }
     }
 
-    const group = this.getNewGroup();
-    const boundingBox = this.getGroupBoundingBox(group);
-
-    this.workflowActionService.addGroup(group, boundingBox);
+    const group = this.getNewGroup(operatorIDs);
+    this.workflowActionService.addGroup(group, this.getGroupBoundingBox(group));
     this.groupIDMap.set(group.groupID, group);
     this.moveGroupToLayer(group, this.getHighestLayer() + 1);
   }
@@ -182,7 +181,7 @@ export class GroupOperatorService {
   }
 
   /**
-   * Creates a new group for highlighted operators.
+   * Creates a new group for given operators.
    *
    * A new group contains the following:
    *  - groupID: the identifier of the group
@@ -195,8 +194,9 @@ export class GroupOperatorService {
    *    recording each link's source port
    *  - collapsed: a boolean value that indicates whether the group is collaped or expanded
    *
+   * @param operatorIDs
    */
-  private getNewGroup(): Group {
+  private getNewGroup(operatorIDs: string[]): Group {
     const groupID = this.workflowUtilService.getGroupRandomUUID();
 
     const operators = new Map<string, OperatorInfo>();
@@ -204,7 +204,7 @@ export class GroupOperatorService {
     const inLinks = new Map<string, OperatorPort>();
     const outLinks = new Map<string, OperatorPort>();
 
-    this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(operatorID => {
+    operatorIDs.forEach(operatorID => {
       const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
       const position = this.workflowActionService.getJointGraphWrapper().getElementPosition(operatorID);
       const layer = this.workflowActionService.getJointGraphWrapper().getCellLayer(operatorID);
