@@ -562,7 +562,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.groupOperatorService.collapseGroup(groupID, this.getJointPaper());
+          this.groupOperatorService.collapseGroup(groupID);
         }
       );
   }
@@ -584,7 +584,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.groupOperatorService.expandGroup(groupID, this.getJointPaper());
+          this.groupOperatorService.expandGroup(groupID);
         }
       );
   }
@@ -601,13 +601,21 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   /**
-   * Handles the event where a group is resized, and repositions
-   * the group's collapse button.
+   * Handles events that cause a group's size to change (collapse, expand, or
+   * resize), and hides or repositions the group's collapse/expand button.
    *
    * Since the collapse button's position is relative to a group's width,
    * resizing the group will cause the button to be out of place.
    */
   private handleGroupResize(): void {
+    this.groupOperatorService.getGroupCollapseStream().subscribe(group => {
+      this.jointUIService.hideGroupCollapseButton(this.getJointPaper(), group.groupID);
+    });
+
+    this.groupOperatorService.getGroupExpandStream().subscribe(group => {
+      this.jointUIService.hideGroupExpandButton(this.getJointPaper(), group.groupID);
+    });
+
     this.groupOperatorService.getGroupResizeStream().subscribe(value => {
       this.jointUIService.repositionGroupCollapseButton(this.getJointPaper(), value.groupID, value.width);
     });

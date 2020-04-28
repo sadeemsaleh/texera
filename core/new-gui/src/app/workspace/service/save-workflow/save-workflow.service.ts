@@ -3,6 +3,7 @@ import { WorkflowActionService } from '../workflow-graph/model/workflow-action.s
 import { Observable } from '../../../../../node_modules/rxjs';
 import { OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
+import { GroupOperatorService } from '../group-operator/group-operator.service';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
@@ -46,7 +47,8 @@ export class SaveWorkflowService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService
+    private operatorMetadataService: OperatorMetadataService,
+    private groupOperatorService: GroupOperatorService
   ) {
     this.handleAutoSaveWorkFlow();
 
@@ -106,7 +108,11 @@ export class SaveWorkflowService {
       this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getOperatorAdvancedOptionChangeSteam(),
-      this.workflowActionService.getJointGraphWrapper().getElementPositionChangeEvent()
+      this.workflowActionService.getJointGraphWrapper().getElementPositionChangeEvent(),
+      this.groupOperatorService.getGroupAddStream(),
+      this.groupOperatorService.getGroupDeleteStream(),
+      this.groupOperatorService.getGroupCollapseStream(),
+      this.groupOperatorService.getGroupExpandStream()
     ).debounceTime(100).subscribe(() => {
       const workflow = this.workflowActionService.getTexeraGraph();
 

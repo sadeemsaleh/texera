@@ -51,8 +51,7 @@ export class GroupOperatorService {
 
   constructor(
     private workflowUtilService: WorkflowUtilService,
-    private workflowActionService: WorkflowActionService,
-    private jointUIService: JointUIService
+    private workflowActionService: WorkflowActionService
   ) {
     this.handleTexeraGraphLinkDelete();
     this.handleTexeraGraphLinkAdd();
@@ -65,13 +64,10 @@ export class GroupOperatorService {
   }
 
   /**
-   * Groups all given operators together.
+   * Groups given operators together.
    *
    * If there're less than two operators in the array, or if any one of
    * the operators is already in a group, the action will be ignored.
-   *
-   * All cells related to the group (including the group itself)
-   * will be moved to the front.
    *
    * @param operatorIDs
    */
@@ -87,10 +83,7 @@ export class GroupOperatorService {
     }
 
     const group = this.getNewGroup(operatorIDs);
-    this.workflowActionService.addGroup(group, this.getGroupBoundingBox(group));
-    this.groupIDMap.set(group.groupID, group);
-    this.moveGroupToLayer(group, this.getHighestLayer() + 1);
-    this.groupAddStream.next(group);
+    this.addGroup(group);
   }
 
   /**
@@ -113,19 +106,21 @@ export class GroupOperatorService {
   }
 
   /**
-   * Collapses the given group. All operators and links within the group will be
-   * hidden, and the collapse button will be changed to expand button.
+   * Collapses the given group.
+   * Throws an error if the group is already collapsed, otherwise hide all
+   * operators and links within the group.
    *
    * @param groupID
-   * @param jointPaper
    */
-  public collapseGroup(groupID: string, jointPaper: joint.dia.Paper): void {
+  public collapseGroup(groupID: string): void {
     const group = this.getGroup(groupID);
 
-    // collapse group on joint graph
-    this.workflowActionService.getJointGraphWrapper().setElementSize(groupID, 170, 30);
-    this.jointUIService.showGroupExpandButton(jointPaper, groupID);
+    if (group.collapsed) {
+      throw Error(`group with ID ${groupID} is already collapsed`);
+    }
 
+    // collapse the group on joint graph
+    this.workflowActionService.getJointGraphWrapper().setElementSize(groupID, 170, 30);
     // hide embedded operators & links
     this.workflowActionService.getJointGraphWrapper().hideOperatorsAndLinks(group);
 
@@ -134,24 +129,52 @@ export class GroupOperatorService {
   }
 
   /**
-   * Expands the given group. All hidden operators and links will reappear on the
-   * joint graph, and the expand button will be changed to collapse button.
+   * Expands the given group.
+   * Throws an error if the group is already expanded, otherwise show all hidden
+   * operators and links in the group.
    *
    * @param groupID
-   * @param jointPaper
    */
-  public expandGroup(groupID: string, jointPaper: joint.dia.Paper): void {
+  public expandGroup(groupID: string): void {
     const group = this.getGroup(groupID);
 
-    // expand group on joint graph
-    this.repositionGroup(group);
-    this.jointUIService.showGroupCollapseButton(jointPaper, groupID);
+    if (!group.collapsed) {
+      throw Error(`group with ID ${groupID} is already expanded`);
+    }
 
+    // expand the group on joint graph
+    this.repositionGroup(group);
     // show embedded operators & links
     this.workflowActionService.getJointGraphWrapper().showOperatorsAndLinks(group);
 
     group.collapsed = false;
     this.groupExpandStream.next(group);
+  }
+
+  /**
+   * Adds a new group to the graph.
+   * Throws an error the group has a duplicate groupID with an existing group.
+   *
+   * All cells related to the group (including the group itself) will be moved to the front.
+   *
+   * @param group
+   */
+  public addGroup(group: Group): void {
+    if (this.groupIDMap.has(group.groupID)) {
+      throw new Error(`group with ID ${group.groupID} already exists`);
+    }
+
+    this.workflowActionService.addGroup(group, this.getGroupBoundingBox(group));
+    this.groupIDMap.set(group.groupID, group);
+    this.moveGroupToLayer(group, this.getHighestLayer() + 1);
+
+    // collapse the group if it's specified as collapsed
+    if (group.collapsed) {
+      group.collapsed = false;
+      this.collapseGroup(group.groupID);
+    }
+
+    this.groupAddStream.next(group);
   }
 
   /**
