@@ -273,9 +273,9 @@ export class WorkflowGraph {
   }
 
   /**
- * Gets the observable event stream of an operator being deleted from the graph.
- * The observable value is the deleted operator.
- */
+   * Gets the observable event stream of an operator being deleted from the graph.
+   * The observable value is the deleted operator.
+   */
   public getOperatorDeleteStream(): Observable<{ deletedOperator: OperatorPredicate }> {
     return this.operatorDeleteSubject.asObservable();
   }
