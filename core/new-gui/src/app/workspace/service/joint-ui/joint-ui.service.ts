@@ -300,25 +300,25 @@ export class JointUIService {
   }
 
   /**
-   * Shows the collapse button and hides the expand button of
+   * Hides the expand button and shows the collapse button of
    * the given group on joint paper.
    *
    * @param jointPaper
    * @param groupID
    */
-  public showGroupCollapseButton(jointPaper: joint.dia.Paper, groupID: string): void {
+  public hideGroupExpandButton(jointPaper: joint.dia.Paper, groupID: string): void {
     jointPaper.getModelById(groupID).attr('.expand-button/display', 'none');
     jointPaper.getModelById(groupID).removeAttr('.collapse-button/display');
   }
 
   /**
-   * Shows the expand button and hides the collapse button of
+   * Hides the collapse button and shows the expand button of
    * the given group on joint paper.
    *
    * @param jointPaper
    * @param groupID
    */
-  public showGroupExpandButton(jointPaper: joint.dia.Paper, groupID: string): void {
+  public hideGroupCollapseButton(jointPaper: joint.dia.Paper, groupID: string): void {
     jointPaper.getModelById(groupID).attr('.collapse-button/display', 'none');
     jointPaper.getModelById(groupID).removeAttr('.expand-button/display');
   }
