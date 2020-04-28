@@ -41,9 +41,13 @@ type groupSizeType = {
 export class GroupOperatorService {
 
   private groupIDMap = new Map<string, Group>();
-  private groupResizeStream = new Subject<groupSizeType>();
-
   private listenOperatorPositionChange = true;
+
+  private readonly groupAddStream = new Subject<Group>();
+  private readonly groupDeleteStream = new Subject<Group>();
+  private readonly groupCollapseStream = new Subject<Group>();
+  private readonly groupExpandStream = new Subject<Group>();
+  private readonly groupResizeStream = new Subject<groupSizeType>();
 
   constructor(
     private workflowUtilService: WorkflowUtilService,
@@ -63,10 +67,11 @@ export class GroupOperatorService {
   /**
    * Groups all given operators together.
    *
-   * If there're less than two operators in the array, or if any one of the
-   * operators is already in a group, the action will be ignored.
+   * If there're less than two operators in the array, or if any one of
+   * the operators is already in a group, the action will be ignored.
    *
-   * All cells related to the group (including the group itself) will be moved to the front.
+   * All cells related to the group (including the group itself)
+   * will be moved to the front.
    *
    * @param operatorIDs
    */
@@ -74,6 +79,7 @@ export class GroupOperatorService {
     if (operatorIDs.length < 2) {
       return;
     }
+
     for (const operatorID of operatorIDs) {
       if (this.getGroupByOperator(operatorID)) {
         return;
@@ -84,6 +90,7 @@ export class GroupOperatorService {
     this.workflowActionService.addGroup(group, this.getGroupBoundingBox(group));
     this.groupIDMap.set(group.groupID, group);
     this.moveGroupToLayer(group, this.getHighestLayer() + 1);
+    this.groupAddStream.next(group);
   }
 
   /**
@@ -102,6 +109,7 @@ export class GroupOperatorService {
 
     this.workflowActionService.deleteGroup(group);
     this.groupIDMap.delete(groupID);
+    this.groupDeleteStream.next(group);
   }
 
   /**
@@ -122,6 +130,7 @@ export class GroupOperatorService {
     this.workflowActionService.getJointGraphWrapper().hideOperatorsAndLinks(group);
 
     group.collapsed = true;
+    this.groupCollapseStream.next(group);
   }
 
   /**
@@ -142,6 +151,7 @@ export class GroupOperatorService {
     this.workflowActionService.getJointGraphWrapper().showOperatorsAndLinks(group);
 
     group.collapsed = false;
+    this.groupExpandStream.next(group);
   }
 
   /**
@@ -171,6 +181,34 @@ export class GroupOperatorService {
       }
     }
     return undefined;
+  }
+
+  /**
+   * Gets the event stream of a group being added.
+   */
+  public getGroupAddStream(): Observable<Group> {
+    return this.groupAddStream.asObservable();
+  }
+
+  /**
+   * Gets the event stream of a group being deleted.
+   */
+  public getGroupDeleteStream(): Observable<Group> {
+    return this.groupDeleteStream.asObservable();
+  }
+
+  /**
+   * Gets the event stream of a group being collapsed.
+   */
+  public getGroupCollapseStream(): Observable<Group> {
+    return this.groupCollapseStream.asObservable();
+  }
+
+  /**
+   * Gets the event stream of a group being expanded.
+   */
+  public getGroupExpandStream(): Observable<Group> {
+    return this.groupExpandStream.asObservable();
   }
 
   /**
