@@ -228,8 +228,9 @@ export class NavigationComponent implements OnInit {
    * Groups highlighted operators on the graph.
    */
   public onClickGroupOperators(): void {
+    const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
     if (this.operatorsGroupable()) {
-      this.groupOperatorService.groupOperators();
+      this.groupOperatorService.groupOperators(highlightedOperators);
     }
   }
 
