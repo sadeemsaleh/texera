@@ -198,12 +198,19 @@ export class GroupOperatorService {
    * @param operatorID
    */
   public getGroupByOperator(operatorID: string): Group | undefined {
-    for (const group of Array.from(this.groupIDMap.values())) {
+    for (const group of this.getAllGroups()) {
       if (group.operators.has(operatorID)) {
         return group;
       }
     }
     return undefined;
+  }
+
+  /**
+   * Returns an array of all groups in the graph
+   */
+  public getAllGroups(): Group[] {
+    return Array.from(this.groupIDMap.values());
   }
 
   /**
@@ -482,7 +489,6 @@ export class GroupOperatorService {
           const operatorInfo = group.operators.get(movedOperator.elementID);
           if (operatorInfo) {
             operatorInfo.position = movedOperator.newPosition;
-            group.operators.set(movedOperator.elementID, operatorInfo);
             this.repositionGroup(group);
           }
         });
@@ -503,9 +509,8 @@ export class GroupOperatorService {
         if (group.collapsed) {
           const offsetX = movedGroup.newPosition.x - movedGroup.oldPosition.x;
           const offsetY = movedGroup.newPosition.y - movedGroup.oldPosition.y;
-          group.operators.forEach((operatorInfo, operatorID) => {
+          group.operators.forEach(operatorInfo => {
             operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY};
-            group.operators.set(operatorID, operatorInfo);
           });
         }
       });
@@ -523,7 +528,6 @@ export class GroupOperatorService {
           const operatorInfo = group.operators.get(movedOperator.cellID);
           if (operatorInfo) {
             operatorInfo.layer = movedOperator.newLayer;
-            group.operators.set(movedOperator.cellID, operatorInfo);
           }
         });
       });
@@ -541,7 +545,6 @@ export class GroupOperatorService {
           const linkInfo = group.links.get(movedLink.cellID);
           if (linkInfo) {
             linkInfo.layer = movedLink.newLayer;
-            group.links.set(movedLink.cellID, linkInfo);
           }
         });
       });

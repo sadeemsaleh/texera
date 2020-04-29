@@ -78,7 +78,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   private operatorStatusTooltipDisplayEnabled: boolean = false;
 
   // dictionary of {operatorID, CopiedOperator} pairs
-  private copiedOperators: Record<string, CopiedOperator> = {};
+  private copiedOperators = new Map<string, CopiedOperator>();
 
 
   constructor(
@@ -414,8 +414,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(event => {
         this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(<boolean> event[1].shiftKey);
         const operatorID = event[0].model.id.toString();
-        const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        if (event[1].shiftKey && currentOperatorIDs.includes(operatorID)) {
+        const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        if (event[1].shiftKey && highlightedOperatorIDs.includes(operatorID)) {
           this.workflowActionService.getJointGraphWrapper().unhighlightOperator(operatorID);
         } else {
           this.workflowActionService.getJointGraphWrapper().highlightOperator(operatorID);
@@ -425,8 +425,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
     // on user mouse clicks on blank area, unhighlight all operators
     Observable.fromEvent<JointPaperEvent>(this.getJointPaper(), 'blank:pointerdown')
       .subscribe(() => {
-        const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        this.workflowActionService.getJointGraphWrapper().unhighlightOperators(currentOperatorIDs);
+        const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        this.workflowActionService.getJointGraphWrapper().unhighlightOperators(highlightedOperatorIDs);
       });
   }
 
@@ -736,8 +736,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .filter(event => event.key === 'Backspace' || event.key === 'Delete')
       .subscribe(() => {
-        const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        this.workflowActionService.deleteOperatorsAndLinks(currentOperatorIDs, []);
+        const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, []);
       });
   }
 
@@ -767,10 +767,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
     Observable.fromEvent<ClipboardEvent>(document, 'copy')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
-        const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        if (currentOperatorIDs.length > 0) {
-          this.copiedOperators = {};
-          currentOperatorIDs.forEach(operatorID => this.saveOperatorInfo(operatorID));
+        const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        if (highlightedOperatorIDs.length > 0) {
+          this.copiedOperators.clear();
+          highlightedOperatorIDs.forEach(operatorID => this.saveOperatorInfo(operatorID, true));
         }
       });
   }
@@ -784,14 +784,11 @@ export class WorkflowEditorComponent implements AfterViewInit {
     Observable.fromEvent<ClipboardEvent>(document, 'cut')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
-        const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        if (currentOperatorIDs.length > 0) {
-          this.copiedOperators = {};
-          currentOperatorIDs.forEach(operatorID => {
-            this.saveOperatorInfo(operatorID);
-            this.copiedOperators[operatorID].pastedOperators = [];
-          });
-          this.workflowActionService.deleteOperatorsAndLinks(currentOperatorIDs, []);
+        const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        if (highlightedOperatorIDs.length > 0) {
+          this.copiedOperators.clear();
+          highlightedOperatorIDs.forEach(operatorID => this.saveOperatorInfo(operatorID, false));
+          this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, []);
         }
       });
   }
@@ -799,14 +796,15 @@ export class WorkflowEditorComponent implements AfterViewInit {
   /**
    * Utility function to cache the operator's info.
    * @param operatorID
+   * @param includeOperator
    */
-  private saveOperatorInfo(operatorID: string): void {
+  private saveOperatorInfo(operatorID: string, includeOperator: boolean): void {
     const operator = this.workflowActionService.getTexeraGraph().getOperator(operatorID);
     if (operator) {
       const position = this.workflowActionService.getJointGraphWrapper().getElementPosition(operatorID);
       const layer = this.workflowActionService.getJointGraphWrapper().getCellLayer(operatorID);
-      const pastedOperators = [operatorID];
-      this.copiedOperators[operatorID] = {operator, position, layer, pastedOperators};
+      const pastedOperators = includeOperator ? [operatorID] : [];
+      this.copiedOperators.set(operatorID, {operator, position, layer, pastedOperators});
     }
   }
 
@@ -819,17 +817,17 @@ export class WorkflowEditorComponent implements AfterViewInit {
     Observable.fromEvent<ClipboardEvent>(document, 'paste')
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
-        if (Object.keys(this.copiedOperators).length > 0) {
-          const operatorsAndPositions = [];
-          const positions = [];
-          const copiedOperatorIDs = Object.keys(this.copiedOperators).sort((first, second) =>
-            this.copiedOperators[first].layer - this.copiedOperators[second].layer);
-          for (const operatorID of copiedOperatorIDs) {
-            const newOperator = this.copyOperator(this.copiedOperators[operatorID].operator);
+        if (this.copiedOperators.size > 0) {
+          const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
+          const positions: Point[] = [];
+          this.copiedOperators = new Map<string, CopiedOperator>(Array.from(this.copiedOperators)
+            .sort((first, second) => first[1].layer - second[1].layer));
+          this.copiedOperators.forEach((copiedOperator, operatorID) => {
+            const newOperator = this.copyOperator(copiedOperator.operator);
             const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
             operatorsAndPositions.push({op: newOperator, pos: newOperatorPosition});
             positions.push(newOperatorPosition);
-          }
+          });
           this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, []);
         }
       });
@@ -861,21 +859,24 @@ export class WorkflowEditorComponent implements AfterViewInit {
    */
   private calcOperatorPosition(newOperatorID: string, copiedOperatorID: string, positions: Point[]): Point {
     let i, position;
-    const operatorPosition = this.copiedOperators[copiedOperatorID].position;
-    const pastedOperators = this.copiedOperators[copiedOperatorID].pastedOperators;
+    const copiedOperator = this.copiedOperators.get(copiedOperatorID);
+    if (!copiedOperator) {
+      throw Error(`Internal error: cannot find ${copiedOperatorID} in copied operators`);
+    }
+    const pastedOperators = copiedOperator.pastedOperators;
     for (i = 0; i < pastedOperators.length; ++i) {
-      position = {x: operatorPosition.x + i * this.COPY_OPERATOR_OFFSET,
-                  y: operatorPosition.y + i * this.COPY_OPERATOR_OFFSET};
+      position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
+                  y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getTexeraGraph().hasOperator(pastedOperators[i]) ||
           this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).x !== position.x ||
           this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).y !== position.y)) {
-        this.copiedOperators[copiedOperatorID].pastedOperators[i] = newOperatorID;
+        pastedOperators[i] = newOperatorID;
         return this.getNonOverlappingPosition(position, positions);
       }
     }
-    this.copiedOperators[copiedOperatorID].pastedOperators.push(newOperatorID);
-    position = {x: operatorPosition.x + i * this.COPY_OPERATOR_OFFSET,
-                y: operatorPosition.y + i * this.COPY_OPERATOR_OFFSET};
+    pastedOperators.push(newOperatorID);
+    position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
+                y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
     return this.getNonOverlappingPosition(position, positions);
   }
 
