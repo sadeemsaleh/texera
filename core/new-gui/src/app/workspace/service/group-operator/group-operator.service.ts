@@ -37,6 +37,8 @@ type groupSizeType = {
   height: number
 };
 
+// TO-DO: add undo redo for group add, delete, collapse, and expand
+
 @Injectable()
 export class GroupOperatorService {
 
@@ -95,9 +97,9 @@ export class GroupOperatorService {
   public ungroupOperators(groupID: string): void {
     const group = this.getGroup(groupID);
 
-    // if the group is collapsed, show all hidden operators & links before ungrouping
+    // if the group is collapsed, expand it before ungrouping
     if (group.collapsed) {
-      this.workflowActionService.getJointGraphWrapper().showOperatorsAndLinks(group);
+      this.expandGroup(groupID);
     }
 
     this.workflowActionService.deleteGroup(group);

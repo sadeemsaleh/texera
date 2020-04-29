@@ -323,11 +323,11 @@ export class WorkflowActionService {
    * @param boundingBox
    */
   public addGroup(group: Group, boundingBox: GroupBoundingBox): void {
-    const command: Command = {
-      execute: () => this.addGroupInternal(group, boundingBox),
-      undo: () => { }
-    };
-    this.executeAndStoreCommand(command);
+    const groupJointElement = this.jointUIService.getJointGroupElement(group, boundingBox);
+    // embed operators & links in the group
+    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.embed(this.jointGraph.getCell(operatorID)));
+    group.links.forEach((linkInfo, linkID) => groupJointElement.embed(this.jointGraph.getCell(linkID)));
+    this.jointGraph.addCell(groupJointElement);
   }
 
   /**
@@ -336,11 +336,11 @@ export class WorkflowActionService {
    * @param group
    */
   public deleteGroup(group: Group): void {
-    const command: Command = {
-      execute: () => this.deleteGroupInternal(group),
-      undo: () => { }
-    };
-    this.executeAndStoreCommand(command);
+    const groupJointElement = this.jointGraph.getCell(group.groupID);
+    // free up embedded operators & links
+    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
+    group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
+    groupJointElement.remove();
   }
 
   // problem here
@@ -427,22 +427,6 @@ export class WorkflowActionService {
     this.texeraGraph.assertLinkWithIDExists(linkID);
     this.jointGraph.getCell(linkID).remove();
     // JointJS link delete event will propagate and trigger Texera link delete
-  }
-
-  private addGroupInternal(group: Group, boundingBox: GroupBoundingBox): void {
-    const groupJointElement = this.jointUIService.getJointGroupElement(group, boundingBox);
-    // embed operators & links in the group
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.embed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.embed(this.jointGraph.getCell(linkID)));
-    this.jointGraph.addCell(groupJointElement);
-  }
-
-  private deleteGroupInternal(group: Group): void {
-    const groupJointElement = this.jointGraph.getCell(group.groupID);
-    // free up embedded operators & links
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
-    groupJointElement.remove();
   }
 
   // use this to modify properties
