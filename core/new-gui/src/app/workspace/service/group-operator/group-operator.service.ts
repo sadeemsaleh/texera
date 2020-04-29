@@ -162,9 +162,8 @@ export class GroupOperatorService {
    * @param group
    */
   public addGroup(group: Group): void {
-    if (this.groupIDMap.has(group.groupID)) {
-      throw new Error(`group with ID ${group.groupID} already exists`);
-    }
+    this.assertGroupNotExists(group.groupID);
+    this.assertGroupIsValid(group);
 
     this.workflowActionService.addGroup(group, this.getGroupBoundingBox(group));
     this.groupIDMap.set(group.groupID, group);
@@ -195,7 +194,7 @@ export class GroupOperatorService {
 
   /**
    * Gets the group that the given operator resides in.
-   * Returns undefined if there's no such a group.
+   * Returns undefined if there's no such group.
    *
    * @param operatorID
    */
@@ -205,7 +204,20 @@ export class GroupOperatorService {
         return group;
       }
     }
-    return undefined;
+  }
+
+  /**
+   * Gets the group that the given link resides in.
+   * Returns undefined if there's no such group.
+   *
+   * @param linkID
+   */
+  public getGroupByLink(linkID: string): Group | undefined {
+    for (const group of this.getAllGroups()) {
+      if (group.links.has(linkID)) {
+        return group;
+      }
+    }
   }
 
   /**
@@ -248,6 +260,50 @@ export class GroupOperatorService {
    */
   public getGroupResizeStream(): Observable<groupSizeType> {
     return this.groupResizeStream.asObservable();
+  }
+
+  /**
+   * Asserts that the group doesn't exist in the graph.
+   * Throws an error if there's a duplicate group ID.
+   *
+   * @param groupID
+   */
+  public assertGroupNotExists(groupID: string): void {
+    if (this.groupIDMap.has(groupID)) {
+      throw new Error(`group with ID ${groupID} already exists`);
+    }
+  }
+
+  /**
+   * Checks if it's valid to add the given group to the graph.
+   *
+   * Throws an error if it's not a valid group because there are:
+   *  - less than two operators in the group
+   *  - operators that exist in another group
+   *  - links that exist in another group
+   *
+   * @param group
+   */
+  public assertGroupIsValid(group: Group): void {
+    if (group.operators.size < 2) {
+      throw Error(`group has less than two operators`);
+    }
+
+    // checks if the group contains operators from another group
+    for (const operatorID of Array.from(group.operators.keys())) {
+      const duplicateGroup = this.getGroupByOperator(operatorID);
+      if (duplicateGroup && duplicateGroup.groupID !== group.groupID) {
+        throw Error(`operator ${operatorID} exists in another group`);
+      }
+    }
+
+    // checks if the group contains links from another group
+    for (const linkID of Array.from(group.links.keys())) {
+      const duplicateGroup = this.getGroupByLink(linkID);
+      if (duplicateGroup && duplicateGroup.groupID !== group.groupID) {
+        throw Error(`link ${linkID} exists in another group`);
+      }
+    }
   }
 
   /**
