@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
 import { Observable } from '../../../../../node_modules/rxjs';
-import { OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
+import { OperatorLink, OperatorPredicate, OperatorPort, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
-import { GroupOperatorService } from '../group-operator/group-operator.service';
+import { GroupOperatorService, OperatorInfo, LinkInfo } from '../group-operator/group-operator.service';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
@@ -20,8 +20,17 @@ export interface SavedWorkflow {
   operators: OperatorPredicate[];
   operatorPositions: {[key: string]: Point | undefined};
   links: OperatorLink[];
+  groups: PlainGroup[];
 }
 
+interface PlainGroup {
+  groupID: string;
+  operators: Record<string, OperatorInfo>;
+  links: Record<string, LinkInfo>;
+  inLinks: Record<string, OperatorPort>;
+  outLinks: Record<string, OperatorPort>;
+  collapsed: boolean;
+}
 
 /**
  * SaveWorkflowService is responsible for saving the existing workflow and
@@ -91,6 +100,12 @@ export class SaveWorkflowService {
 
     this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
 
+    savedWorkflow.groups.map(group => {
+      return {groupID: group.groupID, operators: this.recordToMap(group.operators),
+        links: this.recordToMap(group.links), inLinks: this.recordToMap(group.inLinks),
+        outLinks: this.recordToMap(group.outLinks), collapsed: group.collapsed};
+    }).forEach(group => this.groupOperatorService.addGroup(group));
+
     // operators shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
       this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
@@ -118,17 +133,57 @@ export class SaveWorkflowService {
 
       const operators = workflow.getAllOperators();
       const links = workflow.getAllLinks();
+
+      const groups = this.groupOperatorService.getAllGroups().map(group => {
+        return {groupID: group.groupID, operators: this.mapToRecord(group.operators),
+          links: this.mapToRecord(group.links), inLinks: this.mapToRecord(group.inLinks),
+          outLinks: this.mapToRecord(group.outLinks), collapsed: group.collapsed};
+      });
+
       const operatorPositions: {[key: string]: Point} = {};
-      workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
-        this.workflowActionService.getJointGraphWrapper().getElementPosition(op.operatorID));
-        // group-operator problem here: when group is collapsed, can't get element position
+      workflow.getAllOperators().forEach(op => {
+        const group = this.groupOperatorService.getGroupByOperator(op.operatorID);
+        if (group && group.collapsed) {
+          const operatorInfo = group.operators.get(op.operatorID);
+          if (operatorInfo) {
+            operatorPositions[op.operatorID] = operatorInfo.position;
+          }
+        } else {
+          operatorPositions[op.operatorID] = this.workflowActionService.getJointGraphWrapper()
+            .getElementPosition(op.operatorID);
+        }
+      });
 
       const savedWorkflow: SavedWorkflow = {
-        operators, operatorPositions, links
+        operators, operatorPositions, links, groups
       };
 
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
     });
+  }
+
+  /**
+   * Converts ES6 Map object to TS Record object.
+   * This method is used to stringify Map objects.
+   * @param map
+   */
+  private mapToRecord(map: Map<string, any>): Record<string, any> {
+    const record: Record<string, any> = {};
+    map.forEach((value, key) => record[key] = value);
+    return record;
+  }
+
+  /**
+   * Converts TS Record object to ES6 Map object.
+   * This method is used to construct Map objects from JSON.
+   * @param record
+   */
+  private recordToMap(record: Record<string, any>): Map<string, any> {
+    const map = new Map<string, any>();
+    for (const key of Object.keys(record)) {
+      map.set(key, record[key]);
+    }
+    return map;
   }
 
 }
