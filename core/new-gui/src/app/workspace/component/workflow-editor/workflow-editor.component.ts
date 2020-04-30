@@ -594,10 +594,15 @@ export class WorkflowEditorComponent implements AfterViewInit {
    */
   private handleOperatorValidation(): void {
 
-    // group-operator problem here: when group is collapsed, no joint element can be found
     this.validationWorkflowService.getOperatorValidationStream()
-      .subscribe(value =>
-        this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.status));
+      .subscribe(value => {
+        const group = this.groupOperatorService.getGroupByOperator(value.operatorID);
+        if (group && group.collapsed) {
+          // TO-DO: change color of the collapsed group instead
+        } else {
+          this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.status);
+        }
+      });
   }
 
   /**
