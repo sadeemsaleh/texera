@@ -825,6 +825,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
         if (this.copiedOperators.size > 0) {
           const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
           const positions: Point[] = [];
+          const pastedOperators: string[] = []; // pasted operators whose copied operator is hidden
           this.copiedOperators = new Map<string, CopiedOperator>(Array.from(this.copiedOperators)
             .sort((first, second) => first[1].layer - second[1].layer));
           this.copiedOperators.forEach((copiedOperator, operatorID) => {
@@ -832,8 +833,14 @@ export class WorkflowEditorComponent implements AfterViewInit {
             const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
             operatorsAndPositions.push({op: newOperator, pos: newOperatorPosition});
             positions.push(newOperatorPosition);
+            const group = this.groupOperatorService.getGroupByOperator(operatorID);
+            if (group && group.collapsed) {
+              pastedOperators.push(newOperator.operatorID);
+            }
           });
           this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, []);
+          pastedOperators.forEach(operatorID => this.workflowActionService.getJointGraphWrapper().setCellLayer(
+            operatorID, this.workflowActionService.getJointGraphWrapper().getCellLayer(operatorID) + 1));
         }
       });
   }
