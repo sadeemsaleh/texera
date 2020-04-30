@@ -485,10 +485,10 @@ export class DragDropService {
     // assumes that for an op with multiple input/output ports, ports in op.inputPorts/outPutports are rendered
     //              [first ... last] => [North ... South]
     const heightSortedInputs: OperatorPredicate[] = inputOperators.slice(0).sort((op1, op2) =>
-      graph.getOperatorPosition(op1.operatorID).y - graph.getOperatorPosition(op2.operatorID).y
+      graph.getElementPosition(op1.operatorID).y - graph.getElementPosition(op2.operatorID).y
     );
     const heightSortedOutputs: OperatorPredicate[] = receiverOperators.slice(0).sort((op1, op2) =>
-      graph.getOperatorPosition(op1.operatorID).y - graph.getOperatorPosition(op2.operatorID).y
+      graph.getElementPosition(op1.operatorID).y - graph.getElementPosition(op2.operatorID).y
     );
 
     // if new operator has suggested links, create them
