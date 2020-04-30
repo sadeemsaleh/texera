@@ -72,6 +72,9 @@ export class SaveWorkflowService {
    *  the JointJS paper.
    */
   public loadWorkflow(): void {
+    // ungroup the existing groups on the paper currently
+    this.groupOperatorService.getAllGroups().forEach(group =>
+      this.groupOperatorService.ungroupOperators(group.groupID));
     // remove the existing operators on the paper currently
     this.workflowActionService.deleteOperatorsAndLinks(
       this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
@@ -133,25 +136,14 @@ export class SaveWorkflowService {
 
       const operators = workflow.getAllOperators();
       const links = workflow.getAllLinks();
+      const operatorPositions: {[key: string]: Point} = {};
+      workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
+        this.groupOperatorService.getOperatorPositionByGroup(op.operatorID));
 
       const groups = this.groupOperatorService.getAllGroups().map(group => {
         return {groupID: group.groupID, operators: this.mapToRecord(group.operators),
           links: this.mapToRecord(group.links), inLinks: this.mapToRecord(group.inLinks),
           outLinks: this.mapToRecord(group.outLinks), collapsed: group.collapsed};
-      });
-
-      const operatorPositions: {[key: string]: Point} = {};
-      workflow.getAllOperators().forEach(op => {
-        const group = this.groupOperatorService.getGroupByOperator(op.operatorID);
-        if (group && group.collapsed) {
-          const operatorInfo = group.operators.get(op.operatorID);
-          if (operatorInfo) {
-            operatorPositions[op.operatorID] = operatorInfo.position;
-          }
-        } else {
-          operatorPositions[op.operatorID] = this.workflowActionService.getJointGraphWrapper()
-            .getElementPosition(op.operatorID);
-        }
       });
 
       const savedWorkflow: SavedWorkflow = {
