@@ -868,8 +868,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
                   y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getTexeraGraph().hasOperator(pastedOperators[i]) ||
-          this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).x !== position.x ||
-          this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedOperators[i]).y !== position.y)) {
+          this.groupOperatorService.getOperatorPositionByGroup(pastedOperators[i]).x !== position.x ||
+          this.groupOperatorService.getOperatorPositionByGroup(pastedOperators[i]).y !== position.y)) {
         pastedOperators[i] = newOperatorID;
         return this.getNonOverlappingPosition(position, positions);
       }
@@ -890,7 +890,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   private getNonOverlappingPosition(position: Point, positions: Point[]): Point {
     let overlapped = false;
     const operatorPositions = positions.concat(this.workflowActionService.getTexeraGraph().getAllOperators()
-      .map(operator => this.workflowActionService.getJointGraphWrapper().getElementPosition(operator.operatorID)));
+      .map(operator => this.groupOperatorService.getOperatorPositionByGroup(operator.operatorID)));
     do {
       for (const operatorPosition of operatorPositions) {
         if (operatorPosition.x === position.x && operatorPosition.y === position.y) {

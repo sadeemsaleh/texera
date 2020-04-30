@@ -3,6 +3,7 @@ import { WorkflowActionService } from './../workflow-graph/model/workflow-action
 import { Observable } from 'rxjs/Observable';
 import { WorkflowUtilService } from './../workflow-graph/util/workflow-util.service';
 import { JointUIService } from './../joint-ui/joint-ui.service';
+import { GroupOperatorService } from '../group-operator/group-operator.service';
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 
@@ -89,7 +90,8 @@ export class DragDropService {
   constructor(
     private jointUIService: JointUIService,
     private workflowUtilService: WorkflowUtilService,
-    private workflowActionService: WorkflowActionService
+    private workflowActionService: WorkflowActionService,
+    private groupOperatorService: GroupOperatorService
   ) {
     this.handleOperatorDropEvent();
   }
@@ -375,8 +377,11 @@ export class DragDropService {
    */
   private findClosestOperator(mouseCoordinate: Point): void {
     const curruntOperator = this.workflowUtilService.getNewOperatorPredicate(this.currentOperatorType);
-    const operatorList = this.workflowActionService.getTexeraGraph().getAllOperators();
     const operatorLinks = this.workflowActionService.getTexeraGraph().getAllLinks();
+    const operatorList = this.workflowActionService.getTexeraGraph().getAllOperators().filter(operator => {
+      const group = this.groupOperatorService.getGroupByOperator(operator.operatorID);
+      return !group || !group.collapsed;
+    });
 
     let minDistance = Number.MAX_VALUE; // keep tracking the closest operator
     let newSuggestionOperator: OperatorPredicate | undefined;

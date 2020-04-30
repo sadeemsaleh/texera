@@ -44,6 +44,7 @@ export class GroupOperatorService {
 
   private groupIDMap = new Map<string, Group>();
   private listenOperatorPositionChange = true;
+  private groupToCollapse: string | undefined;
 
   private readonly groupAddStream = new Subject<Group>();
   private readonly groupDeleteStream = new Subject<Group>();
@@ -186,7 +187,7 @@ export class GroupOperatorService {
    */
   public getGroup(groupID: string): Group {
     const group = this.groupIDMap.get(groupID);
-    if (! group) {
+    if (!group) {
       throw new Error(`group with ID ${groupID} doesn't exist`);
     }
     return group;
@@ -307,6 +308,75 @@ export class GroupOperatorService {
   }
 
   /**
+   * Gets the given operator's position on the JointJS graph, or its
+   * supposed-to-be position if the operator is in a collapsed group.
+   *
+   * For operators that are supposed to be on the JointJS graph, use
+   * getElementPosition() from JointGraphWrapper instead.
+   *
+   * @param operatorID
+   */
+  public getOperatorPositionByGroup(operatorID: string): Point {
+    const group = this.getGroupByOperator(operatorID);
+    if (group && group.collapsed) {
+      const operatorInfo = group.operators.get(operatorID);
+      if (operatorInfo) {
+        return operatorInfo.position;
+      } else {
+        throw Error(`Internal error: can't find operator ${operatorID} in group ${group.groupID}`);
+      }
+    } else {
+      return this.workflowActionService.getJointGraphWrapper().getElementPosition(operatorID);
+    }
+  }
+
+  /**
+   * Gets the given operator's layer on the JointJS graph, or its
+   * supposed-to-be layer if the operator is in a collapsed group.
+   *
+   * For operators that are supposed to be on the JointJS graph, use
+   * getCellLayer() from JointGraphWrapper instead.
+   *
+   * @param operatorID
+   */
+  public getOperatorLayerByGroup(operatorID: string): number {
+    const group = this.getGroupByOperator(operatorID);
+    if (group && group.collapsed) {
+      const operatorInfo = group.operators.get(operatorID);
+      if (operatorInfo) {
+        return operatorInfo.layer;
+      } else {
+        throw Error(`Internal error: can't find operator ${operatorID} in group ${group.groupID}`);
+      }
+    } else {
+      return this.workflowActionService.getJointGraphWrapper().getCellLayer(operatorID);
+    }
+  }
+
+  /**
+   * Gets the given link's layer on the JointJS graph, or its
+   * supposed-to-be layer if the link is in a collapsed group.
+   *
+   * For links that are supposed to be on the JointJS graph, use
+   * getCellLayer() from JointGraphWrapper instead.
+   *
+   * @param linkID
+   */
+  public getLinkLayerByGroup(linkID: string): number {
+    const group = this.getGroupByLink(linkID);
+    if (group && group.collapsed) {
+      const linkInfo = group.links.get(linkID);
+      if (linkInfo) {
+        return linkInfo.layer;
+      } else {
+        throw Error(`Internal error: can't find link ${linkID} in group ${group.groupID}`);
+      }
+    } else {
+      return this.workflowActionService.getJointGraphWrapper().getCellLayer(linkID);
+    }
+  }
+
+  /**
    * Creates a new group for given operators.
    *
    * A new group contains the following:
@@ -364,7 +434,7 @@ export class GroupOperatorService {
    */
   private getGroupBoundingBox(group: Group): GroupBoundingBox {
     const randomOperator = group.operators.get(Array.from(group.operators.keys())[0]);
-    if (! randomOperator) {
+    if (!randomOperator) {
       throw new Error(`Internal error: group with ID ${group.groupID} is invalid`);
     }
 
@@ -396,13 +466,13 @@ export class GroupOperatorService {
     let highestLayer = 0;
 
     this.workflowActionService.getTexeraGraph().getAllOperators().forEach(operator => {
-      const layer = this.workflowActionService.getJointGraphWrapper().getCellLayer(operator.operatorID);
+      const layer = this.getOperatorLayerByGroup(operator.operatorID);
       if (layer > highestLayer) {
         highestLayer = layer;
       }
     });
     this.workflowActionService.getTexeraGraph().getAllLinks().forEach(link => {
-      const layer = this.workflowActionService.getJointGraphWrapper().getCellLayer(link.linkID);
+      const layer = this.getLinkLayerByGroup(link.linkID);
       if (layer > highestLayer) {
         highestLayer = layer;
       }
@@ -468,6 +538,11 @@ export class GroupOperatorService {
     this.groupResizeStream.next({groupID: group.groupID, height: height, width: width});
   }
 
+  // TO-DO: handle texera graph operator add
+  //  - when an operator is added, check if the operator's top left point
+  //    and bottom right point are within any group on the graph
+  //  - if it does, add the operator to the group
+
   /**
    * Handles operator delete events on texera graph.
    * If the deleted operator is embedded in some group,
@@ -492,6 +567,15 @@ export class GroupOperatorService {
       });
   }
 
+  // TO-DO: handle in-link & out-link add events that happened when group is collapsed
+  //  * possible when an in-link/out-link is deleted when the group is collapsed, then user undo this action *
+  // Solution: 1. add an event stream before the link is added (possibly in workflowActionService)
+  //           2. subscribe to the event stream & check if the link's source/target operator is in a collapsed group
+  //              using getGroupByOperator
+  //           3. if it's an in-link or out-link (or both), expand the corresponding group(s)
+  //    (done) 4. save the groupID somewhere
+  //    (done) 5. in handleTexeraGraphLinkAdd(), collapse the group and set the variable to undefined
+
   /**
    * Handles link add events on texera graph.
    * Checks if the added link is related to some group, and add the
@@ -509,6 +593,10 @@ export class GroupOperatorService {
           group.outLinks.set(link.linkID, link.source);
         }
       });
+      if (this.groupToCollapse) {
+        this.collapseGroup(this.groupToCollapse);
+        this.groupToCollapse = undefined;
+      }
     });
   }
 
