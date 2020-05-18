@@ -6,6 +6,8 @@ import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 import { Injectable } from '@angular/core';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort } from '../../../types/workflow-common.interface';
+import { WorkflowCollabService } from './../../workflow-collab/workflow-collab.service';
+import { webSocket } from 'rxjs/webSocket';
 
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
@@ -15,6 +17,18 @@ export interface Command {
   execute(): void;
   undo(): void;
   redo?(): void;
+}
+
+
+// Need to refactor commands/add a new interface such that it's sendable to other clients,
+// can't be functions
+export interface CommandMessage {
+  action: string;
+  operators: OperatorPredicate[];
+  operatorPositions: {op: OperatorPredicate, pos: Point}[];
+  links: OperatorLink[];
+  newProperty: object;
+  operation: string; // operation will be the thing in the map
 }
 
 type OperatorPosition = {
@@ -36,9 +50,12 @@ type OperatorPosition = {
  *
  */
 
+ // New connection gets opened when you subscribe to socket
 
 @Injectable()
 export class WorkflowActionService {
+
+  public functionMap: {[key: string]: Function} = {};
 
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
@@ -48,7 +65,8 @@ export class WorkflowActionService {
   constructor(
     private operatorMetadataService: OperatorMetadataService,
     private jointUIService: JointUIService,
-    private undoRedoService: UndoRedoService
+    private undoRedoService: UndoRedoService,
+    private workflowCollabService: WorkflowCollabService,
   ) {
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
@@ -57,6 +75,8 @@ export class WorkflowActionService {
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
+
+    this.initializeFunctionMap();
   }
 
   public handleJointLinkAdd(): void {
@@ -113,6 +133,7 @@ export class WorkflowActionService {
       });
   }
 
+
   /**
    * Gets the read-only version of the TexeraGraph
    *  to access the properties and event streams.
@@ -158,7 +179,6 @@ export class WorkflowActionService {
   public addOperator(operator: OperatorPredicate, point: Point): void {
     // remember currently highlighted operators
     const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-
     const command: Command = {
       execute: () => {
         // turn off multiselect since there's only one operator added
@@ -206,6 +226,16 @@ export class WorkflowActionService {
         this.getJointGraphWrapper().highlightOperator(operator.operatorID);
       }
     };
+
+    const message: CommandMessage = {
+      action: 'execute',
+      operators: [operator],
+      operatorPositions: [],
+      links: [],
+      newProperty: [],
+      operation: 'delete'
+    };
+    this.sendCommand(JSON.stringify(message));
     this.executeAndStoreCommand(command);
   }
 
@@ -235,6 +265,21 @@ export class WorkflowActionService {
         this.jointGraphWrapper.highlightOperators(currentHighlighted);
       }
     };
+    const operators: OperatorPredicate[] = [];
+    operatorsAndPositions.forEach(o => {
+      operators.push(o.op);
+    });
+
+    const message: CommandMessage = {
+      action: 'execute',
+      operators: operators,
+      operatorPositions: operatorsAndPositions,
+      links: links,
+      newProperty: [],
+      operation: 'addOpsLinks',
+    };
+
+    this.sendCommand(JSON.stringify(message));
     this.executeAndStoreCommand(command);
   }
 
@@ -316,6 +361,7 @@ export class WorkflowActionService {
 
   // problem here
   public setOperatorProperty(operatorID: string, newProperty: object): void {
+    const operator = this.getTexeraGraph().getOperator(operatorID);
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
     const command: Command = {
       execute: () => {
@@ -327,6 +373,16 @@ export class WorkflowActionService {
         this.setOperatorPropertyInternal(operatorID, prevProperty);
       }
     };
+
+    const message: CommandMessage = {
+      action: 'execute',
+      operators: [operator],
+      operatorPositions: [],
+      links: [],
+      newProperty: newProperty,
+      operation: 'changeProperty'
+    };
+    this.sendCommand(JSON.stringify(message));
     this.executeAndStoreCommand(command);
   }
 
@@ -416,4 +472,15 @@ export class WorkflowActionService {
     this.undoRedoService.setListenJointCommand(true);
   }
 
+  private sendCommand(update: string): void {
+    // function to send command, only do it if some bool from workflow-collab service.
+    if (this.workflowCollabService.getSendData()) {
+      this.workflowCollabService.sendCommand(update);
+    }
+  }
+
+  private initializeFunctionMap(): void {
+    const self = this;
+    this.workflowCollabService.setFunctionMap('addOpsLinks', self.addOperatorsAndLinks);
+  }
 }

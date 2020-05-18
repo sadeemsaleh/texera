@@ -7,11 +7,13 @@ import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle;
 import edu.uci.ics.texera.perftest.sample.SampleExtraction;
 import edu.uci.ics.texera.perftest.twitter.TwitterSample;
 import edu.uci.ics.texera.web.healthcheck.SampleHealthCheck;
+import edu.uci.ics.texera.web.resource.CollaborationResource;
 import edu.uci.ics.texera.web.resource.*;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import io.dropwizard.websockets.WebsocketBundle;
 
 /**
  * This is the main application class from where the Texera application
@@ -20,10 +22,14 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
  */
 public class TexeraWebApplication extends Application<TexeraWebConfiguration> {
 
+    private WebsocketBundle websocketBundle;
+    
     @Override
     public void initialize(Bootstrap<TexeraWebConfiguration> bootstrap) {
         // serve static frontend GUI files
         bootstrap.addBundle(new FileAssetsBundle("./new-gui/dist/", "/", "index.html"));
+        websocketBundle = new WebsocketBundle(CollaborationResource.class);
+        bootstrap.addBundle(websocketBundle);
     }
 
     @Override

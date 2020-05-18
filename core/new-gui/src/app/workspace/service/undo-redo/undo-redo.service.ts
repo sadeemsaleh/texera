@@ -1,5 +1,6 @@
-import { Command } from './../workflow-graph/model/workflow-action.service';
+import { Command, CommandMessage } from './../workflow-graph/model/workflow-action.service';
 import { Injectable } from '@angular/core';
+import { WorkflowCollabService } from './../workflow-collab/workflow-collab.service';
 import * as Y from 'yjs';
 
 
@@ -21,7 +22,7 @@ export class UndoRedoService {
   private redoStack: Command[] = [];
 
 
-  constructor() { }
+  constructor(private workflowCollabService: WorkflowCollabService) { }
 
   public undoAction(): void {
     // We have a toggle to let our service know to add to the redo stack
@@ -32,6 +33,15 @@ export class UndoRedoService {
         command.undo();
         this.redoStack.push(command);
         this.setListenJointCommand(true);
+        const message: CommandMessage = {
+          action: 'undo',
+          operators: [],
+          operatorPositions: [],
+          links: [],
+          newProperty: [],
+          operation: ''
+        };
+        this.sendCommand(JSON.stringify(message));
       }
     }
   }
@@ -49,6 +59,15 @@ export class UndoRedoService {
           command.execute();
         }
         this.undoStack.push(command);
+        const message: CommandMessage = {
+          action: 'redo',
+          operators: [],
+          operatorPositions: [],
+          links: [],
+          newProperty: [],
+          operation: ''
+        };
+        this.sendCommand(JSON.stringify(message));
         this.setListenJointCommand(true);
       }
     }
@@ -71,5 +90,11 @@ export class UndoRedoService {
 
   public getRedoLength(): number {
     return this.redoStack.length;
+  }
+
+  private sendCommand(update: string): void {
+    if (this.workflowCollabService.getSendData()) {
+      this.workflowCollabService.sendCommand(update);
+    }
   }
 }
