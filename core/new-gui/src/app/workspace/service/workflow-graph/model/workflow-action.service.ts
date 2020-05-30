@@ -12,6 +12,7 @@ import { Point, OperatorPredicate, OperatorLink, OperatorPort } from '../../../t
 
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
+import { cloneDeep } from 'lodash';
 
 
 export interface Command {
@@ -22,6 +23,11 @@ export interface Command {
 
 type OperatorPosition = {
   position: Point,
+  layer: number
+};
+
+type GroupInfo = {
+  group: Group,
   layer: number
 };
 
@@ -206,28 +212,53 @@ export class WorkflowActionService {
     */
   public deleteOperator(operatorID: string): void {
     const operator = this.getTexeraGraph().getOperator(operatorID);
-    const position = this.getJointGraphWrapper().getElementPosition(operatorID);
-    const layer = this.getJointGraphWrapper().getCellLayer(operatorID);
-    const linksToDelete = this.getTexeraGraph().getAllLinks()
-      .filter(link => link.source.operatorID === operatorID || link.target.operatorID === operatorID);
+    const position = this.getOperatorGroup().getOperatorPositionByGroup(operatorID);
+    const layer = this.getOperatorGroup().getOperatorLayerByGroup(operatorID);
+
+    const linksToDelete = new Map<OperatorLink, number>();
+    this.getTexeraGraph().getAllLinks()
+      .filter(link => link.source.operatorID === operatorID || link.target.operatorID === operatorID)
+      .forEach(link => linksToDelete.set(link, this.getOperatorGroup().getLinkLayerByGroup(link.linkID)));
+
+    const group = cloneDeep(this.getOperatorGroup().getGroupByOperator(operatorID));
+    const groupLayer = group ? this.getJointGraphWrapper().getCellLayer(group.groupID) : undefined;
 
     const command: Command = {
       execute: () => {
-        linksToDelete.forEach(link => this.deleteLinkWithIDInternal(link.linkID));
+        linksToDelete.forEach((linkLayer, link) => this.deleteLinkWithIDInternal(link.linkID));
         this.deleteOperatorInternal(operatorID);
+        if (group && this.getOperatorGroup().getGroup(group.groupID).operators.size < 2) {
+          this.deleteGroupInternal(group.groupID);
+        }
       },
       undo: () => {
         this.addOperatorInternal(operator, position);
         this.getJointGraphWrapper().setCellLayer(operatorID, layer);
-        linksToDelete.forEach(link => this.addLinkInternal(link));
-        // turn off multiselect since only the deleted operator will be added
-        this.getJointGraphWrapper().setMultiSelectMode(false);
-        this.getJointGraphWrapper().highlightOperator(operator.operatorID);
+        linksToDelete.forEach((linkLayer, link) => {
+          this.addLinkInternal(link);
+          this.getJointGraphWrapper().setCellLayer(link.linkID, linkLayer);
+        });
+        if (group && this.getOperatorGroup().hasGroup(group.groupID)) {
+          this.getOperatorGroup().addOperatorToGroup(operatorID, group.groupID);
+        } else if (group && groupLayer) {
+          this.addGroupInternal(cloneDeep(group));
+          this.getJointGraphWrapper().setCellLayer(group.groupID, groupLayer);
+        }
+        if (!group || !group.collapsed) {
+          // turn off multiselect since only the deleted operator will be added
+          this.getJointGraphWrapper().setMultiSelectMode(false);
+          this.getJointGraphWrapper().highlightOperator(operator.operatorID);
+        }
       }
     };
     this.executeAndStoreCommand(command);
   }
 
+  /**
+   * Adds given operators and links to the workflow graph.
+   * @param operatorsAndPositions
+   * @param links
+   */
   public addOperatorsAndLinks(operatorsAndPositions: {op: OperatorPredicate, pos: Point}[], links: OperatorLink[]): void {
     // remember currently highlighted operators
     const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
@@ -257,39 +288,81 @@ export class WorkflowActionService {
     this.executeAndStoreCommand(command);
   }
 
+  /**
+   * Deletes given operators and links from the workflow graph.
+   * @param operatorIDs
+   * @param linkIDs
+   */
   public deleteOperatorsAndLinks(operatorIDs: string[], linkIDs: string[]): void {
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
-    operatorIDs.forEach(operatorID => {
-      operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
-        {position: this.getJointGraphWrapper().getElementPosition(operatorID),
-         layer: this.getJointGraphWrapper().getCellLayer(operatorID)});
-    });
+    operatorIDs.forEach(operatorID => operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
+      {position: this.getOperatorGroup().getOperatorPositionByGroup(operatorID),
+       layer: this.getOperatorGroup().getOperatorLayerByGroup(operatorID)}));
 
     // save links to be deleted, including links needs to be deleted and links affected by deleted operators
-    const linksToDelete = new Set<OperatorLink>();
+    const linksToDelete = new Map<OperatorLink, number>();
     // delete links required by this command
     linkIDs.map(linkID => this.getTexeraGraph().getLinkWithID(linkID))
-      .forEach(link => linksToDelete.add(link));
+      .forEach(link => linksToDelete.set(link, this.getOperatorGroup().getLinkLayerByGroup(link.linkID)));
     // delete links related to the deleted operator
     this.getTexeraGraph().getAllLinks()
       .filter(link => operatorIDs.includes(link.source.operatorID) || operatorIDs.includes(link.target.operatorID))
-      .forEach(link => linksToDelete.add(link));
+      .forEach(link => linksToDelete.set(link, this.getOperatorGroup().getLinkLayerByGroup(link.linkID)));
+
+    // save groups that deleted operators reside in
+    const groups = new Map<string, GroupInfo>();
+    operatorIDs.forEach(operatorID => {
+      const group = cloneDeep(this.getOperatorGroup().getGroupByOperator(operatorID));
+      if (group) {
+        groups.set(operatorID, {group, layer: this.getJointGraphWrapper().getCellLayer(group.groupID)});
+      }
+    });
 
     // remember currently highlighted operators
     const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
 
     const command: Command = {
       execute: () => {
-        linksToDelete.forEach(link => this.deleteLinkWithIDInternal(link.linkID));
-        operatorIDs.forEach(operatorID => this.deleteOperatorInternal(operatorID));
+        linksToDelete.forEach((layer, link) => this.deleteLinkWithIDInternal(link.linkID));
+        operatorIDs.forEach(operatorID => {
+          this.deleteOperatorInternal(operatorID);
+          // if the group has less than 2 operators left, delete the group
+          const groupInfo = groups.get(operatorID);
+          if (groupInfo && this.getOperatorGroup().hasGroup(groupInfo.group.groupID) &&
+            this.getOperatorGroup().getGroup(groupInfo.group.groupID).operators.size < 2) {
+            this.deleteGroupInternal(groupInfo.group.groupID);
+          }
+        });
       },
       undo: () => {
         operatorsAndPositions.forEach((pos, operator) => {
           this.addOperatorInternal(operator, pos.position);
           this.getJointGraphWrapper().setCellLayer(operator.operatorID, pos.layer);
+          // if the group still exists, add the operator back to the group
+          const groupInfo = groups.get(operator.operatorID);
+          if (groupInfo && this.getOperatorGroup().hasGroup(groupInfo.group.groupID)) {
+            this.getOperatorGroup().addOperatorToGroup(operator.operatorID, groupInfo.group.groupID);
+          }
         });
-        linksToDelete.forEach(link => this.addLinkInternal(link));
+        linksToDelete.forEach((layer, link) => {
+          this.addLinkInternal(link);
+          // if the link is added to a collapsed group, change its saved layer in the group
+          const group = this.getOperatorGroup().getGroupByLink(link.linkID);
+          if (group && group.collapsed) {
+            const linkInfo = group.links.get(link.linkID);
+            if (linkInfo) { linkInfo.layer = layer; }
+          } else {
+            this.getJointGraphWrapper().setCellLayer(link.linkID, layer);
+          }
+        });
+        // add back groups that were deleted when deleting operators
+        groups.forEach(groupInfo => {
+          if (!this.getOperatorGroup().hasGroup(groupInfo.group.groupID)) {
+            this.addGroupInternal(cloneDeep(groupInfo.group));
+            this.getJointGraphWrapper().setCellLayer(groupInfo.group.groupID, groupInfo.layer);
+          }
+        });
         // restore previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
         this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
