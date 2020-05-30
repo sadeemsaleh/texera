@@ -8,7 +8,6 @@ import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-grap
 
 import { ExecutionResult } from './../../types/execute-workflow.interface';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
-import { GroupOperatorService } from '../../service/group-operator/group-operator.service';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -41,11 +40,10 @@ export class NavigationComponent implements OnInit {
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
-    public tourService: TourService,
     private workflowActionService: WorkflowActionService,
     private workflowStatusService: WorkflowStatusService,
-    public undoRedo: UndoRedoService,
-    private groupOperatorService: GroupOperatorService
+    public tourService: TourService,
+    public undoRedo: UndoRedoService
     ) {
     // return the run button after the execution is finished, either
     //  when the value is valid or invalid
@@ -213,7 +211,6 @@ export class NavigationComponent implements OnInit {
    * Delete all operators (including hidden ones) on the graph.
    */
   public onClickDeleteAllOperators(): void {
-    this.groupOperatorService.getAllGroups().forEach(group => this.groupOperatorService.ungroupOperators(group.groupID));
     const allOperatorIDs = this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID);
     this.workflowActionService.deleteOperatorsAndLinks(allOperatorIDs, []);
   }
@@ -231,7 +228,8 @@ export class NavigationComponent implements OnInit {
   public onClickGroupOperators(): void {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
     if (this.operatorsGroupable()) {
-      this.groupOperatorService.groupOperators(highlightedOperators);
+      const group = this.workflowActionService.getOperatorGroup().getNewGroup(highlightedOperators);
+      this.workflowActionService.addGroup(group);
     }
   }
 
@@ -242,7 +240,7 @@ export class NavigationComponent implements OnInit {
   public operatorsGroupable(): boolean {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
     for (const operatorID of highlightedOperators) {
-      if (this.groupOperatorService.getGroupByOperator(operatorID)) {
+      if (this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID)) {
         return false;
       }
     }

@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
 import { Observable } from '../../../../../node_modules/rxjs';
-import { OperatorLink, OperatorPredicate, OperatorPort, Point } from '../../types/workflow-common.interface';
+import { OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
-import { GroupOperatorService, OperatorInfo, LinkInfo } from '../group-operator/group-operator.service';
+import { OperatorInfo, LinkInfo } from '../workflow-graph/model/operator-group';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
@@ -27,8 +27,8 @@ interface PlainGroup {
   groupID: string;
   operators: Record<string, OperatorInfo>;
   links: Record<string, LinkInfo>;
-  inLinks: Record<string, OperatorPort>;
-  outLinks: Record<string, OperatorPort>;
+  inLinks: string[];
+  outLinks: string[];
   collapsed: boolean;
 }
 
@@ -56,8 +56,7 @@ export class SaveWorkflowService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService,
-    private groupOperatorService: GroupOperatorService
+    private operatorMetadataService: OperatorMetadataService
   ) {
     this.handleAutoSaveWorkFlow();
 
@@ -72,9 +71,6 @@ export class SaveWorkflowService {
    *  the JointJS paper.
    */
   public loadWorkflow(): void {
-    // ungroup the existing groups on the paper currently
-    this.groupOperatorService.getAllGroups().forEach(group =>
-      this.groupOperatorService.ungroupOperators(group.groupID));
     // remove the existing operators on the paper currently
     this.workflowActionService.deleteOperatorsAndLinks(
       this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
@@ -105,9 +101,9 @@ export class SaveWorkflowService {
 
     savedWorkflow.groups.map(group => {
       return {groupID: group.groupID, operators: this.recordToMap(group.operators),
-        links: this.recordToMap(group.links), inLinks: this.recordToMap(group.inLinks),
-        outLinks: this.recordToMap(group.outLinks), collapsed: group.collapsed};
-    }).forEach(group => this.groupOperatorService.addGroup(group));
+        links: this.recordToMap(group.links), inLinks: group.inLinks, outLinks: group.outLinks,
+        collapsed: group.collapsed};
+    }).forEach(group => this.workflowActionService.addGroup(group));
 
     // operators shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
@@ -127,10 +123,10 @@ export class SaveWorkflowService {
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.workflowActionService.getTexeraGraph().getOperatorAdvancedOptionChangeSteam(),
       this.workflowActionService.getJointGraphWrapper().getElementPositionChangeEvent(),
-      this.groupOperatorService.getGroupAddStream(),
-      this.groupOperatorService.getGroupDeleteStream(),
-      this.groupOperatorService.getGroupCollapseStream(),
-      this.groupOperatorService.getGroupExpandStream()
+      this.workflowActionService.getOperatorGroup().getGroupAddStream(),
+      this.workflowActionService.getOperatorGroup().getGroupDeleteStream(),
+      this.workflowActionService.getOperatorGroup().getGroupCollapseStream(),
+      this.workflowActionService.getOperatorGroup().getGroupExpandStream()
     ).debounceTime(100).subscribe(() => {
       const workflow = this.workflowActionService.getTexeraGraph();
 
@@ -138,12 +134,12 @@ export class SaveWorkflowService {
       const links = workflow.getAllLinks();
       const operatorPositions: {[key: string]: Point} = {};
       workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
-        this.groupOperatorService.getOperatorPositionByGroup(op.operatorID));
+        this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(op.operatorID));
 
-      const groups = this.groupOperatorService.getAllGroups().map(group => {
+      const groups = this.workflowActionService.getOperatorGroup().getAllGroups().map(group => {
         return {groupID: group.groupID, operators: this.mapToRecord(group.operators),
-          links: this.mapToRecord(group.links), inLinks: this.mapToRecord(group.inLinks),
-          outLinks: this.mapToRecord(group.outLinks), collapsed: group.collapsed};
+          links: this.mapToRecord(group.links), inLinks: group.inLinks, outLinks: group.outLinks,
+          collapsed: group.collapsed};
       });
 
       const savedWorkflow: SavedWorkflow = {

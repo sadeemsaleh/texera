@@ -19,7 +19,6 @@ import { WorkflowStatusService } from '../../service/workflow-status/workflow-st
 import { SuccessProcessStatus } from '../../types/execute-workflow.interface';
 import { OperatorStates } from '../../types/execute-workflow.interface';
 import { environment } from './../../../../environments/environment';
-import { GroupOperatorService } from '../../service/group-operator/group-operator.service';
 
 
 // argument type of callback event on a JointJS Paper
@@ -89,8 +88,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
     private validationWorkflowService: ValidationWorkflowService,
     private jointUIService: JointUIService,
     private workflowStatusService: WorkflowStatusService,
-    private workflowUtilService: WorkflowUtilService,
-    private groupOperatorService: GroupOperatorService
+    private workflowUtilService: WorkflowUtilService
   ) {
 
     // bind validation functions to the same scope as component
@@ -562,7 +560,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.groupOperatorService.collapseGroup(groupID);
+          this.workflowActionService.collapseGroup(groupID);
         }
       );
   }
@@ -584,7 +582,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.groupOperatorService.expandGroup(groupID);
+          this.workflowActionService.expandGroup(groupID);
         }
       );
   }
@@ -596,10 +594,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
 
     this.validationWorkflowService.getOperatorValidationStream()
       .subscribe(value => {
-        const group = this.groupOperatorService.getGroupByOperator(value.operatorID);
-        if (group && group.collapsed) {
-          // TO-DO: change color of the collapsed group instead
-        } else {
+        const group = this.workflowActionService.getOperatorGroup().getGroupByOperator(value.operatorID);
+        if (!group || !group.collapsed) {
           this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.status);
         }
       });
@@ -613,15 +609,15 @@ export class WorkflowEditorComponent implements AfterViewInit {
    * resizing the group will cause the button to be out of place.
    */
   private handleGroupResize(): void {
-    this.groupOperatorService.getGroupCollapseStream().subscribe(group => {
+    this.workflowActionService.getOperatorGroup().getGroupCollapseStream().subscribe(group => {
       this.jointUIService.hideGroupCollapseButton(this.getJointPaper(), group.groupID);
     });
 
-    this.groupOperatorService.getGroupExpandStream().subscribe(group => {
+    this.workflowActionService.getOperatorGroup().getGroupExpandStream().subscribe(group => {
       this.jointUIService.hideGroupExpandButton(this.getJointPaper(), group.groupID);
     });
 
-    this.groupOperatorService.getGroupResizeStream().subscribe(value => {
+    this.workflowActionService.getOperatorGroup().getGroupResizeStream().subscribe(value => {
       this.jointUIService.repositionGroupCollapseButton(this.getJointPaper(), value.groupID, value.width);
     });
   }
@@ -833,7 +829,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
             const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
             operatorsAndPositions.push({op: newOperator, pos: newOperatorPosition});
             positions.push(newOperatorPosition);
-            const group = this.groupOperatorService.getGroupByOperator(operatorID);
+            const group = this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID);
             if (group && group.collapsed) {
               pastedOperators.push(newOperator.operatorID);
             }
@@ -880,8 +876,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
                   y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getTexeraGraph().hasOperator(pastedOperators[i]) ||
-          this.groupOperatorService.getOperatorPositionByGroup(pastedOperators[i]).x !== position.x ||
-          this.groupOperatorService.getOperatorPositionByGroup(pastedOperators[i]).y !== position.y)) {
+          this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(pastedOperators[i]).x !== position.x ||
+          this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(pastedOperators[i]).y !== position.y)) {
         pastedOperators[i] = newOperatorID;
         return this.getNonOverlappingPosition(position, positions);
       }
@@ -902,7 +898,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   private getNonOverlappingPosition(position: Point, positions: Point[]): Point {
     let overlapped = false;
     const operatorPositions = positions.concat(this.workflowActionService.getTexeraGraph().getAllOperators()
-      .map(operator => this.groupOperatorService.getOperatorPositionByGroup(operator.operatorID)));
+      .map(operator => this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(operator.operatorID)));
     do {
       for (const operatorPosition of operatorPositions) {
         if (operatorPosition.x === position.x && operatorPosition.y === position.y) {

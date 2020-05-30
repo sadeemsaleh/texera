@@ -3,7 +3,6 @@ import { WorkflowActionService } from './../workflow-graph/model/workflow-action
 import { Observable } from 'rxjs/Observable';
 import { WorkflowUtilService } from './../workflow-graph/util/workflow-util.service';
 import { JointUIService } from './../joint-ui/joint-ui.service';
-import { GroupOperatorService } from '../group-operator/group-operator.service';
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs/Subject';
 import TinyQueue from 'tinyqueue';
@@ -86,8 +85,7 @@ export class DragDropService {
   constructor(
     private jointUIService: JointUIService,
     private workflowUtilService: WorkflowUtilService,
-    private workflowActionService: WorkflowActionService,
-    private groupOperatorService: GroupOperatorService
+    private workflowActionService: WorkflowActionService
   ) {
     this.handleOperatorDropEvent();
   }
@@ -348,7 +346,7 @@ export class DragDropService {
   private findClosestOperators(mouseCoordinate: Point, currentOperator: OperatorPredicate): [OperatorPredicate[], OperatorPredicate[]] {
     const operatorLinks = this.workflowActionService.getTexeraGraph().getAllLinks();
     const operatorList = this.workflowActionService.getTexeraGraph().getAllOperators().filter(operator => {
-      const group = this.groupOperatorService.getGroupByOperator(operator.operatorID);
+      const group = this.workflowActionService.getOperatorGroup().getGroupByOperator(operator.operatorID);
       return !group || !group.collapsed;
     });
 

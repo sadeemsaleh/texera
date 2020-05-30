@@ -6,7 +6,7 @@ import * as joint from 'jointjs';
 import { Point, OperatorPredicate, OperatorLink } from '../../types/workflow-common.interface';
 import { OperatorStates } from '../../types/execute-workflow.interface';
 import { Statistics } from '../../types/execute-workflow.interface';
-import { Group, GroupBoundingBox } from '../group-operator/group-operator.service';
+import { Group, GroupBoundingBox } from '../workflow-graph/model/operator-group';
 
 /**
  * Defines the SVG path for the delete button
