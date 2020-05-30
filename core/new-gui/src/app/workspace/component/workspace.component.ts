@@ -48,11 +48,11 @@ export class WorkspaceComponent {
   // MY BRANCH: Removed saveworkflow for now to see if can be shared between clients
   constructor(
     private resultPanelToggleService: ResultPanelToggleService,
-    private workflowCollabService: WorkflowCollabService,
     // private saveWorkflowService: SaveWorkflowService,
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService,
+    private saveWorkflowService: SaveWorkflowService
   ) {
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
       value => this.showResultPanel = value,

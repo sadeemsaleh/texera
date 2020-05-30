@@ -501,7 +501,7 @@ export class WorkflowActionService {
       if (message.type === 'execute') {
         self.workflowCollabService.setSendData(false);
         const func = message.action;
-        this[func].apply(this, message.parameters);
+        (this[func] as any).apply(this, message.parameters);
         self.workflowCollabService.setSendData(true);
       }
     });
