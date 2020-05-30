@@ -1,15 +1,17 @@
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
 import { OperatorMetadataService } from './../../operator-metadata/operator-metadata.service';
+import { WorkflowUtilService } from '../util/workflow-util.service';
 import { SyncTexeraModel } from './sync-texera-model';
+import { SyncOperatorGroup } from './sync-operator-group';
 import { JointGraphWrapper } from './joint-graph-wrapper';
 import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
+import { OperatorGroup, Group, OperatorGroupReadonly } from './operator-group';
 import { Injectable } from '@angular/core';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort } from '../../../types/workflow-common.interface';
 
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
-import { Group, GroupBoundingBox } from '../../group-operator/group-operator.service';
 
 
 export interface Command {
@@ -44,17 +46,21 @@ export class WorkflowActionService {
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
+  private readonly operatorGroup: OperatorGroup;
   private readonly syncTexeraModel: SyncTexeraModel;
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
     private jointUIService: JointUIService,
-    private undoRedoService: UndoRedoService
+    private undoRedoService: UndoRedoService,
+    private workflowUtilService: WorkflowUtilService
   ) {
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
     this.jointGraphWrapper = new JointGraphWrapper(this.jointGraph, this.undoRedoService, this.jointUIService);
-    this.syncTexeraModel = new SyncTexeraModel(this.texeraGraph, this.jointGraphWrapper);
+    this.operatorGroup = new OperatorGroup(this.texeraGraph, this.jointGraph, this.jointGraphWrapper,
+      this.workflowUtilService, this.jointUIService);
+    this.syncTexeraModel = new SyncTexeraModel(this.texeraGraph, this.jointGraphWrapper, this.operatorGroup);
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
@@ -135,6 +141,15 @@ export class WorkflowActionService {
    */
   public getJointGraphWrapper(): JointGraphWrapper {
     return this.jointGraphWrapper;
+  }
+
+  /**
+   * Gets the read-only version of the OperatorGroup
+   *  which provides access to properties, event streams,
+   *  and some helper functions.
+   */
+  public getOperatorGroup(): OperatorGroupReadonly {
+    return this.operatorGroup;
   }
 
   /**
@@ -317,30 +332,65 @@ export class WorkflowActionService {
   }
 
   /**
-   * Adds a group to the workflow graph with position and size specified
-   * by the bounding box, and embed operators and links inside the group.
+   * Adds a group to the workflow graph, and embeds operators
+   * and links inside the group. All cells related to the group
+   * (including the group itself) will be moved to the front.
+   *
    * @param group
-   * @param boundingBox
    */
-  public addGroup(group: Group, boundingBox: GroupBoundingBox): void {
-    const groupJointElement = this.jointUIService.getJointGroupElement(group, boundingBox);
-    // embed operators & links in the group
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.embed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.embed(this.jointGraph.getCell(linkID)));
-    this.jointGraph.addCell(groupJointElement);
+  public addGroup(group: Group): void {
+    const command: Command = {
+      execute: () => {
+        this.addGroupInternal(group);
+        this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+      },
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
   }
 
   /**
    * Deletes a group from the workflow graph, and free up
    * its embedded operators and links.
+   *
    * @param group
    */
-  public deleteGroup(group: Group): void {
-    const groupJointElement = this.jointGraph.getCell(group.groupID);
-    // free up embedded operators & links
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
-    groupJointElement.remove();
+  public deleteGroup(groupID: string): void {
+    const command: Command = {
+      execute: () => this.deleteGroupInternal(groupID),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Collapses the given group.
+   * Throws an error if the group is already collapsed, otherwise hides all
+   * operators and links within the group.
+   *
+   * @param groupID
+   */
+  public collapseGroup(groupID: string): void {
+    const command: Command = {
+      execute: () => this.collapseGroupInternal(groupID),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Expands the given group.
+   * Throws an error if the group is already expanded, otherwise shows all
+   * hidden operators and links in the group.
+   *
+   * @param groupID
+   */
+  public expandGroup(groupID: string): void {
+    const command: Command = {
+      execute: () => this.expandGroupInternal(groupID),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
   }
 
   // problem here
@@ -427,6 +477,68 @@ export class WorkflowActionService {
     this.texeraGraph.assertLinkWithIDExists(linkID);
     this.jointGraph.getCell(linkID).remove();
     // JointJS link delete event will propagate and trigger Texera link delete
+  }
+
+  private addGroupInternal(group: Group): void {
+    this.operatorGroup.assertGroupNotExists(group.groupID);
+    this.operatorGroup.assertGroupIsValid(group);
+
+    // add the group to joint graph, and embed operators & links in the group
+    const groupJointElement = this.jointUIService.getJointGroupElement(group, this.operatorGroup.getGroupBoundingBox(group));
+    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.embed(this.jointGraph.getCell(operatorID)));
+    group.links.forEach((linkInfo, linkID) => groupJointElement.embed(this.jointGraph.getCell(linkID)));
+    this.jointGraph.addCell(groupJointElement);
+
+    // add the group to group ID map
+    this.operatorGroup.addGroup(group);
+
+    // collapse the group if it's specified as collapsed
+    if (group.collapsed) {
+      this.operatorGroup.setGroupCollapsed(group.groupID, false);
+      this.collapseGroupInternal(group.groupID);
+    }
+  }
+
+  private deleteGroupInternal(groupID: string): void {
+    const group = this.operatorGroup.getGroup(groupID);
+
+    // if the group is collapsed, expand it before ungrouping
+    if (group.collapsed) {
+      this.expandGroupInternal(groupID);
+    }
+
+    // delete the group from joint graph, and free up embedded operators & links
+    const groupJointElement = this.jointGraph.getCell(group.groupID);
+    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
+    group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
+    groupJointElement.remove();
+
+    // delete the group from group ID map
+    this.operatorGroup.deleteGroup(groupID);
+  }
+
+  private collapseGroupInternal(groupID: string): void {
+    const group = this.operatorGroup.getGroup(groupID);
+    this.operatorGroup.assertGroupNotCollapsed(group);
+
+    // collapse the group on joint graph
+    this.jointGraphWrapper.setElementSize(groupID, 170, 30);
+    this.operatorGroup.hideOperatorsAndLinks(group);
+
+    // update the group in OperatorGroup
+    this.operatorGroup.collapseGroup(groupID);
+  }
+
+  private expandGroupInternal(groupID: string): void {
+    const group = this.operatorGroup.getGroup(groupID);
+    this.operatorGroup.assertGroupIsCollapsed(group);
+
+    // expand the group on joint graph
+    this.operatorGroup.repositionGroup(group);
+    this.operatorGroup.showOperatorsAndLinks(group);
+
+    // update the group in OperatorGroup
+    this.operatorGroup.expandGroup(groupID);
   }
 
   // use this to modify properties

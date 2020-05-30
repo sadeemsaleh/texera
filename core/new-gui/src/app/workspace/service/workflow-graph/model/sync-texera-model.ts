@@ -2,6 +2,7 @@ import { OperatorLink } from './../../../types/workflow-common.interface';
 
 import { WorkflowGraph } from './workflow-graph';
 import { JointGraphWrapper } from './joint-graph-wrapper';
+import { OperatorGroup } from './operator-group';
 
 /**
  * SyncTexeraModel subscribes to the graph change events from JointJS,
@@ -18,9 +19,9 @@ export class SyncTexeraModel {
 
   constructor(
     private texeraGraph: WorkflowGraph,
-    private jointGraphWrapper: JointGraphWrapper
+    private jointGraphWrapper: JointGraphWrapper,
+    private operatorGroup: OperatorGroup
   ) {
-
     this.handleJointOperatorDelete();
     this.handleJointLinkEvents();
   }
@@ -40,7 +41,7 @@ export class SyncTexeraModel {
   private handleJointOperatorDelete(): void {
     this.jointGraphWrapper.getJointOperatorCellDeleteStream()
       .map(element => element.id.toString())
-      .filter(elementID => this.texeraGraph.hasOperator(elementID) && !this.jointGraphWrapper.getSyncTexeraGraph())
+      .filter(elementID => this.texeraGraph.hasOperator(elementID) && this.operatorGroup.getSyncTexeraGraph())
       .subscribe(elementID => this.texeraGraph.deleteOperator(elementID));
   }
 
@@ -70,7 +71,7 @@ export class SyncTexeraModel {
      *  and only add valid links to the graph
      */
     this.jointGraphWrapper.getJointLinkCellAddStream()
-      .filter(link => this.isValidJointLink(link) && !this.jointGraphWrapper.getSyncTexeraGraph())
+      .filter(link => this.isValidJointLink(link) && this.operatorGroup.getSyncTexeraGraph())
       .map(link => SyncTexeraModel.getOperatorLink(link))
       .subscribe(link => this.texeraGraph.addLink(link));
 
@@ -80,7 +81,7 @@ export class SyncTexeraModel {
      *  then delete the link by the link ID
      */
     this.jointGraphWrapper.getJointLinkCellDeleteStream()
-      .filter(link => this.isValidJointLink(link) && !this.jointGraphWrapper.getSyncTexeraGraph())
+      .filter(link => this.isValidJointLink(link) && this.operatorGroup.getSyncTexeraGraph())
       .map(link => SyncTexeraModel.getOperatorLink(link))
       .subscribe(link => this.texeraGraph.deleteLinkWithID(link.linkID));
 
@@ -91,7 +92,7 @@ export class SyncTexeraModel {
      * TODO: finish this documentation
      */
     this.jointGraphWrapper.getJointLinkCellChangeStream()
-      .filter(() => !this.jointGraphWrapper.getSyncTexeraGraph())
+      .filter(() => this.operatorGroup.getSyncTexeraGraph())
       // we intentially want the side effect (delete the link) to happen **before** other operations in the chain
       .do(link => {
         const linkID = link.id.toString();
@@ -114,13 +115,13 @@ export class SyncTexeraModel {
     return jointLink && jointLink.attributes &&
       jointLink.attributes.source && jointLink.attributes.target &&
       jointLink.attributes.source.id && (jointLink.attributes.source.port ||
-        jointLink.attributes.source.id.toString().startsWith('group')) &&
+        this.operatorGroup.hasGroup(jointLink.attributes.source.id.toString())) &&
       jointLink.attributes.target.id && (jointLink.attributes.target.port ||
-        jointLink.attributes.target.id.toString().startsWith('group')) &&
+        this.operatorGroup.hasGroup(jointLink.attributes.target.id.toString())) &&
       (this.texeraGraph.hasOperator(jointLink.attributes.source.id.toString()) ||
       this.texeraGraph.hasOperator(jointLink.attributes.target.id.toString()) ||
-      jointLink.attributes.source.id.toString().startsWith('group') &&
-      jointLink.attributes.source.id.toString().startsWith('group'));
+      this.operatorGroup.hasGroup(jointLink.attributes.source.id.toString()) &&
+      this.operatorGroup.hasGroup(jointLink.attributes.source.id.toString()));
       // the above two lines are causing unit test fail in sync-texera-model.spec.ts
       // since if operator is deleted first the link will become invalid and thus undeletable.
   }

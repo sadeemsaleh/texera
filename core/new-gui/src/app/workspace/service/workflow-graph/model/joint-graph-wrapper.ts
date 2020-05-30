@@ -4,7 +4,6 @@ import { debounceTime } from 'rxjs/operators';
 import { Point } from '../../../types/workflow-common.interface';
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
 import { JointUIService } from '../../joint-ui/joint-ui.service';
-import { Group } from '../../group-operator/group-operator.service';
 
 type operatorIDsType = { operatorIDs: string[] };
 
@@ -101,9 +100,6 @@ export class JointGraphWrapper {
   private zoomRatio: number = JointGraphWrapper.INIT_ZOOM_VALUE;
   // panOffset, a point of panning offset alongside x and y axis
   private panOffset: Point = JointGraphWrapper.INIT_PAN_OFFSET;
-
-  // indicates whether or not sync JointJS changes to texera graph
-  private syncTexeraGraph: boolean = false;
 
   /**
    * This will capture all events in JointJS
@@ -516,81 +512,19 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Hides operators and links embedded in the given group.
-   * inLinks and outLinks will be reconnected to the group element.
-   *
-   * Sync texera graph is turned off to prevent JointJS graph changes from
-   * propagating to texera graph.
-   *
-   * @param group
-   */
-  public hideOperatorsAndLinks(group: Group): void {
-    this.syncTexeraGraph = true;
-
-    group.links.forEach((linkInfo, linkID) => this.jointGraph.getCell(linkID).remove());
-
-    group.inLinks.forEach((port, linkID) => {
-      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
-      jointLinkCell.set('target', {id: group.groupID});
-    });
-
-    group.outLinks.forEach((port, linkID) => {
-      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
-      jointLinkCell.set('source', {id: group.groupID});
-    });
-
-    group.operators.forEach((operatorInfo, operatorID) => this.jointGraph.getCell(operatorID).remove());
-
-    this.syncTexeraGraph = false;
-  }
-
-  /**
-   * Shows operators and links embedded in the group.
-   * inLinks and outLinks will be reconnected back to corresponding operators.
-   *
-   * Sync texera graph is turned off to prevent JointJS graph changes from
-   * propagating to texera graph.
-   *
-   * @param group
-   */
-  public showOperatorsAndLinks(group: Group): void {
-    this.syncTexeraGraph = true;
-
-    const groupJointElement = this.jointGraph.getCell(group.groupID);
-
-    group.operators.forEach((operatorInfo, operatorID) => {
-      const operatorJointElement = this.jointUIService.getJointOperatorElement(operatorInfo.operator, operatorInfo.position);
-      this.jointGraph.addCell(operatorJointElement);
-      this.setCellLayer(operatorID, operatorInfo.layer);
-      groupJointElement.embed(operatorJointElement);
-    });
-
-    group.links.forEach((linkInfo, linkID) => {
-      const jointLinkCell = JointUIService.getJointLinkCell(linkInfo.link);
-      this.jointGraph.addCell(jointLinkCell);
-      this.setCellLayer(linkID, linkInfo.layer);
-      groupJointElement.embed(jointLinkCell);
-    });
-
-    group.inLinks.forEach((port, linkID) => {
-      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
-      jointLinkCell.set('target', {id: port.operatorID, port: port.portID});
-    });
-
-    group.outLinks.forEach((port, linkID) => {
-      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
-      jointLinkCell.set('source', {id: port.operatorID, port: port.portID});
-    });
-
-    this.syncTexeraGraph = false;
-  }
-
-  /**
    * Returns the boolean value that indicates whether
-   * or not sync JointJS changes to texera graph.
+   * or not listen to operator position change.
    */
-  public getSyncTexeraGraph(): boolean {
-    return this.syncTexeraGraph;
+  public getListenPositionChange(): boolean {
+    return this.listenPositionChange;
+  }
+
+  /**
+   * Sets the boolean value that indicates whether
+   * or not listen to operator position change.
+   */
+  public setListenPositionChange(listenPositionChange: boolean): void {
+    this.listenPositionChange = listenPositionChange;
   }
 
   /**
@@ -662,12 +596,12 @@ export class JointGraphWrapper {
       .subscribe(movedOperator => {
         const offsetX = movedOperator.newPosition.x - movedOperator.oldPosition.x;
         const offsetY = movedOperator.newPosition.y - movedOperator.oldPosition.y;
-        this.listenPositionChange = false;
+        this.setListenPositionChange(false);
         this.undoRedoService.setListenJointCommand(false);
         this.currentHighlightedOperators
           .filter(operatorID => operatorID !== movedOperator.elementID)
           .forEach(operatorID => this.setElementPosition(operatorID, offsetX, offsetY));
-        this.listenPositionChange = true;
+        this.setListenPositionChange(true);
         this.undoRedoService.setListenJointCommand(true);
       });
   }
