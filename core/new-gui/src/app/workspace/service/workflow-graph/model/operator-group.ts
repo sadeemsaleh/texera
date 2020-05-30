@@ -128,6 +128,189 @@ export class OperatorGroup {
   }
 
   /**
+   * Adds the operator and links connected to it to the group.
+   *
+   * Embeds the operator in the group if the group is not collapsed,
+   * hides the operator on JointJS graph otherwise.
+   *
+   * Throws an error if the operator is already in a group.
+   *
+   * @param operatorID
+   * @param groupID
+   */
+  public addOperatorToGroup(operatorID: string, groupID: string): void {
+    const operator = this.texeraGraph.getOperator(operatorID);
+    const group = this.getGroup(groupID);
+
+    if (this.getGroupByOperator(operatorID)) {
+      throw Error(`operator ${operatorID} already exists in a group`);
+    }
+
+    const operatorLayer = this.jointGraphWrapper.getCellLayer(operatorID);
+    const groupLayer = this.jointGraphWrapper.getCellLayer(groupID);
+    if (operatorLayer <= groupLayer) {
+      this.jointGraphWrapper.setCellLayer(operatorID, groupLayer + operatorLayer);
+    }
+
+    const position = this.jointGraphWrapper.getElementPosition(operatorID);
+    const layer = this.jointGraphWrapper.getCellLayer(operatorID);
+    group.operators.set(operatorID, {operator, position, layer});
+
+    this.texeraGraph.getAllLinks().filter(link => link.source.operatorID === operatorID).forEach(link => {
+      if (group.operators.has(link.target.operatorID)) {
+        group.inLinks.splice(group.inLinks.indexOf(link.linkID), 1);
+        this.addLinkToGroup(link.linkID, groupID);
+      } else {
+        this.addOutLinkToGroup(link.linkID, groupID);
+      }
+    });
+
+    this.texeraGraph.getAllLinks().filter(link => link.target.operatorID === operatorID).forEach(link => {
+      if (group.operators.has(link.source.operatorID)) {
+        group.outLinks.splice(group.outLinks.indexOf(link.linkID), 1);
+        this.addLinkToGroup(link.linkID, groupID);
+      } else {
+        this.addInLinkToGroup(link.linkID, groupID);
+      }
+    });
+
+    if (group.collapsed) {
+      this.setSyncTexeraGraph(false);
+      this.jointGraph.getCell(operatorID).remove();
+      this.setSyncTexeraGraph(true);
+    } else {
+      this.jointGraph.getCell(groupID).embed(this.jointGraph.getCell(operatorID));
+      this.repositionGroup(group);
+    }
+  }
+
+  /**
+   * Adds the link to the group as a 'link' of the group.
+   *
+   * Embeds the link in the group if the group is not collapsed,
+   * hides the link on JointJS graph otherwise.
+   *
+   * If the link is already hidden on the JointJS graph, just add it to
+   * the group ID map and set it to the highest layer.
+   *
+   * Throws an error if the link is already in a group, or if its
+   * source and target operators are not both in the group.
+   *
+   * @param linkID
+   * @param groupID
+   */
+  public addLinkToGroup(linkID: string, groupID: string): void {
+    const link = this.texeraGraph.getLinkWithID(linkID);
+    const group = this.getGroup(groupID);
+
+    if (this.getGroupByLink(linkID) || this.getGroupByInLink(linkID) || this.getGroupByOutLink(linkID)) {
+      throw Error(`link with ID ${linkID} already exists in a group`);
+    }
+    if (!group.operators.has(link.source.operatorID) || !group.operators.has(link.target.operatorID)) {
+      throw Error(`link ${linkID} doesn't qualify as a link of group ${groupID}`);
+    }
+
+    if (this.jointGraph.getCell(linkID)) {
+      const linkLayer = this.jointGraphWrapper.getCellLayer(linkID);
+      const groupLayer = this.jointGraphWrapper.getCellLayer(groupID);
+      if (linkLayer <= groupLayer) {
+        this.jointGraphWrapper.setCellLayer(linkID, groupLayer + linkLayer);
+      }
+
+      const layer = this.jointGraphWrapper.getCellLayer(linkID);
+      group.links.set(linkID, {link, layer});
+
+      if (group.collapsed) {
+        this.setSyncTexeraGraph(false);
+        this.jointGraph.getCell(linkID).remove();
+        this.setSyncTexeraGraph(true);
+      } else {
+        this.jointGraph.getCell(groupID).embed(this.jointGraph.getCell(linkID));
+      }
+    } else {
+      group.links.set(linkID, {link, layer: this.getHighestLayer() + 1});
+    }
+  }
+
+  /**
+   * Adds the link to the group as an 'in-link' of the group.
+   *
+   * If the group is collapsed, connect the link's target port to the
+   * group on the JointJS graph.
+   *
+   * Throws an error if the link is already a link or in-link of
+   * a group, or if it's not actually an in-link of the group.
+   *
+   * @param linkID
+   * @param groupID
+   */
+  public addInLinkToGroup(linkID: string, groupID: string): void {
+    const link = this.texeraGraph.getLinkWithID(linkID);
+    const group = this.getGroup(groupID);
+
+    if (this.getGroupByLink(linkID) || this.getGroupByInLink(linkID)) {
+      throw Error(`link with ID ${linkID} already exists in a group`);
+    }
+    if (group.operators.has(link.source.operatorID) || !group.operators.has(link.target.operatorID)) {
+      throw Error(`link ${linkID} doesn't qualify as an in-link of group ${groupID}`);
+    }
+
+    const linkLayer = this.jointGraphWrapper.getCellLayer(linkID);
+    const groupLayer = this.jointGraphWrapper.getCellLayer(groupID);
+    if (linkLayer <= groupLayer) {
+      this.jointGraphWrapper.setCellLayer(linkID, groupLayer + linkLayer);
+    }
+
+    group.inLinks.push(linkID);
+
+    if (group.collapsed) {
+      this.setSyncTexeraGraph(false);
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('target', {id: groupID});
+      this.setSyncTexeraGraph(true);
+    }
+  }
+
+  /**
+   * Adds the link to the group as an 'out-link' of the group.
+   *
+   * If the group is collapsed, connect the link's source port to the
+   * group on the JointJS graph.
+   *
+   * Throws an error if the link is already a link or out-link of
+   * a group, or if it's not actually an out-link of the group.
+   *
+   * @param linkID
+   * @param groupID
+   */
+  public addOutLinkToGroup(linkID: string, groupID: string): void {
+    const link = this.texeraGraph.getLinkWithID(linkID);
+    const group = this.getGroup(groupID);
+
+    if (this.getGroupByLink(linkID) || this.getGroupByOutLink(linkID)) {
+      throw Error(`link with ID ${linkID} already exists in a group`);
+    }
+    if (!group.operators.has(link.source.operatorID) || group.operators.has(link.target.operatorID)) {
+      throw Error(`link ${linkID} doesn't qualify as an out-link of group ${groupID}`);
+    }
+
+    const linkLayer = this.jointGraphWrapper.getCellLayer(linkID);
+    const groupLayer = this.jointGraphWrapper.getCellLayer(groupID);
+    if (linkLayer <= groupLayer) {
+      this.jointGraphWrapper.setCellLayer(linkID, groupLayer + linkLayer);
+    }
+
+    group.outLinks.push(linkID);
+
+    if (group.collapsed) {
+      this.setSyncTexeraGraph(false);
+      const jointLinkCell = <joint.dia.Link> this.jointGraph.getCell(linkID);
+      jointLinkCell.set('source', {id: groupID});
+      this.setSyncTexeraGraph(true);
+    }
+  }
+
+  /**
    * Returns whether the group exists in the graph.
    * @param groupID
    */
