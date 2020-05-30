@@ -438,6 +438,7 @@ export class WorkflowActionService {
     // add operator to joint graph first
     // if jointJS throws an error, it won't cause the inconsistency in texera graph
     this.jointGraph.addCell(operatorJointElement);
+    this.jointGraphWrapper.setCellLayer(operator.operatorID, this.operatorGroup.getHighestLayer() + 1);
 
     // if display status feature is enabled, add the execution status tooltip for this operator
     if (environment.executionStatusEnabled) {
@@ -449,6 +450,8 @@ export class WorkflowActionService {
       operatorJointElement.embed(operatorStatusTooltipJointElement);
       // add the status toolip to the JointJS graph
       this.jointGraph.addCell(operatorStatusTooltipJointElement);
+      this.jointGraphWrapper.setCellLayer(JointUIService.getOperatorStatusTooltipElementID(operator.operatorID),
+        this.operatorGroup.getHighestLayer() + 1);
     }
 
     // add operator to texera graph
@@ -490,6 +493,7 @@ export class WorkflowActionService {
       }
       this.operatorGroup.setSyncTexeraGraph(false);
       this.jointGraph.addCell(jointLinkCell);
+      this.jointGraphWrapper.setCellLayer(link.linkID, this.operatorGroup.getHighestLayer() + 1);
       this.operatorGroup.setSyncTexeraGraph(true);
       this.texeraGraph.addLink(link);
     }
