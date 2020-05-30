@@ -3,6 +3,7 @@ package edu.uci.ics.texera.web;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle;
+import org.eclipse.jetty.websocket.jsr356.server.BasicServerEndpointConfig;
 
 import edu.uci.ics.texera.perftest.sample.SampleExtraction;
 import edu.uci.ics.texera.perftest.twitter.TwitterSample;
@@ -23,7 +24,7 @@ import io.dropwizard.websockets.WebsocketBundle;
 public class TexeraWebApplication extends Application<TexeraWebConfiguration> {
 
     private WebsocketBundle websocketBundle;
-    
+
     @Override
     public void initialize(Bootstrap<TexeraWebConfiguration> bootstrap) {
         // serve static frontend GUI files

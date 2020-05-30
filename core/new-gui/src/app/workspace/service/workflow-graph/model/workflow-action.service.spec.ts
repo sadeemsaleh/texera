@@ -267,6 +267,11 @@ describe('WorkflowActionService', () => {
       expect(tooltipElement.position()).toEqual(expectedTooltipPosition);
     });
 
+    // For collaboration
+    it('should send CommandMessage after performing command', () => {
+      service.addOperator(mockScanPredicate, mockPoint);
+    });
+
   });
 
 });

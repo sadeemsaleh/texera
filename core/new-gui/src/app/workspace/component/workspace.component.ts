@@ -53,14 +53,10 @@ export class WorkspaceComponent {
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService,
-    private workflowAction: WorkflowActionService,
-    private undoRedo: UndoRedoService,
   ) {
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
       value => this.showResultPanel = value,
     );
-
-    this.workflowCollabService.setServices(workflowAction, undoRedo);
   }
 
 }

@@ -32,6 +32,12 @@ export const defaultEnvironment = {
    * whether download execution result is supported
    */
    downloadExecutionResultEnabled: false,
+
+   /**
+    * Whether workflow collab should be active
+    */
+
+    enableWorkflowCollab: false,
 };
 
 export type AppEnv = typeof defaultEnvironment;

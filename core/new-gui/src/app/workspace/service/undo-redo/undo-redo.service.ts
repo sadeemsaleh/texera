@@ -22,7 +22,9 @@ export class UndoRedoService {
   private redoStack: Command[] = [];
 
 
-  constructor(private workflowCollabService: WorkflowCollabService) { }
+  constructor(private workflowCollabService: WorkflowCollabService) {
+    this.handleRemoteChange();
+  }
 
   public undoAction(): void {
     // We have a toggle to let our service know to add to the redo stack
@@ -33,15 +35,8 @@ export class UndoRedoService {
         command.undo();
         this.redoStack.push(command);
         this.setListenJointCommand(true);
-        const message: CommandMessage = {
-          action: 'undo',
-          operators: [],
-          operatorPositions: [],
-          links: [],
-          newProperty: [],
-          operation: ''
-        };
-        this.sendCommand(JSON.stringify(message));
+        const commandMessage: CommandMessage = {'action': 'deleteOperator', 'parameters': [''], 'type': 'undo'};
+        this.sendCommand(JSON.stringify(commandMessage));
       }
     }
   }
@@ -59,15 +54,8 @@ export class UndoRedoService {
           command.execute();
         }
         this.undoStack.push(command);
-        const message: CommandMessage = {
-          action: 'redo',
-          operators: [],
-          operatorPositions: [],
-          links: [],
-          newProperty: [],
-          operation: ''
-        };
-        this.sendCommand(JSON.stringify(message));
+        const commandMessage: CommandMessage = {'action': 'deleteOperator', 'parameters': [''], 'type': 'redo'};
+        this.sendCommand(JSON.stringify(commandMessage));
         this.setListenJointCommand(true);
       }
     }
@@ -96,5 +84,22 @@ export class UndoRedoService {
     if (this.workflowCollabService.getSendData()) {
       this.workflowCollabService.sendCommand(update);
     }
+  }
+
+  private handleRemoteChange(): void {
+    const self = this;
+    this.workflowCollabService.getCommandMessageStream().subscribe(message => {
+      if (message.type === 'undo') {
+        self.workflowCollabService.setSendData(false);
+        // @ts-ignore need to figure out the type error here
+        self.undoAction();
+        self.workflowCollabService.setSendData(true);
+      } else if (message.type === 'redo') {
+        self.workflowCollabService.setSendData(false);
+        // @ts-ignore need to figure out the type error here
+        self.redoAction();
+        self.workflowCollabService.setSendData(true);
+      }
+    });
   }
 }

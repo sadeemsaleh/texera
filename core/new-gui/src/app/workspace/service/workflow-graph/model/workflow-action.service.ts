@@ -7,7 +7,6 @@ import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 import { Injectable } from '@angular/core';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort } from '../../../types/workflow-common.interface';
 import { WorkflowCollabService } from './../../workflow-collab/workflow-collab.service';
-import { webSocket } from 'rxjs/webSocket';
 
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
@@ -20,16 +19,24 @@ export interface Command {
 }
 
 
-// Need to refactor commands/add a new interface such that it's sendable to other clients,
-// can't be functions
-export interface CommandMessage {
-  action: string;
-  operators: OperatorPredicate[];
-  operatorPositions: {op: OperatorPredicate, pos: Point}[];
-  links: OperatorLink[];
-  newProperty: object;
-  operation: string; // operation will be the thing in the map
-}
+
+// Caveat: These operations must be performed in order, and the ability to sync up multiple clients relies
+// on the fact that different clients rest at the same state.
+
+// At least for some of them, have to do a bit more thinking.
+
+export type commandFuncs = 'addOperator' | 'deleteOperator' | 'addOperatorsAndLinks' | 'deleteOperatorsAndLinks'
+| 'setOperatorProperty' | 'changeOperatorPosition' | 'setOperatorAdvanceStatus' | 'addLink';
+
+type ValueOf<T> = T[keyof T];
+export type CommandMessage = ValueOf<{
+  [P in keyof Pick<WorkflowActionService, commandFuncs>]:
+  {
+    action: P;
+    parameters: Parameters<WorkflowActionService[P]>;
+    type: string;
+  }
+}>;
 
 type OperatorPosition = {
   position: Point,
@@ -75,9 +82,10 @@ export class WorkflowActionService {
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
+    this.handleRemoteChange();
 
-    this.initializeFunctionMap();
   }
+
 
   public handleJointLinkAdd(): void {
     this.texeraGraph.getLinkAddStream().filter(() => this.undoRedoService.listenJointCommand).subscribe(link => {
@@ -113,22 +121,16 @@ export class WorkflowActionService {
         const command: Command = {
           execute: () => { },
           undo: () => {
-            this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-            currentHighlighted.forEach(operatorID => {
-              this.jointGraphWrapper.highlightOperator(operatorID);
-              this.jointGraphWrapper.setOperatorPosition(operatorID, -offsetX, -offsetY);
-            });
+            this.changeOperatorPositionInternal(currentHighlighted, -offsetX, -offsetY);
           },
           redo: () => {
-            this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-            currentHighlighted.forEach(operatorID => {
-              this.jointGraphWrapper.highlightOperator(operatorID);
-              this.jointGraphWrapper.setOperatorPosition(operatorID, offsetX, offsetY);
-            });
+            this.changeOperatorPositionInternal(currentHighlighted, offsetX, offsetY);
           }
         };
+
+        const commandMessage: CommandMessage = {'action': 'changeOperatorPosition',
+          'parameters': [currentHighlighted, offsetX, offsetY], 'type': 'execute'};
+        this.sendCommand(JSON.stringify(commandMessage));
         this.executeAndStoreCommand(command);
       });
   }
@@ -197,6 +199,8 @@ export class WorkflowActionService {
         this.jointGraphWrapper.highlightOperators(currentHighlighted);
       }
     };
+    const commandMessage: CommandMessage = {'action': 'addOperator', 'parameters': [operator, point], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
   }
 
@@ -227,15 +231,9 @@ export class WorkflowActionService {
       }
     };
 
-    const message: CommandMessage = {
-      action: 'execute',
-      operators: [operator],
-      operatorPositions: [],
-      links: [],
-      newProperty: [],
-      operation: 'delete'
-    };
-    this.sendCommand(JSON.stringify(message));
+    const commandMessage: CommandMessage = {'action': 'deleteOperator', 'parameters': [operatorID], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
+
     this.executeAndStoreCommand(command);
   }
 
@@ -270,16 +268,9 @@ export class WorkflowActionService {
       operators.push(o.op);
     });
 
-    const message: CommandMessage = {
-      action: 'execute',
-      operators: operators,
-      operatorPositions: operatorsAndPositions,
-      links: links,
-      newProperty: [],
-      operation: 'addOpsLinks',
-    };
-
-    this.sendCommand(JSON.stringify(message));
+    const commandMessage: CommandMessage = {'action': 'addOperatorsAndLinks', 'parameters': [operatorsAndPositions, links],
+    'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
   }
 
@@ -323,6 +314,10 @@ export class WorkflowActionService {
       }
     };
 
+    const commandMessage: CommandMessage = {'action': 'deleteOperatorsAndLinks', 'parameters': [operatorIDs, linkIDs],
+  'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
+
     this.executeAndStoreCommand(command);
   }
 
@@ -337,6 +332,8 @@ export class WorkflowActionService {
       execute: () => this.addLinkInternal(link),
       undo: () => this.deleteLinkWithIDInternal(link.linkID)
     };
+    const commandMessage: CommandMessage = {'action': 'addLink', 'parameters': [link], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
   }
 
@@ -374,15 +371,9 @@ export class WorkflowActionService {
       }
     };
 
-    const message: CommandMessage = {
-      action: 'execute',
-      operators: [operator],
-      operatorPositions: [],
-      links: [],
-      newProperty: newProperty,
-      operation: 'changeProperty'
-    };
-    this.sendCommand(JSON.stringify(message));
+
+    const commandMessage: CommandMessage = {'action': 'setOperatorProperty', 'parameters': [operatorID, newProperty], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
   }
 
@@ -397,6 +388,23 @@ export class WorkflowActionService {
         this.setOperatorAdvanceStatusInternal(operatorID, !newShowAdvancedStatus);
       }
     };
+
+    const commandMessage: CommandMessage = {'action': 'setOperatorAdvanceStatus',
+      'parameters': [operatorID, newShowAdvancedStatus], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
+    this.executeAndStoreCommand(command);
+  }
+
+  public changeOperatorPosition(currentHighlighted: string[], offsetX: number, offsetY: number) {
+    const command: Command = {
+      execute: () => {
+        this.changeOperatorPositionInternal(currentHighlighted, offsetX, offsetY);
+      },
+      undo: () => {
+        this.changeOperatorPositionInternal(currentHighlighted, -offsetX, -offsetY);
+      }
+    };
+
     this.executeAndStoreCommand(command);
   }
 
@@ -465,6 +473,15 @@ export class WorkflowActionService {
     this.texeraGraph.setOperatorAdvanceStatus(operatorID, newShowAdvancedStatus);
   }
 
+  private changeOperatorPositionInternal(currentHighlighted: string[], offsetX: number, offsetY: number) {
+    this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+    this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
+    currentHighlighted.forEach(operatorID => {
+      this.jointGraphWrapper.highlightOperator(operatorID);
+      this.jointGraphWrapper.setOperatorPosition(operatorID, offsetX, offsetY);
+    });
+  }
+
   private executeAndStoreCommand(command: Command): void {
     this.undoRedoService.setListenJointCommand(false);
     command.execute();
@@ -473,14 +490,20 @@ export class WorkflowActionService {
   }
 
   private sendCommand(update: string): void {
-    // function to send command, only do it if some bool from workflow-collab service.
     if (this.workflowCollabService.getSendData()) {
       this.workflowCollabService.sendCommand(update);
     }
   }
 
-  private initializeFunctionMap(): void {
+  private handleRemoteChange(): void {
     const self = this;
-    this.workflowCollabService.setFunctionMap('addOpsLinks', self.addOperatorsAndLinks);
+    this.workflowCollabService.getCommandMessageStream().subscribe(message => {
+      if (message.type === 'execute') {
+        self.workflowCollabService.setSendData(false);
+        const func = message.action;
+        this[func].apply(this, message.parameters);
+        self.workflowCollabService.setSendData(true);
+      }
+    });
   }
 }
