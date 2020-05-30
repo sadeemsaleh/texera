@@ -48,6 +48,7 @@ export class WorkflowActionService {
   private readonly jointGraphWrapper: JointGraphWrapper;
   private readonly operatorGroup: OperatorGroup;
   private readonly syncTexeraModel: SyncTexeraModel;
+  private readonly syncOperatorGroup: SyncOperatorGroup;
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -61,6 +62,7 @@ export class WorkflowActionService {
     this.operatorGroup = new OperatorGroup(this.texeraGraph, this.jointGraph, this.jointGraphWrapper,
       this.workflowUtilService, this.jointUIService);
     this.syncTexeraModel = new SyncTexeraModel(this.texeraGraph, this.jointGraphWrapper, this.operatorGroup);
+    this.syncOperatorGroup = new SyncOperatorGroup(this.texeraGraph, this.jointGraphWrapper, this.operatorGroup);
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
@@ -455,28 +457,53 @@ export class WorkflowActionService {
 
   private deleteOperatorInternal(operatorID: string): void {
     this.texeraGraph.assertOperatorExists(operatorID);
-    // remove the corresponding tooltip from JointJS first
-    if (environment.executionStatusEnabled) {
-      this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
+    const group = this.operatorGroup.getGroupByOperator(operatorID);
+    if (group && group.collapsed) {
+      this.texeraGraph.deleteOperator(operatorID);
+    } else {
+      // remove the corresponding tooltip from JointJS first
+      if (environment.executionStatusEnabled) {
+        this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
+      }
+      // then remove the operator from JointJS
+      this.jointGraph.getCell(operatorID).remove();
+      // JointJS operator delete event will propagate and trigger Texera operator delete
     }
-    // then remove the operator from JointJS
-    this.jointGraph.getCell(operatorID).remove();
-    // JointJS operator delete event will propagate and trigger Texera operator delete
   }
 
   private addLinkInternal(link: OperatorLink): void {
     this.texeraGraph.assertLinkNotExists(link);
     this.texeraGraph.assertLinkIsValid(link);
-    // add the link to JointJS
-    const jointLinkCell = JointUIService.getJointLinkCell(link);
-    this.jointGraph.addCell(jointLinkCell);
-    // JointJS link add event will propagate and trigger Texera link add
+
+    const sourceGroup = this.operatorGroup.getGroupByOperator(link.source.operatorID);
+    const targetGroup = this.operatorGroup.getGroupByOperator(link.target.operatorID);
+
+    if (sourceGroup && targetGroup && sourceGroup.groupID === targetGroup.groupID && sourceGroup.collapsed) {
+      this.texeraGraph.addLink(link);
+    } else {
+      const jointLinkCell = JointUIService.getJointLinkCell(link);
+      if (sourceGroup && sourceGroup.collapsed) {
+        jointLinkCell.set('source', {id: sourceGroup.groupID});
+      }
+      if (targetGroup && targetGroup.collapsed) {
+        jointLinkCell.set('target', {id: targetGroup.groupID});
+      }
+      this.operatorGroup.setSyncTexeraGraph(false);
+      this.jointGraph.addCell(jointLinkCell);
+      this.operatorGroup.setSyncTexeraGraph(true);
+      this.texeraGraph.addLink(link);
+    }
   }
 
   private deleteLinkWithIDInternal(linkID: string): void {
     this.texeraGraph.assertLinkWithIDExists(linkID);
-    this.jointGraph.getCell(linkID).remove();
-    // JointJS link delete event will propagate and trigger Texera link delete
+    const group = this.operatorGroup.getGroupByLink(linkID);
+    if (group && group.collapsed) {
+      this.texeraGraph.deleteLinkWithID(linkID);
+    } else {
+      this.jointGraph.getCell(linkID).remove();
+      // JointJS link delete event will propagate and trigger Texera link delete
+    }
   }
 
   private addGroupInternal(group: Group): void {
