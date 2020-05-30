@@ -91,12 +91,10 @@ export class UndoRedoService {
     this.workflowCollabService.getCommandMessageStream().subscribe(message => {
       if (message.type === 'undo') {
         self.workflowCollabService.setSendData(false);
-        // @ts-ignore need to figure out the type error here
         self.undoAction();
         self.workflowCollabService.setSendData(true);
       } else if (message.type === 'redo') {
         self.workflowCollabService.setSendData(false);
-        // @ts-ignore need to figure out the type error here
         self.redoAction();
         self.workflowCollabService.setSendData(true);
       }
