@@ -3,7 +3,6 @@ import { Observable } from 'rxjs/Observable';
 import { debounceTime } from 'rxjs/operators';
 import { Point } from '../../../types/workflow-common.interface';
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
-import { JointUIService } from '../../joint-ui/joint-ui.service';
 
 type operatorIDsType = { operatorIDs: string[] };
 
@@ -126,17 +125,17 @@ export class JointGraphWrapper {
     .map(value => value[0]);
 
 
-  constructor(
-    private jointGraph: joint.dia.Graph,
-    private undoRedoService: UndoRedoService,
-    private jointUIService: JointUIService
-  ) {
+  constructor(private jointGraph: joint.dia.Graph, private undoRedoService: UndoRedoService) {
     // handle if the current highlighted operator is deleted, it should be unhighlighted
     this.handleOperatorDeleteUnhighlight();
+
     this.jointCellAddStream.filter(cell => cell.isElement()).subscribe(element => {
       const initPosition = {currPos: (element as joint.dia.Element).position(), lastPos: undefined};
       this.elementPositions.set(element.id.toString(), initPosition);
     });
+
+    this.jointCellDeleteStream.filter(cell => cell.isElement()).subscribe(element =>
+      this.elementPositions.delete(element.id.toString()));
 
     // handle if the current highlighted operator's position is changed,
     // other highlighted operators should move with it.
