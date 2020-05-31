@@ -16,7 +16,6 @@ import { ResultPanelToggleService } from '../../service/result-panel-toggle/resu
 import { Point, OperatorPredicate } from '../../types/workflow-common.interface';
 import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
-import { SuccessProcessStatus } from '../../types/execute-workflow.interface';
 import { OperatorStates } from '../../types/execute-workflow.interface';
 import { environment } from './../../../../environments/environment';
 

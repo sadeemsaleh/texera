@@ -1,6 +1,5 @@
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
-import { debounceTime } from 'rxjs/operators';
 import { Point } from '../../../types/workflow-common.interface';
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
 
@@ -289,23 +288,23 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Gets the event stream of an operator being dragged.
+   * Gets the event stream of an element being dragged.
    */
-  public getJointOperatorCellDragStream(): Observable<joint.dia.Element> {
-    const jointOperatorDragStream = this.jointCellDragStream
+  public getJointElementCellDragStream(): Observable<joint.dia.Element> {
+    const jointElementDragStream = this.jointCellDragStream
       .filter(cell => cell.isElement())
       .map(cell => <joint.dia.Element>cell);
-    return jointOperatorDragStream;
+    return jointElementDragStream;
   }
 
   /**
-   * Returns an Observable stream capturing the operator cell delete event in JointJS graph.
+   * Returns an Observable stream capturing the element cell delete event in JointJS graph.
    */
-  public getJointOperatorCellDeleteStream(): Observable<joint.dia.Element> {
-    const jointOperatorDeleteStream = this.jointCellDeleteStream
+  public getJointElementCellDeleteStream(): Observable<joint.dia.Element> {
+    const jointElementDeleteStream = this.jointCellDeleteStream
       .filter(cell => cell.isElement())
       .map(cell => <joint.dia.Element>cell);
-    return jointOperatorDeleteStream;
+    return jointElementDeleteStream;
   }
 
   /**
@@ -562,8 +561,7 @@ export class JointGraphWrapper {
     if (!this.currentHighlightedOperators.includes(operatorID)) {
       return;
     }
-    const unhighlightedOperatorIndex = this.currentHighlightedOperators.indexOf(operatorID);
-    this.currentHighlightedOperators.splice(unhighlightedOperatorIndex, 1);
+    this.currentHighlightedOperators.splice(this.currentHighlightedOperators.indexOf(operatorID), 1);
     unhighlightedOperatorIDs.push(operatorID);
   }
 

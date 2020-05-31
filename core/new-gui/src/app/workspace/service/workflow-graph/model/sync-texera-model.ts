@@ -39,7 +39,7 @@ export class SyncTexeraModel {
    *  link delete events and cause texera link to be deleted.
    */
   private handleJointOperatorDelete(): void {
-    this.jointGraphWrapper.getJointOperatorCellDeleteStream()
+    this.jointGraphWrapper.getJointElementCellDeleteStream()
       .map(element => element.id.toString())
       .filter(elementID => this.texeraGraph.hasOperator(elementID) && this.operatorGroup.getSyncTexeraGraph())
       .subscribe(elementID => this.texeraGraph.deleteOperator(elementID));
