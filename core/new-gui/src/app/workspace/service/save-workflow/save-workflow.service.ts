@@ -46,7 +46,7 @@ export class SaveWorkflowService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService
+    private operatorMetadataService: OperatorMetadataService,
   ) {
     this.handleAutoSaveWorkFlow();
 
@@ -86,12 +86,13 @@ export class SaveWorkflowService {
     savedWorkflow.links.forEach(link => {
       links.push(link);
     });
-
+    this.workflowActionService.toggleSendData(false);
     this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
 
     // operators shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
       this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
+    this.workflowActionService.toggleSendData(true);
   }
 
   /**

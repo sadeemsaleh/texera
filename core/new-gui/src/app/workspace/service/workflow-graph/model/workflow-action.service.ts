@@ -86,6 +86,9 @@ export class WorkflowActionService {
 
   }
 
+  public toggleSendData(toggle: boolean): void {
+    this.workflowCollabService.setSendData(toggle);
+  }
 
   public handleJointLinkAdd(): void {
     this.texeraGraph.getLinkAddStream().filter(() => this.undoRedoService.listenJointCommand).subscribe(link => {
@@ -499,10 +502,10 @@ export class WorkflowActionService {
     const self = this;
     this.workflowCollabService.getCommandMessageStream().subscribe(message => {
       if (message.type === 'execute') {
-        self.workflowCollabService.setSendData(false);
+        self.toggleSendData(false);
         const func = message.action;
         (this[func] as any).apply(this, message.parameters);
-        self.workflowCollabService.setSendData(true);
+        self.toggleSendData(true);
       }
     });
   }

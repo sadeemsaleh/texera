@@ -32,7 +32,7 @@ export class WorkflowCollabService {
   constructor(
   ) {
     const self = this;
-    if (environment.enableWorkflowCollab) { // to disable service, change to true to enable
+    if (environment.enableWorkflowCollab { // to disable service, change to true to enable
       // Noticed a strange interaction between this feature and SaveWorkflowService, things will get duplicated
       // When enabling this feature, am currently disabling that feature
       this.setSendData(true);
