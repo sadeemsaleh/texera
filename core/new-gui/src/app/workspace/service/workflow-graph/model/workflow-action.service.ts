@@ -445,6 +445,23 @@ export class WorkflowActionService {
   }
 
   /**
+   * Adds given groups to the workflow graph.
+   * @param groups
+   */
+  public addGroups(groups: Group[]): void {
+    const command: Command = {
+      execute: () => {
+        groups.forEach(group => {
+          this.addGroupInternal(group);
+          this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+        });
+      },
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
    * Deletes a group from the workflow graph, and free up
    * its embedded operators and links.
    *
@@ -459,13 +476,26 @@ export class WorkflowActionService {
   }
 
   /**
-   * Collapses the given group.
+   * Deletes given groups from the workflow graph.
+   * @param groupIDs
+   */
+  public deleteGroups(groupIDs: string[]): void {
+    const command: Command = {
+      execute: () => groupIDs.forEach(groupID => this.deleteGroupInternal(groupID)),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Collapses the given group on the graph.
    * Throws an error if the group is already collapsed, otherwise hides all
    * operators and links within the group.
    *
    * @param groupID
    */
   public collapseGroup(groupID: string): void {
+    // TO-DO: highlight group on collapsing & expanding
     const command: Command = {
       execute: () => this.collapseGroupInternal(groupID),
       undo: () => {}
@@ -474,7 +504,19 @@ export class WorkflowActionService {
   }
 
   /**
-   * Expands the given group.
+   * Collapses given groups on the graph.
+   * @param groupIDs
+   */
+  public collapseGroups(groupIDs: string[]): void {
+    const command: Command = {
+      execute: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Expands the given group on the graph.
    * Throws an error if the group is already expanded, otherwise shows all
    * hidden operators and links in the group.
    *
@@ -483,6 +525,18 @@ export class WorkflowActionService {
   public expandGroup(groupID: string): void {
     const command: Command = {
       execute: () => this.expandGroupInternal(groupID),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Expands given groups on the graph.
+   * @param groupIDs
+   */
+  public expandGroups(groupIDs: string[]): void {
+    const command: Command = {
+      execute: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
       undo: () => {}
     };
     this.executeAndStoreCommand(command);
