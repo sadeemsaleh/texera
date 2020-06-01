@@ -515,6 +515,21 @@ export class OperatorGroup {
   }
 
   /**
+   * Returns true if there're at least two operators in the operator
+   * list and none of them is already embedded in a group.
+   *
+   * @param operatorIDs
+   */
+  public operatorsGroupable(operatorIDs: string[]): boolean {
+    for (const operatorID of operatorIDs) {
+      if (this.getGroupByOperator(operatorID)) {
+        return false;
+      }
+    }
+    return operatorIDs.length > 1;
+  }
+
+  /**
    * Gets the given operator's position on the JointJS graph, or its
    * supposed-to-be position if the operator is in a collapsed group.
    *
@@ -597,6 +612,10 @@ export class OperatorGroup {
    * @param operatorIDs
    */
   public getNewGroup(operatorIDs: string[]): Group {
+    if (!this.operatorsGroupable(operatorIDs)) {
+      throw Error('given operators are not groupable');
+    }
+
     const groupID = this.workflowUtilService.getGroupRandomUUID();
 
     const operators = new Map<string, OperatorInfo>();

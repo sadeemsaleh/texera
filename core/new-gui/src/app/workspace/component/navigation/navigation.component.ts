@@ -227,24 +227,20 @@ export class NavigationComponent implements OnInit {
    */
   public onClickGroupOperators(): void {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    if (this.operatorsGroupable()) {
+    if (this.highlightedElementsGroupable()) {
       const group = this.workflowActionService.getOperatorGroup().getNewGroup(highlightedOperators);
       this.workflowActionService.addGroup(group);
     }
   }
 
   /**
-   * Returns true if there're at least two highlighted operators
-   *  and none of them is already embedded in a group.
+   * Returns true if currently highlighted elements are all operators
+   * and if they are groupable.
    */
-  public operatorsGroupable(): boolean {
+  public highlightedElementsGroupable(): boolean {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    for (const operatorID of highlightedOperators) {
-      if (this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID)) {
-        return false;
-      }
-    }
-    return highlightedOperators.length > 1;
+    return this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length === 0 &&
+      this.workflowActionService.getOperatorGroup().operatorsGroupable(highlightedOperators);
   }
 
   /**
