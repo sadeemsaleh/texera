@@ -515,28 +515,31 @@ export class PropertyEditorComponent {
   }
 
   /**
-   * Handles the operator highlight / unhighlight events.
+   * Handles operator and group highlight / unhighlight events.
    *
-   * When operators are highlighted / unhighlighted,
+   * When operators and groups are highlighted / unhighlighted,
    *   -> displays the form of the highlighted operator if only one operator is highlighted
    *   -> hides the form otherwise
    */
   private handleHighlightEvents() {
-    this.workflowActionService.getJointGraphWrapper().getJointCellHighlightStream()
-      .subscribe(() => this.changePropertyEditorOnHighlightEvents());
-    this.workflowActionService.getJointGraphWrapper().getJointCellUnhighlightStream()
-      .subscribe(() => this.changePropertyEditorOnHighlightEvents());
+    Observable.merge(
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorUnhighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupUnhighlightStream()
+    ).subscribe(() => this.changePropertyEditorOnHighlightEvents());
   }
 
   /**
    * This method changes the property editor according to how operators are highlighted on the workflow editor.
    *
    * Displays the form of the highlighted operator if only one operator is highlighted;
-   * hides the form if no operator is highlighted or multiple operators are highlighted.
+   * hides the form if no operator is highlighted or multiple operators and/or groups are highlighted.
    */
   private changePropertyEditorOnHighlightEvents() {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    if (highlightedOperators.length === 1) {
+    const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+    if (highlightedOperators.length === 1 && highlightedGroups.length === 0) {
       const operator = this.workflowActionService.getTexeraGraph().getOperator(highlightedOperators[0]);
       this.changePropertyEditor(operator);
     } else {

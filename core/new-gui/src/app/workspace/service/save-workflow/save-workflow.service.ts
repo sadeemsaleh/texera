@@ -105,9 +105,11 @@ export class SaveWorkflowService {
         collapsed: group.collapsed};
     }).forEach(group => this.workflowActionService.addGroup(group));
 
-    // operators shouldn't be highlighted during page reload
+    // operators and groups shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
       this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
+    this.workflowActionService.getJointGraphWrapper().unhighlightGroups(
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs());
   }
 
   /**

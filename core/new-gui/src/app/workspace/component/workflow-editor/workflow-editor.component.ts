@@ -391,44 +391,52 @@ export class WorkflowEditorComponent implements AfterViewInit {
 
   private handleCellHighlight(): void {
     this.handleHighlightMouseInput();
-    this.handleOperatorHightlightEvent();
+    this.handleElementHightlightEvent();
   }
 
 
   /**
-   * Handles user mouse down events to trigger logically highlight and unhighlight an operator.
-   * If user clicks the operator while pressing the shift key, multiselect mode is turned on.
-   * When pressing the shift key, user can unhighlight a highlighted operator by clicking on it.
-   * User can also unhighlight all operators by clicking on the blank area of the graph.
+   * Handles user mouse down events to trigger logically highlight and unhighlight an operator or group.
+   * If user clicks the operator/group while pressing the shift key, multiselect mode is turned on.
+   * When pressing the shift key, user can unhighlight a highlighted operator/group by clicking on it.
+   * User can also unhighlight all operators and groups by clicking on the blank area of the graph.
    */
   private handleHighlightMouseInput(): void {
-    // on user mouse clicks a operator cell, highlight that operator
+    // on user mouse clicks an operator/group cell, highlight that operator/group
     // operator status tooltips should never be highlighted
     Observable.fromEvent<JointPaperEvent>(this.getJointPaper(), 'cell:pointerdown')
       // event[0] is the JointJS CellView; event[1] is the original JQuery Event
       .filter(event => event[0].model.isElement())
-      .filter(event => this.workflowActionService.getTexeraGraph().hasOperator(event[0].model.id.toString()))
+      .filter(event => this.workflowActionService.getTexeraGraph().hasOperator(event[0].model.id.toString()) ||
+        this.workflowActionService.getOperatorGroup().hasGroup(event[0].model.id.toString()))
       .subscribe(event => {
         this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(<boolean> event[1].shiftKey);
-        const operatorID = event[0].model.id.toString();
+        const elementID = event[0].model.id.toString();
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-        if (event[1].shiftKey && highlightedOperatorIDs.includes(operatorID)) {
-          this.workflowActionService.getJointGraphWrapper().unhighlightOperator(operatorID);
+        const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+        if (event[1].shiftKey && highlightedOperatorIDs.includes(elementID)) {
+          this.workflowActionService.getJointGraphWrapper().unhighlightOperator(elementID);
+        } else if (event[1].shiftKey && highlightedGroupIDs.includes(elementID)) {
+          this.workflowActionService.getJointGraphWrapper().unhighlightGroup(elementID);
+        } else if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
+          this.workflowActionService.getJointGraphWrapper().highlightOperator(elementID);
         } else {
-          this.workflowActionService.getJointGraphWrapper().highlightOperator(operatorID);
+          this.workflowActionService.getJointGraphWrapper().highlightGroup(elementID);
         }
       });
 
-    // on user mouse clicks on blank area, unhighlight all operators
+    // on user mouse clicks on blank area, unhighlight all operators and groups
     Observable.fromEvent<JointPaperEvent>(this.getJointPaper(), 'blank:pointerdown')
       .subscribe(() => {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
         this.workflowActionService.getJointGraphWrapper().unhighlightOperators(highlightedOperatorIDs);
+        this.workflowActionService.getJointGraphWrapper().unhighlightGroups(highlightedGroupIDs);
       });
   }
 
-  private handleOperatorHightlightEvent(): void {
-    // handle logical operator highlight / unhighlight events to let JointJS
+  private handleElementHightlightEvent(): void {
+    // handle logical operator and group highlight / unhighlight events to let JointJS
     //  use our own custom highlighter
     const highlightOptions = {
       name: 'stroke',
@@ -440,17 +448,21 @@ export class WorkflowEditorComponent implements AfterViewInit {
       }
     };
 
-    this.workflowActionService.getJointGraphWrapper().getJointCellHighlightStream()
-      .subscribe(value => value.operatorIDs.forEach(operatorID =>
-        this.getJointPaper().findViewByModel(operatorID).highlight(
-          'rect', { highlighter: highlightOptions })
-      ));
+    Observable.merge(
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorHighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupHighlightStream()
+    ).subscribe(elementIDs => elementIDs.forEach(elementID =>
+      this.getJointPaper().findViewByModel(elementID).highlight(
+        'rect', { highlighter: highlightOptions }
+    )));
 
-    this.workflowActionService.getJointGraphWrapper().getJointCellUnhighlightStream()
-      .subscribe(value => value.operatorIDs.forEach(operatorID =>
-        this.getJointPaper().findViewByModel(operatorID).unhighlight(
-          'rect', { highlighter: highlightOptions })
-      ));
+    Observable.merge(
+      this.workflowActionService.getJointGraphWrapper().getJointOperatorUnhighlightStream(),
+      this.workflowActionService.getJointGraphWrapper().getJointGroupUnhighlightStream()
+    ).subscribe(elementIDs => elementIDs.forEach(elementID =>
+      this.getJointPaper().findViewByModel(elementID).unhighlight(
+        'rect', { highlighter: highlightOptions }
+    )));
   }
 
   private handleOperatorSuggestionHighlightEvent(): void {

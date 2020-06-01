@@ -181,8 +181,9 @@ export class WorkflowActionService {
    * @param point
    */
   public addOperator(operator: OperatorPredicate, point: Point): void {
-    // remember currently highlighted operators
-    const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    // remember currently highlighted operators and groups
+    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
 
     const command: Command = {
       execute: () => {
@@ -198,8 +199,10 @@ export class WorkflowActionService {
         this.deleteOperatorInternal(operator.operatorID);
         // restore previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlighted);
+        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
       }
     };
     this.executeAndStoreCommand(command);
@@ -247,7 +250,7 @@ export class WorkflowActionService {
         if (!group || !group.collapsed) {
           // turn off multiselect since only the deleted operator will be added
           this.getJointGraphWrapper().setMultiSelectMode(false);
-          this.getJointGraphWrapper().highlightOperator(operator.operatorID);
+          this.getJointGraphWrapper().highlightOperator(operatorID);
         }
       }
     };
@@ -260,13 +263,15 @@ export class WorkflowActionService {
    * @param links
    */
   public addOperatorsAndLinks(operatorsAndPositions: {op: OperatorPredicate, pos: Point}[], links: OperatorLink[]): void {
-    // remember currently highlighted operators
-    const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    // remember currently highlighted operators and groups
+    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
 
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         this.jointGraphWrapper.setMultiSelectMode(operatorsAndPositions.length > 1);
         operatorsAndPositions.forEach(o => {
           this.addOperatorInternal(o.op, o.pos);
@@ -281,8 +286,10 @@ export class WorkflowActionService {
         operatorsAndPositions.forEach(o => this.deleteOperatorInternal(o.op.operatorID));
         // restore previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlighted);
+        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
       }
     };
     this.executeAndStoreCommand(command);
@@ -319,8 +326,9 @@ export class WorkflowActionService {
       }
     });
 
-    // remember currently highlighted operators
-    const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    // remember currently highlighted operators and groups
+    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
 
     const command: Command = {
       execute: () => {
@@ -365,8 +373,10 @@ export class WorkflowActionService {
         });
         // restore previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlighted);
+        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
       }
     };
 

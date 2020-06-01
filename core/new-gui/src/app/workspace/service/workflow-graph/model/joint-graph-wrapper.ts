@@ -3,8 +3,6 @@ import { Observable } from 'rxjs/Observable';
 import { Point } from '../../../types/workflow-common.interface';
 import { UndoRedoService } from './../../undo-redo/undo-redo.service';
 
-type operatorIDsType = { operatorIDs: string[] };
-
 type JointModelEventInfo = {
   add: boolean,
   merge: boolean,
@@ -81,13 +79,20 @@ export class JointGraphWrapper {
 
   // flag that indicates whether multiselect mode is on
   private multiSelect: boolean = false;
-  // the current highlighted operators' ID
+  // the currently highlighted operators' IDs
   private currentHighlightedOperators: string[] = [];
+  // the currently highlighted groups' IDs
+  private currentHighlightedGroups: string[] = [];
   // event stream of highlighting an operator
-  private jointCellHighlightStream = new Subject<operatorIDsType>();
+  private jointOperatorHighlightStream = new Subject<string[]>();
   // event stream of un-highlighting an operator
-  private jointCellUnhighlightStream = new Subject<operatorIDsType>();
-  // event stream of zooming the jointJs paper
+  private jointOperatorUnhighlightStream = new Subject<string[]>();
+  // event stream of highlighting a group
+  private jointGroupHighlightStream = new Subject<string[]>();
+  // event stream of un-highlighting a group
+  private jointGroupUnhighlightStream = new Subject<string[]>();
+
+  // event stream of zooming the jointJS paper
   private workflowEditorZoomSubject: Subject<number> = new Subject<number>();
   // event stream of restoring zoom / offset default of the jointJS paper
   private restorePaperOffsetSubject: Subject<Point> = new Subject<Point>();
@@ -125,8 +130,8 @@ export class JointGraphWrapper {
 
 
   constructor(private jointGraph: joint.dia.Graph, private undoRedoService: UndoRedoService) {
-    // handle if the current highlighted operator is deleted, it should be unhighlighted
-    this.handleOperatorDeleteUnhighlight();
+    // handle if the currently highlighted operator/group is deleted, it should be unhighlighted
+    this.handleElementDeleteUnhighlight();
 
     this.jointCellAddStream.filter(cell => cell.isElement()).subscribe(element => {
       const initPosition = {currPos: (element as joint.dia.Element).position(), lastPos: undefined};
@@ -136,7 +141,7 @@ export class JointGraphWrapper {
     this.jointCellDeleteStream.filter(cell => cell.isElement()).subscribe(element =>
       this.elementPositions.delete(element.id.toString()));
 
-    // handle if the current highlighted operator's position is changed,
+    // handle if the currently highlighted operator's position is changed,
     // other highlighted operators should move with it.
     this.handleHighlightedOperatorPositionChange();
   }
@@ -166,6 +171,17 @@ export class JointGraphWrapper {
    */
   public getCurrentHighlightedOperatorIDs(): string[] {
     return Object.assign([], this.currentHighlightedOperators);
+  }
+
+  /**
+   * Gets the group ID of the current highlighted groups.
+   * Returns an empty list if there is no highlighted group.
+   *
+   * The returned array is not the original one so that other
+   * services/components can't modify it directly.
+   */
+  public getCurrentHighlightedGroupIDs(): string[] {
+    return Object.assign([], this.currentHighlightedGroups);
   }
 
   /**
@@ -221,9 +237,9 @@ export class JointGraphWrapper {
    */
   public highlightOperator(operatorID: string): void {
     const highlightedOperatorIDs: string[] = [];
-    this.highlightOperatorInternal(operatorID, highlightedOperatorIDs);
+    this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs);
     if (highlightedOperatorIDs.length > 0) {
-      this.jointCellHighlightStream.next({ operatorIDs: highlightedOperatorIDs });
+      this.jointOperatorHighlightStream.next(highlightedOperatorIDs);
     }
   }
 
@@ -237,9 +253,10 @@ export class JointGraphWrapper {
    */
   public highlightOperators(operatorIDs: string[]): void {
     const highlightedOperatorIDs: string[] = [];
-    operatorIDs.forEach(operatorID => this.highlightOperatorInternal(operatorID, highlightedOperatorIDs));
+    operatorIDs.forEach(operatorID =>
+      this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs));
     if (highlightedOperatorIDs.length > 0) {
-      this.jointCellHighlightStream.next({ operatorIDs: highlightedOperatorIDs });
+      this.jointOperatorHighlightStream.next(highlightedOperatorIDs);
     }
   }
 
@@ -250,9 +267,9 @@ export class JointGraphWrapper {
    */
   public unhighlightOperator(operatorID: string): void {
     const unhighlightedOperatorIDs: string[] = [];
-    this.unhighlightOperatorInternal(operatorID, unhighlightedOperatorIDs);
+    this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs);
     if (unhighlightedOperatorIDs.length > 0) {
-      this.jointCellUnhighlightStream.next({ operatorIDs: unhighlightedOperatorIDs });
+      this.jointOperatorUnhighlightStream.next(unhighlightedOperatorIDs);
     }
   }
 
@@ -266,25 +283,101 @@ export class JointGraphWrapper {
    */
   public unhighlightOperators(operatorIDs: string[]): void {
     const unhighlightedOperatorIDs: string[] = [];
-    operatorIDs.forEach(operatorID => this.unhighlightOperatorInternal(operatorID, unhighlightedOperatorIDs));
+    operatorIDs.forEach(operatorID =>
+      this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs));
     if (unhighlightedOperatorIDs.length > 0) {
-      this.jointCellUnhighlightStream.next({ operatorIDs: unhighlightedOperatorIDs });
+      this.jointOperatorUnhighlightStream.next(unhighlightedOperatorIDs);
+    }
+  }
+
+  /**
+   * Highlights the group with given groupID.
+   * Emits an event to the group highlight stream.
+   * @param groupID
+   */
+  public highlightGroup(groupID: string): void {
+    const highlightedGroupIDs: string[] = [];
+    this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs);
+    if (highlightedGroupIDs.length > 0) {
+      this.jointGroupHighlightStream.next(highlightedGroupIDs);
+    }
+  }
+
+  /**
+   * Highlights groups in the given list.
+   *
+   * Emits an event to the group highlight stream with a list of groupIDs
+   * that are highlighted.
+   *
+   * @param groupIDs
+   */
+  public highlightGroups(groupIDs: string[]): void {
+    const highlightedGroupIDs: string[] = [];
+    groupIDs.forEach(groupID =>
+      this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs));
+    if (highlightedGroupIDs.length > 0) {
+      this.jointGroupHighlightStream.next(highlightedGroupIDs);
+    }
+  }
+
+  /**
+   * Unhighlights the given highlighted group.
+   * Emits an event to the group unhighlight stream.
+   * @param groupID
+   */
+  public unhighlightGroup(groupID: string): void {
+    const unhighlightedGroupIDs: string[] = [];
+    this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs);
+    if (unhighlightedGroupIDs.length > 0) {
+      this.jointGroupUnhighlightStream.next(unhighlightedGroupIDs);
+    }
+  }
+
+  /**
+   * Unhighlights groups in the given list.
+   *
+   * Emits an event to the group unhighlight stream with a list of groupIDs
+   * that are unhighlighted.
+   *
+   * @param groupIDs
+   */
+  public unhighlightGroups(groupIDs: string[]): void {
+    const unhighlightedGroupIDs: string[] = [];
+    groupIDs.forEach(groupID =>
+      this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs));
+    if (unhighlightedGroupIDs.length > 0) {
+      this.jointGroupUnhighlightStream.next(unhighlightedGroupIDs);
     }
   }
 
   /**
    * Gets the event stream of an operator being highlighted.
    */
-  public getJointCellHighlightStream(): Observable<operatorIDsType> {
-    return this.jointCellHighlightStream.asObservable();
+  public getJointOperatorHighlightStream(): Observable<string[]> {
+    return this.jointOperatorHighlightStream.asObservable();
   }
 
   /**
    * Gets the event stream of an operator being unhighlighted.
    * The operator could be unhighlighted because it's deleted.
    */
-  public getJointCellUnhighlightStream(): Observable<operatorIDsType> {
-    return this.jointCellUnhighlightStream.asObservable();
+  public getJointOperatorUnhighlightStream(): Observable<string[]> {
+    return this.jointOperatorUnhighlightStream.asObservable();
+  }
+
+  /**
+   * Gets the event stream of a group being highlighted.
+   */
+  public getJointGroupHighlightStream(): Observable<string[]> {
+    return this.jointGroupHighlightStream.asObservable();
+  }
+
+  /**
+   * Gets the event stream of a group being unhighlighted.
+   * The group could be unhighlighted because it's deleted.
+   */
+  public getJointGroupUnhighlightStream(): Observable<string[]> {
+    return this.jointGroupUnhighlightStream.asObservable();
   }
 
   /**
@@ -526,55 +619,57 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Highlights the operator with given operatorID.
+   * Highlights the element with given elementID.
    *
-   * If the currently highlighted operator is already highlighted, the action will be ignored.
+   * An element can be either an operator or a group. If the element is already
+   * highlighted, the action will be ignored.
    *
    * When the multiselect mode is off:
-   * there is only one operator that could be highlighted at a time, therefore
-   *  if another operator is highlighted, it will be unhighlighted.
+   * there is only one element that could be highlighted at a time, therefore
+   *  if there are other highlighted elements, they will be unhighlighted.
    */
-  private highlightOperatorInternal(operatorID: string, highlightedOperatorIDs: string[]): void {
-    // try to get the operator using operator ID
-    if (!this.jointGraph.getCell(operatorID)) {
-      throw new Error(`operator with ID ${operatorID} doesn't exist`);
+  private highlightElement(elementID: string, currentHighlightedElements: string[], highlightedElements: string[]): void {
+    // try to get the element using element ID
+    if (!this.jointGraph.getCell(elementID)) {
+      throw new Error(`element with ID ${elementID} doesn't exist`);
     }
-    // if the current highlighted operator is already highlighted, don't do anything
-    if (this.currentHighlightedOperators.includes(operatorID)) {
+    // if the element is already highlighted, don't do anything
+    if (currentHighlightedElements.includes(elementID)) {
       return;
     }
-    // if the multiselect mode is off and there are other highlighted operators,
-    // unhighlight them first
-    if (!this.multiSelect && this.currentHighlightedOperators.length > 0) {
-      const highlightedOperators = Object.assign([], this.currentHighlightedOperators);
-      this.unhighlightOperators(highlightedOperators);
+    // if the multiselect mode is off, unhighlight other highlighted elements first
+    if (!this.multiSelect) {
+      this.unhighlightOperators(this.getCurrentHighlightedOperatorIDs());
+      this.unhighlightGroups(this.getCurrentHighlightedGroupIDs());
     }
-    // highlight the operator and add it to the list of highlighted operators
-    this.currentHighlightedOperators.push(operatorID);
-    highlightedOperatorIDs.push(operatorID);
+    // highlight the element and add it to the list of highlighted elements
+    currentHighlightedElements.push(elementID);
+    highlightedElements.push(elementID);
   }
 
   /**
-   * Unhighlights the given highlighted operator.
+   * Unhighlights the given highlighted element (operator or group).
    */
-  private unhighlightOperatorInternal(operatorID: string, unhighlightedOperatorIDs: string[]): void {
-    if (!this.currentHighlightedOperators.includes(operatorID)) {
+  private unhighlightElement(elementID: string, currentHighlightedElements: string[], unhighlightedElements: string[]): void {
+    if (!currentHighlightedElements.includes(elementID)) {
       return;
     }
-    this.currentHighlightedOperators.splice(this.currentHighlightedOperators.indexOf(operatorID), 1);
-    unhighlightedOperatorIDs.push(operatorID);
+    currentHighlightedElements.splice(currentHighlightedElements.indexOf(elementID), 1);
+    unhighlightedElements.push(elementID);
   }
 
   /**
-   * Subscribes to operator cell delete event stream,
-   *  checks if the deleted operator is currently highlighted
+   * Subscribes to element cell delete event stream,
+   *  checks if the deleted element is currently highlighted
    *  and unhighlight it if it is.
    */
-  private handleOperatorDeleteUnhighlight(): void {
-    this.getJointOperatorCellDeleteStream().subscribe(deletedOperatorCell => {
-      const deletedOperatorID = deletedOperatorCell.id.toString();
-      if (this.currentHighlightedOperators.includes(deletedOperatorID)) {
-        this.unhighlightOperator(deletedOperatorID);
+  private handleElementDeleteUnhighlight(): void {
+    this.getJointElementCellDeleteStream().subscribe(deletedElement => {
+      const deletedElementID = deletedElement.id.toString();
+      if (this.currentHighlightedOperators.includes(deletedElementID)) {
+        this.unhighlightOperator(deletedElementID);
+      } else if (this.currentHighlightedGroups.includes(deletedElementID)) {
+        this.unhighlightGroup(deletedElementID);
       }
     });
   }
