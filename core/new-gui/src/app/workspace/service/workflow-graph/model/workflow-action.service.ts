@@ -404,9 +404,19 @@ export class WorkflowActionService {
    */
   public deleteLinkWithID(linkID: string): void {
     const link = this.getTexeraGraph().getLinkWithID(linkID);
+    const layer = this.getJointGraphWrapper().getCellLayer(linkID);
     const command: Command = {
       execute: () => this.deleteLinkWithIDInternal(linkID),
-      undo: () => this.addLinkInternal(link)
+      undo: () => {
+        this.addLinkInternal(link);
+        const group = this.getOperatorGroup().getGroupByLink(linkID);
+        if (group && group.collapsed) {
+          const linkInfo = group.links.get(linkID);
+          if (linkInfo) { linkInfo.layer = layer; }
+        } else {
+          this.getJointGraphWrapper().setCellLayer(linkID, layer);
+        }
+      }
     };
     this.executeAndStoreCommand(command);
   }
@@ -622,7 +632,7 @@ export class WorkflowActionService {
     }
 
     // delete the group from joint graph, and free up embedded operators & links
-    const groupJointElement = this.jointGraph.getCell(group.groupID);
+    const groupJointElement = this.jointGraph.getCell(groupID);
     group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
     group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
     groupJointElement.remove();

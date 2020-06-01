@@ -31,7 +31,7 @@ export class SyncOperatorGroup {
       .map(operator => operator.deletedOperator)
       .subscribe(deletedOperator => {
         const group = this.operatorGroup.getGroupByOperator(deletedOperator.operatorID);
-        if (group && !group.collapsed) {
+        if (group && !group.collapsed && group.operators.size > 1) {
           group.operators.delete(deletedOperator.operatorID);
           this.operatorGroup.repositionGroup(group);
         } else if (group) {
