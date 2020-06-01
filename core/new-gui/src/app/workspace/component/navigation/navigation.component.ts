@@ -244,6 +244,24 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
+   * Ungroups highlighted groups on the graph.
+   */
+  public onClickUngroupOperators(): void {
+    const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
+    if (this.highlightedElementsUngroupable()) {
+      this.workflowActionService.deleteGroups(highlightedGroups);
+    }
+  }
+
+  /**
+   * Returns true if currently highlighted elements are all groups.
+   */
+  public highlightedElementsUngroupable(): boolean {
+    return this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs().length > 0 &&
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().length === 0;
+  }
+
+  /**
    * Handler for the execution result to extract successful execution ID
    */
   private handleResultData(response: ExecutionResult): void {

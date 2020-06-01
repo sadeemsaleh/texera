@@ -27,8 +27,8 @@
 
     <i class="navbar-brand fa fa-object-group" [ngClass]="{'utility-button-disabled': !highlightedElementsGroupable(),
       'utility-button': highlightedElementsGroupable()}" (click)="onClickGroupOperators()" title="group"></i>
-    <i class="navbar-brand fa fa-object-ungroup" [ngClass]="{'utility-button-disabled': !highlightedElementsGroupable(),
-      'utility-button': highlightedElementsGroupable()}" (click)="onClickGroupOperators()" title="ungroup"></i>
+    <i class="navbar-brand fa fa-object-ungroup" [ngClass]="{'utility-button-disabled': !highlightedElementsUngroupable(),
+      'utility-button': highlightedElementsUngroupable()}" (click)="onClickUngroupOperators()" title="ungroup"></i>
 
   </div>
   <div class="collapse navbar-collapse texera-navigation-execute">
