@@ -741,7 +741,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   /**
-   * Deletes the currently highlighted operators when user presses the delete key.
+   * Deletes currently highlighted operators and groups when user presses the delete key.
    */
   private handleOperatorDelete(): void {
     Observable.fromEvent<KeyboardEvent>(document, 'keydown')
@@ -749,7 +749,9 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .filter(event => event.key === 'Backspace' || event.key === 'Delete')
       .subscribe(() => {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+        const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
         this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, []);
+        this.workflowActionService.deleteGroupsAndOperators(highlightedGroupIDs);
       });
   }
 

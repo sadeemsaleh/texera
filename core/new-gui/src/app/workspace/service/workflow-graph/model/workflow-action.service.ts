@@ -542,6 +542,30 @@ export class WorkflowActionService {
     this.executeAndStoreCommand(command);
   }
 
+  /**
+   * Deletes the given group and all operators embedded in it.
+   * @param groupID
+   */
+  public deleteGroupAndOperators(groupID: string): void {
+    const command: Command = {
+      execute: () => this.deleteGroupAndOperatorsInternal(groupID),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Deletes given groups and all operators embedded in them.
+   * @param groupID
+   */
+  public deleteGroupsAndOperators(groupIDs: string[]): void {
+    const command: Command = {
+      execute: () => groupIDs.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID)),
+      undo: () => {}
+    };
+    this.executeAndStoreCommand(command);
+  }
+
   // problem here
   public setOperatorProperty(operatorID: string, newProperty: object): void {
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
@@ -717,6 +741,18 @@ export class WorkflowActionService {
 
     // update the group in OperatorGroup
     this.operatorGroup.expandGroup(groupID);
+  }
+
+  private deleteGroupAndOperatorsInternal(groupID: string): void {
+    const group = this.operatorGroup.getGroup(groupID);
+    // delete operators and links from the group
+    group.links.forEach((linkInfo, linkID) => this.deleteLinkWithIDInternal(linkID));
+    group.inLinks.forEach(linkID => this.deleteLinkWithIDInternal(linkID));
+    group.outLinks.forEach(linkID => this.deleteLinkWithIDInternal(linkID));
+    group.operators.forEach((operatorInfo, operatorID) => this.deleteOperatorInternal(operatorID));
+    // delete the group from joint graph and group ID map
+    this.jointGraph.getCell(groupID).remove();
+    this.operatorGroup.deleteGroup(groupID);
   }
 
   // use this to modify properties
