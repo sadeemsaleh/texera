@@ -427,8 +427,7 @@ export class WorkflowActionService {
   }
 
   /**
-   * Adds a group to the workflow graph, and embeds operators
-   * and links inside the group. All cells related to the group
+   * Adds a group to the workflow graph. All cells related to the group
    * (including the group itself) will be moved to the front.
    *
    * @param group
@@ -462,8 +461,8 @@ export class WorkflowActionService {
   }
 
   /**
-   * Deletes a group from the workflow graph, and free up
-   * its embedded operators and links.
+   * Deletes a group from the workflow graph.
+   * Throws an error if the group ID doesn't exist in group ID map.
    *
    * @param group
    */
@@ -685,10 +684,8 @@ export class WorkflowActionService {
     this.operatorGroup.assertGroupNotExists(group.groupID);
     this.operatorGroup.assertGroupIsValid(group);
 
-    // add the group to joint graph, and embed operators & links in the group
+    // get the JointJS UI element for the group and add it to joint graph
     const groupJointElement = this.jointUIService.getJointGroupElement(group, this.operatorGroup.getGroupBoundingBox(group));
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.embed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.embed(this.jointGraph.getCell(linkID)));
     this.jointGraph.addCell(groupJointElement);
 
     // add the group to group ID map
@@ -709,10 +706,8 @@ export class WorkflowActionService {
       this.expandGroupInternal(groupID);
     }
 
-    // delete the group from joint graph, and free up embedded operators & links
+    // delete the group from joint graph
     const groupJointElement = this.jointGraph.getCell(groupID);
-    group.operators.forEach((operatorInfo, operatorID) => groupJointElement.unembed(this.jointGraph.getCell(operatorID)));
-    group.links.forEach((linkInfo, linkID) => groupJointElement.unembed(this.jointGraph.getCell(linkID)));
     groupJointElement.remove();
 
     // delete the group from group ID map

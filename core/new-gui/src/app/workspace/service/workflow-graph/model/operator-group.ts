@@ -47,7 +47,9 @@ export type OperatorGroupReadonly = Omit<OperatorGroup, restrictedMethods>;
 export class OperatorGroup {
 
   private groupIDMap = new Map<string, Group>();
+
   private syncTexeraGraph = true;
+  private syncOperatorGroup = true;
 
   private readonly groupAddStream = new Subject<Group>();
   private readonly groupDeleteStream = new Subject<Group>();
@@ -130,8 +132,9 @@ export class OperatorGroup {
   /**
    * Adds the operator and links connected to it to the group.
    *
-   * Embeds the operator in the group if the group is not collapsed,
-   * hides the operator on JointJS graph otherwise.
+   * Hides the operator and its status tooltip from the JointJS graph
+   * if the group is collapsed, otherwise repositions the group to fit
+   * the newly added operator.
    *
    * Throws an error if the operator is already in a group.
    *
@@ -176,10 +179,12 @@ export class OperatorGroup {
 
     if (group.collapsed) {
       this.setSyncTexeraGraph(false);
+      if (environment.executionStatusEnabled) {
+        this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
+      }
       this.jointGraph.getCell(operatorID).remove();
       this.setSyncTexeraGraph(true);
     } else {
-      this.jointGraph.getCell(groupID).embed(this.jointGraph.getCell(operatorID));
       this.repositionGroup(group);
     }
   }
@@ -187,11 +192,9 @@ export class OperatorGroup {
   /**
    * Adds the link to the group as a 'link' of the group.
    *
-   * Embeds the link in the group if the group is not collapsed,
-   * hides the link on JointJS graph otherwise.
-   *
-   * If the link is already hidden on the JointJS graph, just add it to
-   * the group ID map and set it to the highest layer.
+   * Hides the link from the JointJS graph if the group is collapsed.
+   * If the link is already hidden, just add it to the group ID map
+   * and set it to the highest layer.
    *
    * Throws an error if the link is already in a group, or if its
    * source and target operators are not both in the group.
@@ -224,8 +227,6 @@ export class OperatorGroup {
         this.setSyncTexeraGraph(false);
         this.jointGraph.getCell(linkID).remove();
         this.setSyncTexeraGraph(true);
-      } else {
-        this.jointGraph.getCell(groupID).embed(this.jointGraph.getCell(linkID));
       }
     } else {
       group.links.set(linkID, {link, layer: this.getHighestLayer() + 1});
@@ -409,6 +410,22 @@ export class OperatorGroup {
    */
   public setSyncTexeraGraph(syncTexeraGraph: boolean): void {
     this.syncTexeraGraph = syncTexeraGraph;
+  }
+
+  /**
+   * Returns the boolean value that indicates whether
+   * or not sync JointJS changes to group ID map.
+   */
+  public getSyncOperatorGroup(): boolean {
+    return this.syncOperatorGroup;
+  }
+
+  /**
+   * Sets the boolean value that indicates whether
+   * or not sync JointJS changes to group ID map.
+   */
+  public setSyncOperatorGroup(syncOperatorGroup: boolean): void {
+    this.syncOperatorGroup = syncOperatorGroup;
   }
 
   /**
@@ -739,6 +756,31 @@ export class OperatorGroup {
   }
 
   /**
+   * Repositions and resizes the given group to fit its embedded operators.
+   * @param group
+   */
+  public repositionGroup(group: Group): void {
+    const {topLeft, bottomRight} = this.getGroupBoundingBox(group);
+
+    // calculate group's new position
+    const originalPosition = this.jointGraphWrapper.getElementPosition(group.groupID);
+    const offsetX = topLeft.x - JointUIService.DEFAULT_GROUP_MARGIN - originalPosition.x;
+    const offsetY = topLeft.y - JointUIService.DEFAULT_GROUP_MARGIN - originalPosition.y;
+
+    // calculate group's new height & width
+    const width = bottomRight.x - topLeft.x + JointUIService.DEFAULT_OPERATOR_WIDTH + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
+    const height = bottomRight.y - topLeft.y + JointUIService.DEFAULT_OPERATOR_HEIGHT + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
+
+    // reposition and resize the group according to new position and size
+    this.setSyncOperatorGroup(false);
+    this.jointGraphWrapper.setElementPosition(group.groupID, offsetX, offsetY);
+    this.setSyncOperatorGroup(true);
+    this.jointGraphWrapper.setElementSize(group.groupID, width, height);
+
+    this.groupResizeStream.next({groupID: group.groupID, height: height, width: width});
+  }
+
+  /**
    * Hides operators and links embedded in the given group.
    * in-links and out-links will be reconnected to the group element.
    *
@@ -784,21 +826,17 @@ export class OperatorGroup {
   public showOperatorsAndLinks(group: Group): void {
     this.setSyncTexeraGraph(false);
 
-    const groupJointElement = this.jointGraph.getCell(group.groupID);
-
     group.operators.forEach((operatorInfo, operatorID) => {
       const operatorJointElement = this.jointUIService.getJointOperatorElement(operatorInfo.operator, operatorInfo.position);
       this.jointGraph.addCell(operatorJointElement);
       this.jointGraphWrapper.setCellLayer(operatorID, operatorInfo.layer);
       this.addOperatorTooltip(operatorInfo.operator, operatorInfo.position, operatorInfo.layer + 1);
-      groupJointElement.embed(operatorJointElement);
     });
 
     group.links.forEach((linkInfo, linkID) => {
       const jointLinkCell = JointUIService.getJointLinkCell(linkInfo.link);
       this.jointGraph.addCell(jointLinkCell);
       this.jointGraphWrapper.setCellLayer(linkID, linkInfo.layer);
-      groupJointElement.embed(jointLinkCell);
     });
 
     group.inLinks.forEach(linkID => {
@@ -814,39 +852,6 @@ export class OperatorGroup {
     });
 
     this.setSyncTexeraGraph(true);
-  }
-
-  /**
-   * Repositions and resizes the given group to fit its embedded operators.
-   * @param group
-   */
-  public repositionGroup(group: Group): void {
-    const {topLeft, bottomRight} = this.getGroupBoundingBox(group);
-
-    // calculates group's new position
-    const originalPosition = this.jointGraphWrapper.getElementPosition(group.groupID);
-    const offsetX = topLeft.x - JointUIService.DEFAULT_GROUP_MARGIN - originalPosition.x;
-    const offsetY = topLeft.y - JointUIService.DEFAULT_GROUP_MARGIN - originalPosition.y;
-
-    // calculates group's new height & width
-    const width = bottomRight.x - topLeft.x + JointUIService.DEFAULT_OPERATOR_WIDTH + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
-    const height = bottomRight.y - topLeft.y + JointUIService.DEFAULT_OPERATOR_HEIGHT + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
-
-    // reposition the group according to the new position
-    this.jointGraphWrapper.setListenPositionChange(false);
-    this.jointGraphWrapper.setElementPosition(group.groupID, offsetX, offsetY);
-
-    // reposition embedded operators to offset the side effect of embedding
-    if (!group.collapsed) {
-      group.operators.forEach((operatorInfo, operatorID) => {
-        this.jointGraphWrapper.setElementPosition(operatorID, -offsetX, -offsetY);
-      });
-    }
-    this.jointGraphWrapper.setListenPositionChange(true);
-
-    // resize the group according to the new size
-    this.jointGraphWrapper.setElementSize(group.groupID, width, height);
-    this.groupResizeStream.next({groupID: group.groupID, height: height, width: width});
   }
 
   /**

@@ -87,7 +87,7 @@ export class SyncOperatorGroup {
    */
   private handleOperatorPositionChange(): void {
     this.jointGraphWrapper.getElementPositionChangeEvent()
-      .filter(() => this.jointGraphWrapper.getListenPositionChange())
+      .filter(() => this.operatorGroup.getSyncOperatorGroup())
       .filter(movedElement => this.texeraGraph.hasOperator(movedElement.elementID))
       .subscribe(movedOperator => {
         this.operatorGroup.getAllGroups().forEach(group => {
@@ -102,21 +102,27 @@ export class SyncOperatorGroup {
 
   /**
    * Handles group position change events.
-   * If the group is collapsed when it's moved, update its embedded operators'
-   * position according to the relative offset, so that operators are in the
-   * right position when the moved group is expanded.
+   * When a group is moved, update its embedded operators' position according
+   * to the relative offset. If the group is not collapsed, move embedded
+   * operators together with the group.
    */
   private handleGroupPositionChange(): void {
     this.jointGraphWrapper.getElementPositionChangeEvent()
+      .filter(() => this.operatorGroup.getSyncOperatorGroup())
       .filter(movedElement => this.operatorGroup.hasGroup(movedElement.elementID))
       .subscribe(movedGroup => {
         const group = this.operatorGroup.getGroup(movedGroup.elementID);
-        if (group.collapsed) {
-          const offsetX = movedGroup.newPosition.x - movedGroup.oldPosition.x;
-          const offsetY = movedGroup.newPosition.y - movedGroup.oldPosition.y;
-          group.operators.forEach(operatorInfo => {
-            operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY};
-          });
+        const offsetX = movedGroup.newPosition.x - movedGroup.oldPosition.x;
+        const offsetY = movedGroup.newPosition.y - movedGroup.oldPosition.y;
+        group.operators.forEach(operatorInfo =>
+          operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY});
+        if (!group.collapsed) {
+          this.operatorGroup.setSyncOperatorGroup(false);
+          this.jointGraphWrapper.setListenPositionChange(false);
+          group.operators.forEach((operatorInfo, operatorID) =>
+            this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY));
+          this.operatorGroup.setSyncOperatorGroup(true);
+          this.jointGraphWrapper.setListenPositionChange(true);
         }
       });
   }
