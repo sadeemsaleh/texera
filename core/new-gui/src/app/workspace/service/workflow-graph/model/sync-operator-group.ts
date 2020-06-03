@@ -114,16 +114,16 @@ export class SyncOperatorGroup {
         const group = this.operatorGroup.getGroup(movedGroup.elementID);
         const offsetX = movedGroup.newPosition.x - movedGroup.oldPosition.x;
         const offsetY = movedGroup.newPosition.y - movedGroup.oldPosition.y;
-        group.operators.forEach(operatorInfo =>
-          operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY});
-        if (!group.collapsed) {
-          this.operatorGroup.setSyncOperatorGroup(false);
-          this.jointGraphWrapper.setListenPositionChange(false);
-          group.operators.forEach((operatorInfo, operatorID) =>
-            this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY));
-          this.operatorGroup.setSyncOperatorGroup(true);
-          this.jointGraphWrapper.setListenPositionChange(true);
-        }
+        group.operators.forEach((operatorInfo, operatorID) => {
+          operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY};
+          if (!group.collapsed) {
+            this.operatorGroup.setSyncOperatorGroup(false);
+            this.jointGraphWrapper.setListenPositionChange(false);
+            this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY);
+            this.operatorGroup.setSyncOperatorGroup(true);
+            this.jointGraphWrapper.setListenPositionChange(true);
+          }
+        });
       });
   }
 
