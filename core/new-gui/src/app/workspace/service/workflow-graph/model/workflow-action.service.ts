@@ -26,9 +26,16 @@ export interface Command {
 // At least for some of them, have to do a bit more thinking.
 
 export type commandFuncs = 'addOperator' | 'deleteOperator' | 'addOperatorsAndLinks' | 'deleteOperatorsAndLinks'
-| 'setOperatorProperty' | 'changeOperatorPosition' | 'setOperatorAdvanceStatus' | 'addLink';
+| 'setOperatorProperty' | 'changeOperatorPosition' | 'setOperatorAdvanceStatus' | 'addLink' | 'deleteLink'
+| 'deleteLinkWithID';
 
 type ValueOf<T> = T[keyof T];
+
+// Pick<WorkflowActionService, commandFuncs>: from WorkflowActionService, pick a set of properties whose keys
+// are in commandFuncs. commandFuncs are names of functions, so this pick will only allow existing func names.
+// So when we make CommandMessage, the function will get inferred from action. Then, it'll require that
+// parameters are the parameters for WorkflowActionService[P], or that function.
+
 export type CommandMessage = ValueOf<{
   [P in keyof Pick<WorkflowActionService, commandFuncs>]:
   {
@@ -63,7 +70,6 @@ type OperatorPosition = {
 export class WorkflowActionService {
 
   public functionMap: {[key: string]: Function} = {};
-
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
@@ -130,7 +136,7 @@ export class WorkflowActionService {
             this.changeOperatorPositionInternal(currentHighlighted, offsetX, offsetY);
           }
         };
-
+        // Send command message here since this is where change first gets detected
         const commandMessage: CommandMessage = {'action': 'changeOperatorPosition',
           'parameters': [currentHighlighted, offsetX, offsetY], 'type': 'execute'};
         this.sendCommand(JSON.stringify(commandMessage));
@@ -351,6 +357,8 @@ export class WorkflowActionService {
       execute: () => this.deleteLinkWithIDInternal(linkID),
       undo: () => this.addLinkInternal(link)
     };
+    const commandMessage: CommandMessage = {'action': 'deleteLinkWithID', 'parameters': [linkID], 'type': 'execute'};
+    this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
   }
 
@@ -373,8 +381,6 @@ export class WorkflowActionService {
         this.setOperatorPropertyInternal(operatorID, prevProperty);
       }
     };
-
-
     const commandMessage: CommandMessage = {'action': 'setOperatorProperty', 'parameters': [operatorID, newProperty], 'type': 'execute'};
     this.sendCommand(JSON.stringify(commandMessage));
     this.executeAndStoreCommand(command);
@@ -391,7 +397,6 @@ export class WorkflowActionService {
         this.setOperatorAdvanceStatusInternal(operatorID, !newShowAdvancedStatus);
       }
     };
-
     const commandMessage: CommandMessage = {'action': 'setOperatorAdvanceStatus',
       'parameters': [operatorID, newShowAdvancedStatus], 'type': 'execute'};
     this.sendCommand(JSON.stringify(commandMessage));
@@ -407,7 +412,6 @@ export class WorkflowActionService {
         this.changeOperatorPositionInternal(currentHighlighted, -offsetX, -offsetY);
       }
     };
-
     this.executeAndStoreCommand(command);
   }
 
