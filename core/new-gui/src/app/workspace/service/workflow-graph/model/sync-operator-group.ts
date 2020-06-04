@@ -117,11 +117,12 @@ export class SyncOperatorGroup {
         group.operators.forEach((operatorInfo, operatorID) => {
           operatorInfo.position = {x: operatorInfo.position.x + offsetX, y: operatorInfo.position.y + offsetY};
           if (!group.collapsed) {
+            const listenPositionChange = this.jointGraphWrapper.getListenPositionChange();
             this.operatorGroup.setSyncOperatorGroup(false);
             this.jointGraphWrapper.setListenPositionChange(false);
             this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY);
             this.operatorGroup.setSyncOperatorGroup(true);
-            this.jointGraphWrapper.setListenPositionChange(true);
+            this.jointGraphWrapper.setListenPositionChange(listenPositionChange);
           }
         });
       });

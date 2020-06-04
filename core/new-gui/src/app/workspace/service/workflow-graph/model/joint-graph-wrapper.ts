@@ -1,7 +1,6 @@
 import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { Point } from '../../../types/workflow-common.interface';
-import { UndoRedoService } from './../../undo-redo/undo-redo.service';
 
 type JointModelEventInfo = {
   add: boolean,
@@ -129,7 +128,7 @@ export class JointGraphWrapper {
     .map(value => value[0]);
 
 
-  constructor(private jointGraph: joint.dia.Graph, private undoRedoService: UndoRedoService) {
+  constructor(private jointGraph: joint.dia.Graph) {
     // handle if the currently highlighted operator/group is deleted, it should be unhighlighted
     this.handleElementDeleteUnhighlight();
 
@@ -140,10 +139,6 @@ export class JointGraphWrapper {
 
     this.jointCellDeleteStream.filter(cell => cell.isElement()).subscribe(element =>
       this.elementPositions.delete(element.id.toString()));
-
-    // handle if the currently highlighted operator's position is changed,
-    // other highlighted operators should move with it.
-    this.handleHighlightedOperatorPositionChange();
   }
 
 
@@ -672,30 +667,6 @@ export class JointGraphWrapper {
         this.unhighlightGroup(deletedElementID);
       }
     });
-  }
-
-  /**
-   * Subscribes to operator position change event stream,
-   *  checks if the operator is moved by user and if the moved operator is currently highlighted,
-   *  if it is, move other highlighted operators along with it.
-   */
-  private handleHighlightedOperatorPositionChange(): void {
-    // TO-DO: incorporate group position change in multi-select
-    this.getElementPositionChangeEvent()
-      .filter(() => this.listenPositionChange)
-      .filter(() => this.undoRedoService.listenJointCommand)
-      .filter(movedOperator => this.currentHighlightedOperators.includes(movedOperator.elementID))
-      .subscribe(movedOperator => {
-        const offsetX = movedOperator.newPosition.x - movedOperator.oldPosition.x;
-        const offsetY = movedOperator.newPosition.y - movedOperator.oldPosition.y;
-        this.setListenPositionChange(false);
-        this.undoRedoService.setListenJointCommand(false);
-        this.currentHighlightedOperators
-          .filter(operatorID => operatorID !== movedOperator.elementID)
-          .forEach(operatorID => this.setElementPosition(operatorID, offsetX, offsetY));
-        this.setListenPositionChange(true);
-        this.undoRedoService.setListenJointCommand(true);
-      });
   }
 
 }

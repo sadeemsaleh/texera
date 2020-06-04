@@ -771,12 +771,16 @@ export class OperatorGroup {
     const width = bottomRight.x - topLeft.x + JointUIService.DEFAULT_OPERATOR_WIDTH + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
     const height = bottomRight.y - topLeft.y + JointUIService.DEFAULT_OPERATOR_HEIGHT + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
 
-    // reposition and resize the group according to new position and size
+    // reposition the group according to the new position
+    const listenPositionChange = this.jointGraphWrapper.getListenPositionChange();
     this.setSyncOperatorGroup(false);
+    this.jointGraphWrapper.setListenPositionChange(false);
     this.jointGraphWrapper.setElementPosition(group.groupID, offsetX, offsetY);
     this.setSyncOperatorGroup(true);
-    this.jointGraphWrapper.setElementSize(group.groupID, width, height);
+    this.jointGraphWrapper.setListenPositionChange(listenPositionChange);
 
+    // resize the group according to the new size
+    this.jointGraphWrapper.setElementSize(group.groupID, width, height);
     this.groupResizeStream.next({groupID: group.groupID, height: height, width: width});
   }
 

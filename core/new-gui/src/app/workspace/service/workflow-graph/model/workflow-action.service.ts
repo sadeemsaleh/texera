@@ -64,7 +64,7 @@ export class WorkflowActionService {
   ) {
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
-    this.jointGraphWrapper = new JointGraphWrapper(this.jointGraph, this.undoRedoService);
+    this.jointGraphWrapper = new JointGraphWrapper(this.jointGraph);
     this.operatorGroup = new OperatorGroup(this.texeraGraph, this.jointGraph, this.jointGraphWrapper,
       this.workflowUtilService, this.jointUIService);
     this.syncTexeraModel = new SyncTexeraModel(this.texeraGraph, this.jointGraphWrapper, this.operatorGroup);
@@ -72,6 +72,7 @@ export class WorkflowActionService {
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
+    this.handleHighlightedElementPositionChange();
   }
 
   public handleJointLinkAdd(): void {
@@ -126,6 +127,44 @@ export class WorkflowActionService {
           }
         };
         this.executeAndStoreCommand(command);
+      });
+  }
+
+  /**
+   * Subscribes to element position change event stream (which listens to operator and group position change)
+   *  checks if the operator/group is moved by user and if the moved operator/group is currently highlighted,
+   *  if it is, move other highlighted operators and groups along with it.
+   *
+   * If an operator and its group are both highlighted, it is considered that the whole group is highlighted,
+   *  no matter whether remaining operators in the group are highlighted or not.
+   */
+  public handleHighlightedElementPositionChange(): void {
+    this.jointGraphWrapper.getElementPositionChangeEvent()
+      .filter(() => this.jointGraphWrapper.getListenPositionChange())
+      .filter(() => this.undoRedoService.listenJointCommand)
+      .filter(movedElement => this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().includes(movedElement.elementID) ||
+        this.jointGraphWrapper.getCurrentHighlightedGroupIDs().includes(movedElement.elementID))
+      .subscribe(movedElement => {
+        const selectedElements = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+        const movedGroup = this.operatorGroup.getGroupByOperator(movedElement.elementID);
+        if (movedGroup && selectedElements.includes(movedGroup.groupID)) {
+          movedGroup.operators.forEach((operatorInfo, operatorID) => selectedElements.push(operatorID));
+          selectedElements.splice(selectedElements.indexOf(movedGroup.groupID), 1);
+        }
+        this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().forEach(operatorID => {
+          const group = this.operatorGroup.getGroupByOperator(operatorID);
+          if (!group || !this.jointGraphWrapper.getCurrentHighlightedGroupIDs().includes(group.groupID)) {
+            selectedElements.push(operatorID);
+          }
+        });
+        const offsetX = movedElement.newPosition.x - movedElement.oldPosition.x;
+        const offsetY = movedElement.newPosition.y - movedElement.oldPosition.y;
+        this.jointGraphWrapper.setListenPositionChange(false);
+        this.undoRedoService.setListenJointCommand(false);
+        selectedElements.filter(elementID => elementID !== movedElement.elementID).forEach(elementID =>
+          this.jointGraphWrapper.setElementPosition(elementID, offsetX, offsetY));
+        this.jointGraphWrapper.setListenPositionChange(true);
+        this.undoRedoService.setListenJointCommand(true);
       });
   }
 
