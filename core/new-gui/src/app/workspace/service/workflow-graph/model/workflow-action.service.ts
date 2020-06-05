@@ -29,6 +29,13 @@ export type commandFuncs = 'addOperator' | 'deleteOperator' | 'addOperatorsAndLi
 | 'setOperatorProperty' | 'changeOperatorPosition' | 'setOperatorAdvanceStatus' | 'addLink' | 'deleteLink'
 | 'deleteLinkWithID';
 
+// keyof yields permitted property names for T. When we pass function, it'll return value of that function?
+// For this type, we index T with the property names for T, which results in us getting the values.
+/**
+ * type Foo = { a: string, b: number };
+ * type ValueOfFoo = ValueOf<Foo>; // string | number
+ * ValueOf<Foo> = Foo[a | b] = string | number
+ */
 type ValueOf<T> = T[keyof T];
 
 // Pick<WorkflowActionService, commandFuncs>: from WorkflowActionService, pick a set of properties whose keys
@@ -36,6 +43,8 @@ type ValueOf<T> = T[keyof T];
 // So when we make CommandMessage, the function will get inferred from action. Then, it'll require that
 // parameters are the parameters for WorkflowActionService[P], or that function.
 
+// P in keyof Pick: P will be one of the properties that exists in there(set of properties from service).
+// If we have a name in commandFuncs that doesn't match a property in service, we get error. P picks one of them
 export type CommandMessage = ValueOf<{
   [P in keyof Pick<WorkflowActionService, commandFuncs>]:
   {
@@ -103,6 +112,8 @@ export class WorkflowActionService {
         undo: () => this.deleteLinkWithIDInternal(link.linkID),
         redo: () => this.addLinkInternal(link)
       };
+      const commandMessage: CommandMessage = {'action': 'addLink', 'parameters': [link], 'type': 'execute'};
+      this.sendCommand(JSON.stringify(commandMessage));
       this.executeAndStoreCommand(command);
     });
   }
@@ -242,7 +253,6 @@ export class WorkflowActionService {
 
     const commandMessage: CommandMessage = {'action': 'deleteOperator', 'parameters': [operatorID], 'type': 'execute'};
     this.sendCommand(JSON.stringify(commandMessage));
-
     this.executeAndStoreCommand(command);
   }
 
