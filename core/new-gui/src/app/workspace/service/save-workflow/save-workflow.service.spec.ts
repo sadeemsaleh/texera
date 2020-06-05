@@ -6,6 +6,7 @@ import { WorkflowActionService } from '../workflow-graph/model/workflow-action.s
 import { UndoRedoService } from './../../service/undo-redo/undo-redo.service';
 import { marbles } from '../../../../../node_modules/rxjs-marbles';
 import { OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
+import { PlainGroup } from './save-workflow.service';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
 import { HttpClient } from '@angular/common/http';
 import { JointUIService } from '../joint-ui/joint-ui.service';
@@ -184,9 +185,10 @@ describe('SaveWorkflowService', () => {
     const operators: OperatorPredicate[] = [];
     operators.push(mockScanPredicate);
     const links: OperatorLink[] = [];
+    const groups: PlainGroup[] = [];
 
     const mockWorkflow: SavedWorkflow = {
-      operators, operatorPositions, links
+      operators, operatorPositions, links, groups
     };
 
     localStorage.setItem('workflow', JSON.stringify(mockWorkflow));

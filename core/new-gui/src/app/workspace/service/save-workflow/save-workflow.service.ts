@@ -23,7 +23,7 @@ export interface SavedWorkflow {
   groups: PlainGroup[];
 }
 
-interface PlainGroup {
+export interface PlainGroup {
   groupID: string;
   operators: Record<string, OperatorInfo>;
   links: Record<string, LinkInfo>;
