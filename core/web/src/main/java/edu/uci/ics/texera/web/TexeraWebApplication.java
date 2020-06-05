@@ -5,14 +5,21 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.github.dirkraft.dropwizard.fileassets.FileAssetsBundle;
 import org.eclipse.jetty.websocket.jsr356.server.BasicServerEndpointConfig;
 
+import edu.uci.ics.texera.api.constants.DataConstants;
+import edu.uci.ics.texera.api.utils.Utils;
 import edu.uci.ics.texera.perftest.sample.SampleExtraction;
 import edu.uci.ics.texera.perftest.twitter.TwitterSample;
 import edu.uci.ics.texera.web.healthcheck.SampleHealthCheck;
 import edu.uci.ics.texera.web.resource.CollaborationResource;
 import edu.uci.ics.texera.web.resource.*;
 import io.dropwizard.Application;
+import io.dropwizard.bundles.redirect.RedirectBundle;
+import io.dropwizard.bundles.redirect.UriRedirect;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import io.dropwizard.websockets.WebsocketBundle;
 
@@ -37,7 +44,12 @@ public class TexeraWebApplication extends Application<TexeraWebConfiguration> {
     public void run(TexeraWebConfiguration texeraWebConfiguration, Environment environment) throws Exception {
         // serve backend at /api
         environment.jersey().setUrlPattern("/api/*");
-        
+
+        // redirect all 404 to index page, according to Angular routing requirements
+        ErrorPageErrorHandler eph = new ErrorPageErrorHandler();
+        eph.addErrorPage(404, "/");
+        environment.getApplicationContext().setErrorHandler(eph);
+
         final QueryPlanResource newQueryPlanResource = new QueryPlanResource();
         environment.jersey().register(newQueryPlanResource);
 
@@ -58,7 +70,15 @@ public class TexeraWebApplication extends Application<TexeraWebConfiguration> {
         final SystemResource systemResource = new SystemResource();
         // Registers the systemResource with Jersey
         environment.jersey().register(systemResource);
-
+        
+        environment.jersey().register(SessionHandler.class);
+        environment.servlets().setSessionHandler(new SessionHandler());
+        final UserResource userResource = new UserResource();
+        environment.jersey().register(userResource);
+        
+        final UserFileResource userFileResource = new UserFileResource();
+        environment.jersey().register(userFileResource);
+        
         final UserDictionaryResource userDictionaryResource = new UserDictionaryResource();
         environment.jersey().register(userDictionaryResource);
 
@@ -78,6 +98,11 @@ public class TexeraWebApplication extends Application<TexeraWebConfiguration> {
         System.out.println("Writing twitter index");
         TwitterSample.writeTwitterIndex();
         System.out.println("Finished writing twitter index");
-        new TexeraWebApplication().run(args);
+
+        String server = args.length > 1 ? args[0] : "server";
+        String config = args.length > 2 ? args[1] :
+                Utils.getTexeraHomePath().resolve("conf").resolve("web-config.yml").toString();
+
+        new TexeraWebApplication().run(server, config);
     }
 }
