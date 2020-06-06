@@ -131,12 +131,14 @@ export class WorkflowActionService {
   }
 
   /**
-   * Subscribes to element position change event stream (which listens to operator and group position change)
-   *  checks if the operator/group is moved by user and if the moved operator/group is currently highlighted,
-   *  if it is, move other highlighted operators and groups along with it.
+   * Subscribes to element position change event stream,
+   *  checks if the element (operator or group) is moved by user and
+   *  if the moved element is currently highlighted,
+   *  if it is, moves other highlighted elements (operators and groups) along with it.
    *
-   * If an operator and its group are both highlighted, it is considered that the whole group is highlighted,
-   *  no matter whether remaining operators in the group are highlighted or not.
+   * If a group is highlighted, we consider the whole group as highlighted, including all the
+   *  operators embedded in the group and regardless of whether or not they're actually highlighted.
+   *  Thus, when a highlighted group moves, all its embedded operators move along with it.
    */
   public handleHighlightedElementPositionChange(): void {
     this.jointGraphWrapper.getElementPositionChangeEvent()
