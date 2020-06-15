@@ -100,7 +100,7 @@ export class OperatorGroup {
     const group = this.getGroup(groupID);
     this.assertGroupNotCollapsed(group);
     this.setGroupCollapsed(groupID, true);
-    this.groupCollapseStream.next(group);
+    this.groupCollapseStream.next(this.getGroup(groupID));
   }
 
   /**
@@ -113,7 +113,7 @@ export class OperatorGroup {
     const group = this.getGroup(groupID);
     this.assertGroupIsCollapsed(group);
     this.setGroupCollapsed(groupID, false);
-    this.groupExpandStream.next(group);
+    this.groupExpandStream.next(this.getGroup(groupID));
   }
 
   /**
@@ -125,8 +125,7 @@ export class OperatorGroup {
    */
   public setGroupCollapsed(groupID: string, collapsed: boolean): void {
     const group = this.getGroup(groupID);
-    this.groupIDMap.set(groupID, {groupID: groupID, operators: group.operators, links: group.links,
-      inLinks: group.inLinks, outLinks: group.outLinks, collapsed: collapsed});
+    this.groupIDMap.set(groupID, {...group, collapsed: collapsed});
   }
 
   /**

@@ -603,8 +603,11 @@ export class WorkflowEditorComponent implements AfterViewInit {
    */
   private handleOperatorValidation(): void {
     this.validationWorkflowService.getOperatorValidationStream()
-      .subscribe(value =>
-        this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.validation.isValid));
+      .subscribe(value => {
+        if (!this.workflowActionService.getOperatorGroup().getGroupByOperator(value.operatorID)?.collapsed) {
+          this.jointUIService.changeOperatorColor(this.getJointPaper(), value.operatorID, value.validation.isValid);
+        }
+      });
   }
 
   /**

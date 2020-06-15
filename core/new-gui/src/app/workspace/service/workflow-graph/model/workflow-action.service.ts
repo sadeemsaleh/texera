@@ -609,13 +609,30 @@ export class WorkflowActionService {
   // problem here
   public setOperatorProperty(operatorID: string, newProperty: object): void {
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
+    const group = this.getOperatorGroup().getGroupByOperator(operatorID);
     const command: Command = {
       execute: () => {
-        this.jointGraphWrapper.highlightOperator(operatorID);
+        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
+          this.jointGraphWrapper.setMultiSelectMode(false);
+          this.jointGraphWrapper.highlightOperator(operatorID);
+        } else if (!group || !group.collapsed) {
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        }
         this.setOperatorPropertyInternal(operatorID, newProperty);
       },
       undo: () => {
-        this.jointGraphWrapper.highlightOperator(operatorID);
+        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
+          this.jointGraphWrapper.setMultiSelectMode(false);
+          this.jointGraphWrapper.highlightOperator(operatorID);
+        } else if (!group || !group.collapsed) {
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        }
         this.setOperatorPropertyInternal(operatorID, prevProperty);
       }
     };
@@ -623,13 +640,30 @@ export class WorkflowActionService {
   }
 
   public setOperatorAdvanceStatus(operatorID: string, newShowAdvancedStatus: boolean) {
+    const group = this.getOperatorGroup().getGroupByOperator(operatorID);
     const command: Command = {
       execute: () => {
-        this.jointGraphWrapper.highlightOperator(operatorID);
+        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
+          this.jointGraphWrapper.setMultiSelectMode(false);
+          this.jointGraphWrapper.highlightOperator(operatorID);
+        } else if (!group || !group.collapsed) {
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        }
         this.setOperatorAdvanceStatusInternal(operatorID, newShowAdvancedStatus);
       },
       undo: () => {
-        this.jointGraphWrapper.highlightOperator(operatorID);
+        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
+          this.jointGraphWrapper.setMultiSelectMode(false);
+          this.jointGraphWrapper.highlightOperator(operatorID);
+        } else if (!group || !group.collapsed) {
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        }
         this.setOperatorAdvanceStatusInternal(operatorID, !newShowAdvancedStatus);
       }
     };
