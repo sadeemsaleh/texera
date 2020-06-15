@@ -104,6 +104,7 @@ class TexeraCustomGroupElement extends joint.shapes.devs.Model {
   markup =
     `<g class="element-node">
       <rect class="body"></rect>
+      <text>New Group</text>
       ${collapseButtonSVG}
       ${expandButtonSVG}
     </g>`;
@@ -133,7 +134,8 @@ export class JointUIService {
   public static readonly DEFAULT_TOOLTIP_WIDTH = 140;
   public static readonly DEFAULT_TOOLTIP_HEIGHT = 60;
 
-  public static readonly DEFAULT_GROUP_MARGIN = 40;
+  public static readonly DEFAULT_GROUP_MARGIN = 50;
+  public static readonly DEFAULT_GROUP_MARGIN_BOTTOM = 40;
 
   private operators: ReadonlyArray<OperatorSchema> = [];
 
@@ -248,7 +250,8 @@ export class JointUIService {
     const groupElementPosition = {x: topLeft.x - JointUIService.DEFAULT_GROUP_MARGIN,
       y: topLeft.y - JointUIService.DEFAULT_GROUP_MARGIN};
     const widthMargin = JointUIService.DEFAULT_OPERATOR_WIDTH + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
-    const heightMargin = JointUIService.DEFAULT_OPERATOR_HEIGHT + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
+    const heightMargin = JointUIService.DEFAULT_OPERATOR_HEIGHT + JointUIService.DEFAULT_GROUP_MARGIN +
+      JointUIService.DEFAULT_GROUP_MARGIN_BOTTOM;
 
     const groupElement = new TexeraCustomGroupElement({
       position: groupElementPosition,
@@ -557,6 +560,9 @@ export class JointUIService {
       'rect': {
         fill: '#F2F4F5', 'follow-scale': true, stroke: '#CED4D9', 'stroke-width': '2',
         rx: '5px', ry: '5px'
+      },
+      'text': {
+        fill: '#595959', 'font-size': '16px', 'ref-x': 15, 'ref-y': 20, ref: 'rect'
       },
       '.collapse-button': {
         x: width - 23, y: 6, cursor: 'pointer',

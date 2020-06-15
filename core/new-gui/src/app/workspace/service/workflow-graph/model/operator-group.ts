@@ -769,7 +769,8 @@ export class OperatorGroup {
 
     // calculate group's new height & width
     const width = bottomRight.x - topLeft.x + JointUIService.DEFAULT_OPERATOR_WIDTH + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
-    const height = bottomRight.y - topLeft.y + JointUIService.DEFAULT_OPERATOR_HEIGHT + 2 * JointUIService.DEFAULT_GROUP_MARGIN;
+    const height = bottomRight.y - topLeft.y + JointUIService.DEFAULT_OPERATOR_HEIGHT + JointUIService.DEFAULT_GROUP_MARGIN +
+      JointUIService.DEFAULT_GROUP_MARGIN_BOTTOM;
 
     // reposition the group according to the new position
     const listenPositionChange = this.jointGraphWrapper.getListenPositionChange();
