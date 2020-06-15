@@ -345,10 +345,8 @@ export class DragDropService {
    */
   private findClosestOperators(mouseCoordinate: Point, currentOperator: OperatorPredicate): [OperatorPredicate[], OperatorPredicate[]] {
     const operatorLinks = this.workflowActionService.getTexeraGraph().getAllLinks();
-    const operatorList = this.workflowActionService.getTexeraGraph().getAllOperators().filter(operator => {
-      const group = this.workflowActionService.getOperatorGroup().getGroupByOperator(operator.operatorID);
-      return !group || !group.collapsed;
-    });
+    const operatorList = this.workflowActionService.getTexeraGraph().getAllOperators().filter(operator =>
+      !this.workflowActionService.getOperatorGroup().getGroupByOperator(operator.operatorID)?.collapsed);
 
     const numInputOps: number = currentOperator.inputPorts.length;
     const numOutputOps: number = currentOperator.outputPorts.length;

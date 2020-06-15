@@ -751,7 +751,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   /**
-   * Highlight all operators on the graph when user presses command/ctrl + A.
+   * Highlight all operators and groups on the graph when user presses command/ctrl + A.
    */
   private handleOperatorSelectAll(): void {
     Observable.fromEvent<KeyboardEvent>(document, 'keydown')
@@ -759,11 +759,12 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .filter(event => (event.metaKey || event.ctrlKey) && event.key === 'a')
       .subscribe(event => {
         event.preventDefault();
-        const allOperators = this.workflowActionService.getTexeraGraph().getAllOperators();
-        this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(allOperators.length > 1);
-        allOperators.forEach(operator => {
-          this.workflowActionService.getJointGraphWrapper().highlightOperator(operator.operatorID);
-        });
+        const allOperators = this.workflowActionService.getTexeraGraph().getAllOperators().map(operator => operator.operatorID)
+          .filter(operatorID => !this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID)?.collapsed);
+        const allGroups = this.workflowActionService.getOperatorGroup().getAllGroups().map(group => group.groupID);
+        this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(allOperators.length + allGroups.length > 1);
+        this.workflowActionService.getJointGraphWrapper().highlightOperators(allOperators);
+        this.workflowActionService.getJointGraphWrapper().highlightGroups(allGroups);
       });
   }
 
