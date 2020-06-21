@@ -34,7 +34,6 @@ export class UndoRedoService {
   }
 
   public redoAction(): void {
-    console.log(this.getRedoLength());
     // need to figure out what to keep on the stack and off
     if (this.redoStack.length > 0) {
       // set clearRedo to false so when we redo an action, we keep the rest of the stack
