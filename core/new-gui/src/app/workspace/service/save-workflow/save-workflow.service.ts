@@ -99,11 +99,11 @@ export class SaveWorkflowService {
 
     this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
 
-    savedWorkflow.groups.map(group => {
+    this.workflowActionService.addGroups(savedWorkflow.groups.map(group => {
       return {groupID: group.groupID, operators: this.recordToMap(group.operators),
         links: this.recordToMap(group.links), inLinks: group.inLinks, outLinks: group.outLinks,
         collapsed: group.collapsed};
-    }).forEach(group => this.workflowActionService.addGroup(group));
+    }));
 
     // operators and groups shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
