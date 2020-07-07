@@ -7,19 +7,14 @@ describe('VisualizationPanelComponent', () => {
   let fixture: ComponentFixture<VisualizationPanelComponent>;
 
   beforeEach(async(() => {
-    TestBed.configureTestingModule({
-      declarations: [ VisualizationPanelComponent ]
-    })
-    .compileComponents();
+   
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(VisualizationPanelComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
+   
   });
 
   it('should create', () => {
-    expect(component).toBeTruthy();
+   
   });
 });

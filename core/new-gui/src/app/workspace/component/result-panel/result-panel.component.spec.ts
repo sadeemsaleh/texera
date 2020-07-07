@@ -115,7 +115,7 @@ describe('ResultPanelComponent', () => {
 
     executeWorkflowService.getExecuteEndedStream().subscribe({
       complete: () => {
-        const mockColumns = Object.keys(mockResultData[0]);
+        const mockColumns = Object.keys(mockResultData[0].table[0]);
         expect(testComponent.currentDisplayColumns).toEqual(mockColumns);
         expect(testComponent.currentColumns).toBeTruthy();
         expect(testComponent.currentDataSource).toBeTruthy();
@@ -152,7 +152,7 @@ describe('ResultPanelComponent', () => {
     //  never be reached in the public method, this architecture is required.
 
     expect(() =>
-      (component as any).displayResultTable(mockExecutionEmptyResult)
+      (component as any).displayResultTable(mockExecutionEmptyResult.result)
     ).toThrowError(new RegExp(`result data should not be empty`));
 
   });
@@ -193,7 +193,7 @@ describe('ResultPanelComponent', () => {
 
     executeWorkflowService.getExecuteEndedStream().subscribe({
       complete: () => {
-        const mockColumns = Object.keys(mockResultData[0]);
+        const mockColumns = Object.keys(mockResultData[0].table[0]);
         expect(testComponent.currentDisplayColumns).toEqual(mockColumns);
         expect(testComponent.currentColumns).toBeTruthy();
         expect(testComponent.currentDataSource).toBeTruthy();

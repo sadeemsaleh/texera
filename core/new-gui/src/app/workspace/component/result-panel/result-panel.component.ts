@@ -206,9 +206,10 @@ export class ResultPanelComponent {
       this.resultMap.set(item.operator, result);
     }
 
-    console.log(this.resultMap);
+    
     // execution success, display result table
-   // this.displayResultTable(response);
+    if (this.resultMap.size == 1)
+      this.displayResultTable(response.result![0].table);
   }
 
   /**
@@ -234,13 +235,13 @@ export class ResultPanelComponent {
    * @param response
    */
   private displayResultTable(resultData: ReadonlyArray<object>) {
-   /* if (response.result.length < 1) {
+    if (resultData.length < 1) {
       throw new Error(`display result table inconsistency: result data should not be empty`);
     }
 
     // don't display message, display result table instead
     this.showMessage = false;
-    */
+    
     // creates a shallow copy of the readonly response.result,
     //  this copy will be has type object[] because MatTableDataSource's input needs to be object[]
   //  const resultData = response.result.slice();
