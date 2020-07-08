@@ -28,7 +28,7 @@ import { WorkflowActionService } from '../../service/workflow-graph/model/workfl
  */
 interface Result {
   table: ReadonlyArray<object>,
-  chartType: string | undefined
+  chartType: string | undefined;
 }
 @Component({
   selector: 'texera-result-panel',
@@ -39,9 +39,9 @@ export class ResultPanelComponent {
 
   private static readonly PRETTY_JSON_TEXT_LIMIT: number = 50000;
   private static readonly TABLE_COLUMN_TEXT_LIMIT: number = 1000;
-  public result :ReadonlyArray<ResultObject> | undefined;
+  public result: ReadonlyArray<ResultObject> | undefined;
   public resultMap: Map<string, Result> = new Map<string, Result>();
-  public selectedOperatorID: string = "";
+  public selectedOperatorID: string = '';
   public chartType: string | undefined;
   public showTable: boolean = true;
   public showMessage: boolean = false;
@@ -61,7 +61,7 @@ export class ResultPanelComponent {
   constructor(private executeWorkflowService: ExecuteWorkflowService, private modalService: NgbModal,
     private resultPanelToggleService: ResultPanelToggleService,
     private workflowActionService: WorkflowActionService) {
-    
+
     this.workflowActionService.getJointGraphWrapper().getJointCellHighlightStream()
     .subscribe(() => this.handleHighLightOperator());
     this.workflowActionService.getJointGraphWrapper().getJointCellUnhighlightStream()
@@ -79,16 +79,16 @@ export class ResultPanelComponent {
   }
   handleHighLightOperator() : void {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-    
+
     if (highlightedOperators.length === 1) {
       this.selectedOperatorID = highlightedOperators[0];
       if (this.resultMap.has(this.selectedOperatorID)) {
-       
-        let result: Result | undefined = this.resultMap.get(this.selectedOperatorID);   
+
+        let result: Result | undefined = this.resultMap.get(this.selectedOperatorID);
         this.displayResultTable(result!.table);
         if (typeof result?.chartType === 'undefined') {
           this.showTable = true;
-          
+
         }
         else {
           this.chartType = result?.chartType;
@@ -197,7 +197,7 @@ export class ResultPanelComponent {
       return;
     }
     this.result = response.result;
- 
+
     for (let item of this.result) {
       let result : Result = {
         table: item.table,
@@ -206,7 +206,7 @@ export class ResultPanelComponent {
       this.resultMap.set(item.operator, result);
     }
 
-    
+
     // execution success, display result table
     if (this.resultMap.size == 1)
       this.displayResultTable(response.result![0].table);
@@ -241,7 +241,7 @@ export class ResultPanelComponent {
 
     // don't display message, display result table instead
     this.showMessage = false;
-    
+
     // creates a shallow copy of the readonly response.result,
     //  this copy will be has type object[] because MatTableDataSource's input needs to be object[]
   //  const resultData = response.result.slice();
