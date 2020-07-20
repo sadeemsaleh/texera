@@ -153,16 +153,6 @@
         </dependency>
         <dependency>
             <groupId>org.apache.arrow</groupId>
-            <artifactId>arrow-memory</artifactId>
-            <version>0.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.arrow</groupId>
-            <artifactId>arrow-vector</artifactId>
-            <version>0.17.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.arrow</groupId>
             <artifactId>flight-core</artifactId>
             <version>0.17.1</version>
         </dependency>
@@ -191,5 +181,12 @@
     </dependencies>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.6.1</version>
+            </extension>
+        </extensions>
     </build>
 </project>

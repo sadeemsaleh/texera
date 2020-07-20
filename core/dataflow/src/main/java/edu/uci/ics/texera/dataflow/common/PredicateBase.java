@@ -1,5 +1,7 @@
 package edu.uci.ics.texera.dataflow.common;
 
+import edu.uci.ics.texera.dataflow.sink.barchart.BarChartSinkPredicate;
+import edu.uci.ics.texera.dataflow.sink.piechart.PieChartSinkPredicate;
 import java.util.UUID;
 
 import edu.uci.ics.texera.dataflow.aggregator.AggregatorPredicate;
@@ -40,6 +42,7 @@ import edu.uci.ics.texera.dataflow.sink.mysql.MysqlSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.tuple.TupleSinkPredicate;
 import edu.uci.ics.texera.dataflow.source.asterix.AsterixSourcePredicate;
 import edu.uci.ics.texera.dataflow.source.file.FileSourcePredicate;
+import edu.uci.ics.texera.dataflow.source.mysql.MysqlSourcePredicate;
 import edu.uci.ics.texera.dataflow.source.scan.ScanSourcePredicate;
 import edu.uci.ics.texera.dataflow.twitter.TwitterJsonConverterPredicate;
 import edu.uci.ics.texera.dataflow.wordcount.WordCountIndexSourcePredicate;
@@ -88,7 +91,8 @@ import edu.uci.ics.texera.dataflow.arrow.ArrowNltkSentimentPredicate;
         // TODO: fix the problem and add Comparable matcher back later
          @Type(value = ComparablePredicate.class, name = "Comparison"),
         
-        @Type(value = AsterixSourcePredicate.class, name = "AsterixSource"),        
+        @Type(value = AsterixSourcePredicate.class, name = "AsterixSource"),
+        @Type(value = MysqlSourcePredicate.class, name = "MysqlSource"),
         @Type(value = TwitterJsonConverterPredicate.class, name = "TwitterJsonConverter"),
         
         @Type(value = ScanSourcePredicate.class, name = "ScanSource"),
@@ -101,7 +105,10 @@ import edu.uci.ics.texera.dataflow.arrow.ArrowNltkSentimentPredicate;
         @Type(value = WordCountOperatorPredicate.class, name = "WordCount"),
         @Type(value = AggregatorPredicate.class, name = "Aggregation"),
 
+        @Type(value = BarChartSinkPredicate.class, name = "BarChart"),
+        @Type(value = PieChartSinkPredicate.class, name = "PieChart"),
         @Type(value = ArrowNltkSentimentPredicate.class, name = "ArrowNltkSentiment")
+
 })
 public abstract class PredicateBase implements IPredicate {
     
