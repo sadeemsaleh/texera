@@ -9,7 +9,7 @@ inputDataMap = {}
 recordLabelMap = {}
 
 # call format:
-# python3 nltk_sentiment_classify pickleFullPathFileName dataFullPathFileName resultFullPathFileName
+# python3 nltk_sentiment_classify tobacco_classifier_model_path dataFullPathFileName resultFullPathFileName
 def debugLine(strLine):
 	f = open("python_classifier_loader.log","a+")
 	f.write(strLine)

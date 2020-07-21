@@ -5,8 +5,58 @@ import pandas
 import ast
 import threading
 import pyarrow.flight
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
-pickleFullPathFileName = sys.argv[1]
+count_vectorizer_model_path = sys.argv[1]
+tobacco_classifier_model_path = sys.argv[2]
+
+
+def lower_case(text):
+	# make all words lower case
+	text = text.lower()
+	return text
+
+
+def remove_stopwords(text):
+	# remove natural language stop words in the text
+	words = [w for w in text if w not in stopwords.words('english')]
+	return words
+
+
+def combine_text(list_of_word):
+	return ' '.join(list_of_word)
+
+
+def text_preprocessing(data):
+	# apply all the NLP preprocessing
+	print('preprocessing data...')
+	data['text'] = data['text'].apply(lambda x: lower_case(x))
+	print('finish lower case...')
+	data['text'] = data['text'].apply(lambda x: word_tokenize(x))
+	print('finish tokenize...')
+	data['text'] = data['text'].apply(lambda x: remove_stopwords(x))
+	print('finish remove stop words...')
+	data['text'] = data['text'].apply(lambda x: combine_text(x))
+	print('finish combine text...')
+
+	return data
+
+
+class TobaccoClassifier(object):
+
+	def __init__(self, cv_dir='tobacco_cv.sav', model_dir='tobacco_model.sav'):
+		# model used to do classfication
+		self.count_vectorizer = pickle.load(open(cv_dir, 'rb'))
+		self.model = pickle.load(open(model_dir, 'rb'))
+
+	def predict(self, test_data):
+		test_data = text_preprocessing(test_data)
+		test_vector = self.count_vectorizer.transform(test_data['text'])
+		return self.model.predict(test_vector)
+
+
+classifier_model = TobaccoClassifier(cv_dir=count_vectorizer_model_path, model_dir=tobacco_classifier_model_path)
 
 
 class FlightServer(pyarrow.flight.FlightServerBase):
@@ -75,21 +125,13 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 			input_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'ToPython')
 			print("Flight Server:\tComputing sentiment...")
 			key = FlightServer.descriptor_to_key(input_descriptor)
-			pickle_file = open(pickleFullPathFileName,'rb')
-			print("Flight Server:\t\tReading model file...", end =" ")
-			sentiment_model = pickle.load(pickle_file)
-			print("Done.")
 			print("Flight Server:\t\tConverting Arrow data to pandas.Dataframe...", end =" ")
 			input_dataframe = pandas.DataFrame(self.flights[key].to_pandas())
 			print("Done.")
 			print("Flight Server:\t\tExecuting computation...", end=" ")
 			output_dataframe = input_dataframe[['ID']]
-			predictions = []
-			for index, row in input_dataframe.iterrows():
-				p = 1 if sentiment_model.classify(row['text']) == "pos" else -1
-				predictions.append(p)
+			predictions = classifier_model.predict(input_dataframe)
 			output_dataframe['pred'] = predictions
-			pickle_file.close()
 			print("Done.")
 			print("Flight Server:\t\tConverting back to Arrow data...", end =" ")
 			output_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'FromPython')

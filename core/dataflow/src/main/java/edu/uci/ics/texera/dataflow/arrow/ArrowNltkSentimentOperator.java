@@ -95,7 +95,8 @@ public class ArrowNltkSentimentOperator implements IOperator {
         outputSchema = transformToOutputSchema(inputSchema);
 
         cursor = OPENED;
-        List<String> args = new ArrayList<>(Arrays.asList(PYTHON, PYTHONSCRIPT, PicklePath));
+        String modelPath = Utils.getResourcePath("tobacco_model.sav", TexeraProject.TEXERA_DATAFLOW).toString();
+        List<String> args = new ArrayList<>(Arrays.asList(PYTHON, PYTHONSCRIPT, PicklePath, modelPath));
         ProcessBuilder processBuilder = new ProcessBuilder(args).inheritIO();
         try {
             // Start Flight server (Python process)
