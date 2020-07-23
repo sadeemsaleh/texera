@@ -119,7 +119,6 @@ public class TobaccoRelevancyOperator implements IOperator {
                             flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
                     connected = message.equals("Flight Server is up and running!");
                 } catch (Exception e) {
-                    e.printStackTrace();
                     System.out.println("Flight Client:\tNot connected to the server in this try.");
                 }
             }
@@ -183,6 +182,7 @@ public class TobaccoRelevancyOperator implements IOperator {
             boolean success = false;
             while (!success) {
                 try {
+                    FlightInfo info = flightClient.getInfo(FlightDescriptor.path(Collections.singletonList("ToPython")));
                     flightClient.doAction(new Action("compute")).next().getBody();
                 } catch (Exception e) {
                     continue;
@@ -219,6 +219,12 @@ public class TobaccoRelevancyOperator implements IOperator {
      */
     @Override
     public void close() throws TexeraException {
+        try {
+            flightClient.doAction(new Action("shutdown")).next();
+            flightClient.close();
+        } catch (InterruptedException e) {
+            throw new DataflowException(e.getMessage(), e);
+        }
         if (cursor == CLOSED) {
             return;
         }
@@ -226,12 +232,6 @@ public class TobaccoRelevancyOperator implements IOperator {
             inputOperator.close();
         }
         cursor = CLOSED;
-        try {
-            flightClient.doAction(new Action("shutdown"));
-            flightClient.close();
-        } catch (InterruptedException e) {
-            throw new DataflowException(e.getMessage(), e);
-        }
     }
 
     @Override
