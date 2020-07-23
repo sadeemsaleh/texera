@@ -113,15 +113,21 @@ public class TobaccoRelevancyOperator implements IOperator {
         ProcessBuilder processBuilder = new ProcessBuilder(args).inheritIO();
         try {
             // Start Flight server (Python process)
-            processBuilder.start();
+            Process process = processBuilder.start();
+            // wait for it to be alive.
+            while (!process.isAlive()) ;
             // Connect to server
             flightClient = FlightClient.builder(rootAllocator, location).build();
             boolean connected = false;
             while (!connected) {
-                String message = new String(
-                        flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
-                connected = message.equals("Flight Server is up and running!");
-                if (!connected) System.out.println("Flight Client:\tNot connected to the server in this try.");
+                try {
+                    String message = new String(
+                            flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
+                    connected = message.equals("Flight Server is up and running!");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Flight Client:\tNot connected to the server in this try.");
+                }
             }
         } catch (Exception e) {
             throw new DataflowException(e.getMessage(), e);
