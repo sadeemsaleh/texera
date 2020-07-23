@@ -5,8 +5,58 @@ import pandas
 import ast
 import threading
 import pyarrow.flight
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
-pickleFullPathFileName = sys.argv[1]
+count_vectorizer_model_path = sys.argv[1]
+tobacco_classifier_model_path = sys.argv[2]
+
+
+def lower_case(text):
+	# make all words lower case
+	text = text.lower()
+	return text
+
+
+def remove_stopwords(text):
+	# remove natural language stop words in the text
+	words = [w for w in text if w not in stopwords.words('english')]
+	return words
+
+
+def combine_text(list_of_word):
+	return ' '.join(list_of_word)
+
+
+def text_preprocessing(data):
+	# apply all the NLP preprocessing
+	# print('preprocessing data...')
+	data['text'] = data['text'].apply(lambda x: lower_case(x))
+	# print('finish lower case...')
+	data['text'] = data['text'].apply(lambda x: word_tokenize(x))
+	# print('finish tokenize...')
+	data['text'] = data['text'].apply(lambda x: remove_stopwords(x))
+	# print('finish remove stop words...')
+	data['text'] = data['text'].apply(lambda x: combine_text(x))
+	# print('finish combine text...')
+
+	return data
+
+
+class TobaccoClassifier(object):
+
+	def __init__(self, cv_dir='tobacco_cv.sav', model_dir='tobacco_model.sav'):
+		# model used to do classfication
+		self.count_vectorizer = pickle.load(open(cv_dir, 'rb'))
+		self.model = pickle.load(open(model_dir, 'rb'))
+
+	def predict(self, test_data):
+		test_data = text_preprocessing(test_data)
+		test_vector = self.count_vectorizer.transform(test_data['text'])
+		return self.model.predict(test_vector)
+
+
+classifier_model = TobaccoClassifier(cv_dir=count_vectorizer_model_path, model_dir=tobacco_classifier_model_path)
 
 
 class FlightServer(pyarrow.flight.FlightServerBase):
@@ -43,10 +93,6 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 										 table.num_rows, data_size)
 
 	def list_flights(self, context, criteria):
-		"""
-		Getting a list of available datasets on the server. This method is not used here,
-		but might be useful in the future.
-		"""
 		for key, table in self.flights.items():
 			if key[1] is not None:
 				descriptor = \
@@ -57,11 +103,6 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 			yield self._make_flight_info(key, descriptor, table)
 
 	def get_flight_info(self, context, descriptor):
-		"""
-		Returning an “access plan” for a dataset of interest, possibly requiring consuming multiple data streams.
-		This request can accept custom serialized commands containing, for example, your specific
-		application parameters.
-		"""
 		key = FlightServer.descriptor_to_key(descriptor)
 		if key in self.flights:
 			table = self.flights[key]
@@ -69,19 +110,10 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 		raise KeyError('Flight not found.')
 
 	def do_put(self, context, descriptor, reader, writer):
-		"""
-		Pass Arrow stream from the client to the server. The data must be associated with a `FlightDescriptor`,
-		which can be either a path or a command. Here the path is not actually a path on the disk,
-		but rather an identifier.
-		"""
 		key = FlightServer.descriptor_to_key(descriptor)
 		self.flights[key] = reader.read_all()
 
 	def do_get(self, context, ticket):
-		"""
-		Before getting the stream, the client must first ask the server for available tickets
-		(to the specified dataset) of the specified `FlightDescriptor`.
-		"""
 		key = ast.literal_eval(ticket.ticket.decode())
 		if key not in self.flights:
 			print("Flight Server:\tNOT IN")
@@ -89,31 +121,17 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 		return pyarrow.flight.RecordBatchStream(self.flights[key])
 
 	def do_action(self, context, action):
-		"""
-		Each (implementation-specific) action is a string (defined in the script). The client is expected to know
-		available actions. When a specific action is called, the server executes the corresponding action and
-		maybe will return any results, i.e. a generalized function call.
-		"""
 		if action.type == "compute":
-			# to execute the computation of sentiments.
 			input_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'ToPython')
-			# print("Flight Server:\tComputing sentiment...")
+			# print("Flight Server:\tComputing relevancy...")
 			key = FlightServer.descriptor_to_key(input_descriptor)
-			pickle_file = open(pickleFullPathFileName,'rb')
-			# print("Flight Server:\t\tReading model file...", end =" ")
-			sentiment_model = pickle.load(pickle_file)
-			# print("Done.")
-			# print("Flight Server:\t\tConverting Arrow data to pandas.Dataframe...", end =" ")
+			# print("Flight Server:\t\tConverting Arrow data to pandas.Dataframe...", end=" ")
 			input_dataframe = pandas.DataFrame(self.flights[key].to_pandas())
 			# print("Done.")
 			# print("Flight Server:\t\tExecuting computation...", end=" ")
-			output_dataframe = input_dataframe[['ID']]
-			predictions = []
-			for index, row in input_dataframe.iterrows():
-				p = 1 if sentiment_model.classify(row['text']) == "pos" else -1
-				predictions.append(p)
-			output_dataframe['pred'] = predictions
-			pickle_file.close()
+			predictions = classifier_model.predict(input_dataframe)
+			outout_data = {'pred': predictions}
+			output_dataframe = pandas.DataFrame(data=outout_data)
 			# print("Done.")
 			# print("Flight Server:\t\tConverting back to Arrow data...", end =" ")
 			output_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'FromPython')
@@ -122,10 +140,8 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 			# print("Flight Server:\tDone.")
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
 		elif action.type == "healthcheck":
-			# to check the status of the server to see if it is running.
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is up and running!'))
 		elif action.type == "shutdown":
-			# to shutdown the server.
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is shut down!'))
 			# Shut down on background thread to avoid blocking current
 			# request
@@ -135,7 +151,7 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 
 	def _shutdown(self):
 		"""Shut down after a delay."""
-		# print("Flight Server:\tServer is shutting down...")
+		print("Flight Server:\tServer is shutting down...")
 
 		self.shutdown()
 
@@ -143,7 +159,7 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 def main():
 	location = "grpc+tcp://localhost:5005"
 	server = FlightServer("localhost", location)
-	# print("Flight Server:\tServing on", location)
+	print("Flight Server:\tServing on", location)
 	server.serve()
 
 
