@@ -102,13 +102,7 @@ public class TobaccoRelevancyOperator implements IOperator {
         if (inputOperator == null) {
             throw new DataflowException(ErrorMessages.INPUT_OPERATOR_NOT_SPECIFIED);
         }
-        inputOperator.open();
-        Schema inputSchema = inputOperator.getOutputSchema();
 
-        // generate output schema by transforming the input schema
-        outputSchema = transformToOutputSchema(inputSchema);
-
-        cursor = OPENED;
         List<String> args = new ArrayList<>(Arrays.asList(PYTHON, PYTHONSCRIPT, VectorizerPath, ClassifierPath));
         ProcessBuilder processBuilder = new ProcessBuilder(args).inheritIO();
         try {
@@ -117,10 +111,10 @@ public class TobaccoRelevancyOperator implements IOperator {
             // wait for it to be alive.
             while (!process.isAlive()) ;
             // Connect to server
-            flightClient = FlightClient.builder(rootAllocator, location).build();
             boolean connected = false;
             while (!connected) {
                 try {
+                    flightClient = FlightClient.builder(rootAllocator, location).build();
                     String message = new String(
                             flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
                     connected = message.equals("Flight Server is up and running!");
@@ -129,6 +123,14 @@ public class TobaccoRelevancyOperator implements IOperator {
                     System.out.println("Flight Client:\tNot connected to the server in this try.");
                 }
             }
+
+        inputOperator.open();
+        Schema inputSchema = inputOperator.getOutputSchema();
+
+        // generate output schema by transforming the input schema
+        outputSchema = transformToOutputSchema(inputSchema);
+
+        cursor = OPENED;
         } catch (Exception e) {
             throw new DataflowException(e.getMessage(), e);
         }
