@@ -180,7 +180,15 @@ public class TobaccoRelevancyOperator implements IOperator {
     private void computeClassLabel() {
         try{
 //            System.out.println("Flight Client:\t" + new String(
-            flightClient.doAction(new Action("compute")).next().getBody();
+            boolean success = false;
+            while (!success) {
+                try {
+                    flightClient.doAction(new Action("compute")).next().getBody();
+                } catch (Exception e) {
+                    continue;
+                }
+                success = true;
+            }
 //                    , StandardCharsets.UTF_8));
             resultQueue = new LinkedList<>();
             readArrowStream();
