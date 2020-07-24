@@ -114,14 +114,19 @@ public class TobaccoRelevancyOperator implements IOperator {
             boolean connected = false;
             while (!connected) {
                 try {
+
                     flightClient = FlightClient.builder(rootAllocator, location).build();
                     String message = new String(
                             flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
                     connected = message.equals("Flight Server is up and running!");
                 } catch (Exception e) {
                     System.out.println("Flight Client:\tNot connected to the server in this try.");
+                    flightClient.close();
                 }
             }
+        } catch (Exception e) {
+            throw new DataflowException(e.getMessage(), e);
+        }
 
         inputOperator.open();
         Schema inputSchema = inputOperator.getOutputSchema();
@@ -130,9 +135,6 @@ public class TobaccoRelevancyOperator implements IOperator {
         outputSchema = transformToOutputSchema(inputSchema);
 
         cursor = OPENED;
-        } catch (Exception e) {
-            throw new DataflowException(e.getMessage(), e);
-        }
     }
 
     /**
