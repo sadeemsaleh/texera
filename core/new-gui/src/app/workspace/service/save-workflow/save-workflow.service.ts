@@ -3,6 +3,8 @@ import { WorkflowActionService } from '../workflow-graph/model/workflow-action.s
 import { Observable } from '../../../../../node_modules/rxjs';
 import { OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
+import { HttpClient } from '@angular/common/http';
+import { AppSettings } from 'src/app/common/app-setting';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
@@ -21,6 +23,13 @@ export interface SavedWorkflow {
   links: OperatorLink[];
 }
 
+export interface SuccessSaveResponse {
+  code: 0;
+  message: String;
+}
+
+export const FETCH_WORKFLOW_ENDPOINT = 'workflow/get';
+export const SAVE_WORKFLOW_ENDPOINT = 'workflow/set-workflow';
 
 /**
  * SaveWorkflowService is responsible for saving the existing workflow and
@@ -46,13 +55,15 @@ export class SaveWorkflowService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService
+    private operatorMetadataService: OperatorMetadataService,
+    private httpClient: HttpClient
   ) {
     this.handleAutoSaveWorkFlow();
 
-    this.operatorMetadataService.getOperatorMetadata()
-      .filter(metadata => metadata.operators.length !== 0)
-      .subscribe(() => this.loadWorkflow());
+    // commented out because fetchWorfklow will be called
+    // this.operatorMetadataService.getOperatorMetadata()
+    //   .filter(metadata => metadata.operators.length !== 0)
+    //   .subscribe(() => this.loadWorkflow());
   }
 
   /**
@@ -95,6 +106,43 @@ export class SaveWorkflowService {
   }
 
   /**
+   * this method send an request to the backend to get
+   *  the workflow of a specific id stored in the backend mysql storage
+   *  and display it onto the JointJS paper.
+   */
+  public fetchWorkflow(workflowID: String): void {
+    this.operatorMetadataService.getOperatorMetadata()
+      .filter(metadata => metadata.operators.length !== 0)
+      .subscribe(() => {
+        console.log('fetching workflow for ' + workflowID);
+        this.httpClient.get<SavedWorkflow>(`${AppSettings.getApiEndpoint()}/${FETCH_WORKFLOW_ENDPOINT}/${workflowID}`)
+          .subscribe(workflow => {
+            console.log(workflow);
+
+            const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
+            workflow.operators.forEach(op => {
+              const opPosition = workflow.operatorPositions[op.operatorID];
+              if (! opPosition) {
+                throw new Error('position error');
+              }
+              operatorsAndPositions.push({op: op, pos: opPosition});
+            });
+
+            const links: OperatorLink[] = [];
+            workflow.links.forEach(link => {
+              links.push(link);
+            });
+
+            this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
+
+            // operators shouldn't be highlighted during page reload
+            this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
+              this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
+          });
+      });
+  }
+
+  /**
    * This method will listen to all the workflow change event happening
    *  on the property panel and the worfklow editor paper.
    */
@@ -121,6 +169,24 @@ export class SaveWorkflowService {
       };
 
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
+      const saveWorkflowRequestURL = `${AppSettings.getApiEndpoint()}/${SAVE_WORKFLOW_ENDPOINT}`;
+
+      const formData: FormData = new FormData();
+      formData.append('workflowID', 'tobacco-analysis-workflow');
+      formData.append('workflowBody', JSON.stringify(savedWorkflow));
+
+      this.httpClient.post<SuccessSaveResponse>(
+        saveWorkflowRequestURL,
+        formData)
+        .subscribe(
+          response => {
+            // do something with response
+            console.log('success: ' + response);
+          },
+          errorResponse => {
+            console.log('error: ' + errorResponse.toString());
+          }
+      );
     });
   }
 

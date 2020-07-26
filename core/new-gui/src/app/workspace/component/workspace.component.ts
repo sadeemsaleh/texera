@@ -15,6 +15,7 @@ import { SchemaPropagationService } from '../service/dynamic-schema/schema-propa
 import { ResultPanelToggleService } from '../service/result-panel-toggle/result-panel-toggle.service';
 import { SaveWorkflowService } from '../service/save-workflow/save-workflow.service';
 import { WorkflowStatusService } from '../service/workflow-status/workflow-status.service';
+import { ActivatedRoute } from '@angular/router';
 
 @Component({
   selector: 'texera-workspace',
@@ -39,7 +40,7 @@ import { WorkflowStatusService } from '../service/workflow-status/workflow-statu
     WorkflowStatusService,
   ]
 })
-export class WorkspaceComponent {
+export class WorkspaceComponent implements OnInit {
 
   public showResultPanel: boolean = false;
 
@@ -49,11 +50,19 @@ export class WorkspaceComponent {
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService,
-    private saveWorkflowService: SaveWorkflowService
+    private saveWorkflowService: SaveWorkflowService,
+    private route: ActivatedRoute
   ) {
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
       value => this.showResultPanel = value,
     );
+  }
+
+  ngOnInit(): void {
+    // check if workflow id is present in the url
+    if (this.route.snapshot.params.id) {
+      this.saveWorkflowService.fetchWorkflow(this.route.snapshot.params.id);
+    }
   }
 
 }
