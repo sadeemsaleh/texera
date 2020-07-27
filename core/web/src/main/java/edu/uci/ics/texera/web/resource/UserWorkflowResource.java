@@ -16,7 +16,6 @@ import javax.ws.rs.core.MediaType;
 
 import java.io.IOException;
 
-import static edu.uci.ics.texera.dataflow.jooq.generated.Tables.USERDICT;
 import static edu.uci.ics.texera.dataflow.jooq.generated.Tables.USERWORKFLOW;
 
 /**
@@ -98,20 +97,19 @@ public class UserWorkflowResource {
             @FormDataParam("workflowBody") String workflowBody
     ) {
         int count = checkWorkflowExist(workflowID);
-        System.out.println(workflowID + " has count " + count);
-        // throwErrorWhenNotOne("Workflow " + workflowID + " does not exist in the database",count);
         if (count != 1) {
             return new GenericWebResponse(1,"workflow " + workflowID + " does not exist in the database");
         }
-
         int result = updateWorkflowInDataBase(workflowID,workflowBody);
         throwErrorWhenNotOne("Error occurred while updating workflow to database",result);
-
         return GenericWebResponse.generateSuccessResponse();
     }
 
-
-
+    /**
+     * select * from table userworkflow where workflowID is @param "workflowID"
+     * @param workflowID
+     * @return
+     */
     private Record3<String, String, String> getWorkflowFromDatabase(String workflowID) {
         return UserSqlServer.createDSLContext()
                 .select(USERWORKFLOW.WORKFLOWID, USERWORKFLOW.NAME, USERWORKFLOW.WORKFLOWBODY)
@@ -120,6 +118,12 @@ public class UserWorkflowResource {
                 .fetchOne();
     }
 
+    /**
+     * update table userworkflow set workflowBody = @param "workflowBody" where workflowID = @param "workflowID"
+     * @param workflowID
+     * @param workflowBody
+     * @return
+     */
     private int updateWorkflowInDataBase(String workflowID, String workflowBody) {
         return UserSqlServer.createDSLContext().update(USERWORKFLOW)
                 .set(USERWORKFLOW.WORKFLOWBODY, workflowBody)
@@ -127,6 +131,11 @@ public class UserWorkflowResource {
                 .execute();
     }
 
+    /**
+     * select count(*) from userworkflow where workflowID = @param "workflowID"
+     * @param workflowID
+     * @return
+     */
     private int checkWorkflowExist(String workflowID) {
         return UserSqlServer.createDSLContext()
                 .selectCount()
@@ -147,7 +156,7 @@ public class UserWorkflowResource {
     private int insertWorkflowToDataBase(String userID, String workflowID, String workflowName, String workflowBody) {
         return UserSqlServer.createDSLContext().insertInto(USERWORKFLOW)
                 // uncomment below to give workflows the concept of ownership
-//                .set(USERWORKFLOW.USERID,userID)
+                // .set(USERWORKFLOW.USERID,userID)
                 .set(USERWORKFLOW.WORKFLOWID, workflowID)
                 .set(USERWORKFLOW.NAME, workflowName)
                 .set(USERWORKFLOW.WORKFLOWBODY, workflowBody)
