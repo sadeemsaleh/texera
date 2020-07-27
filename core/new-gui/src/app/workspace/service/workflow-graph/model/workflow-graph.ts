@@ -2,6 +2,7 @@ import { Subject } from 'rxjs/Subject';
 import { Observable } from 'rxjs/Observable';
 import { OperatorPredicate, OperatorLink, OperatorPort } from '../../../types/workflow-common.interface';
 import { isEqual } from 'lodash';
+import { v4 as uuid } from 'uuid';
 
 // define the restricted methods that could change the graph
 type restrictedMethods =
@@ -25,6 +26,7 @@ export class WorkflowGraph {
 
   private readonly operatorIDMap = new Map<string, OperatorPredicate>();
   private readonly operatorLinkMap = new Map<string, OperatorLink>();
+  private workflowID: undefined | string;
 
   private readonly operatorAddSubject = new Subject<OperatorPredicate>();
   private readonly operatorDeleteSubject = new Subject<{ deletedOperator: OperatorPredicate }>();
@@ -39,6 +41,18 @@ export class WorkflowGraph {
   ) {
     operatorPredicates.forEach(op => this.operatorIDMap.set(op.operatorID, op));
     operatorLinks.forEach(link => this.operatorLinkMap.set(link.linkID, link));
+  }
+
+  public setID(id: string): void {
+    this.workflowID = id;
+  }
+
+  public getID(): string {
+    if (this.workflowID !== undefined) {
+      return this.workflowID;
+    } else {
+      return uuid();
+    }
   }
 
   /**

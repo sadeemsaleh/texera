@@ -8,6 +8,7 @@ import edu.uci.ics.texera.web.response.GenericWebResponse;
 import io.dropwizard.jersey.sessions.Session;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.jooq.Record3;
+import org.jooq.types.UInteger;
 
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.*;
@@ -15,7 +16,14 @@ import javax.ws.rs.core.MediaType;
 
 import java.io.IOException;
 
+import static edu.uci.ics.texera.dataflow.jooq.generated.Tables.USERDICT;
 import static edu.uci.ics.texera.dataflow.jooq.generated.Tables.USERWORKFLOW;
+
+/**
+ * This file handles various request related to saved-workflows.
+ * It sends mysql queries to the MysqlDB regarding the UserWorkflow Table
+ * The details of UserWorkflowTable can be found in /core/scripts/sql/texera_ddl.sql
+ */
 
 // uncomment and use below to give workflows the concept of ownership
 // @Path("/user/workflow")
@@ -23,12 +31,34 @@ import static edu.uci.ics.texera.dataflow.jooq.generated.Tables.USERWORKFLOW;
 @Produces(MediaType.APPLICATION_JSON)
 public class UserWorkflowResource {
 
+    /**
+     * Corresponds to interface SavedWorkflow in `src/app/workspace/service/save-workflow/save-workflow.service.ts`
+     */
+    public static class UserWorkflow {
+        public String workflowID;
+        public String workflowName;
+        public ObjectNode workflowBody;
+
+        public UserWorkflow(String id, String name, ObjectNode body) {
+            this.workflowID = id;
+            this.workflowName = name;
+            this.workflowBody = body;
+        }
+    }
+
+    /**
+     * This method handles the frontend's request to get a specific workflow to be displayed
+     * at current design, it only takes the workflowID and searches within the database for the matching workflow
+     * for future design, it should also take userID as an parameter.
+     * @param workflowID workflow id, which serves as the primary key in the UserWorkflow database
+     * @param session
+     * @return a json string representing an savedWorkflow
+     */
     @GET
     @Path("/get/{workflowID}")
-    public ObjectNode getUserWorkflow(@PathParam("workflowID") String workflowID, @Session HttpSession session) {
-        System.out.println("with in getUserWorkflow for " + workflowID);
+    public UserWorkflow getUserWorkflow(@PathParam("workflowID") String workflowID, @Session HttpSession session) {
         // uncomment below to link user with workflow
-//        UInteger userID = UserResource.getUser(session).getUserID();
+        // UInteger userID = UserResource.getUser(session).getUserID();
         Record3<String, String, String> result = getWorkflowFromDatabase(workflowID);
 
         if (result == null) {
@@ -36,24 +66,46 @@ public class UserWorkflowResource {
         }
 
         try {
-            ObjectNode savedWorkflow = new ObjectMapper().readValue(result.get(USERWORKFLOW.WORKFLOWBODY), ObjectNode.class);
-            return savedWorkflow;
+            // the json string stored in USERWORKFLOW.WORKFLOWBODY correspond to the interface savedWorkflowBody
+            // in new-gui/src/app/workspace/service/save-workflow/save-workflow.service.ts
+            ObjectNode savedWorkflowBody = new ObjectMapper().readValue(result.get(USERWORKFLOW.WORKFLOWBODY), ObjectNode.class);
+            return new UserWorkflow(
+                    result.get(USERWORKFLOW.WORKFLOWID),
+                    result.get(USERWORKFLOW.NAME),
+                    savedWorkflowBody
+            );
         } catch (IOException e) {
             throw new TexeraWebException(e.getMessage());
         }
     }
 
+    /**
+     * this method handles the frontend's request to save a specific workflow
+     * at current design, it takes a workflowID and a JSON string representing the new workflow
+     * it updates the corresponding mysql record; throws an error if the workflow does not exist
+     * for future design, it should also take userID as an parameter.
+     * @param session
+     * @param workflowID
+     * @param workflowBody
+     * @return
+     */
     @POST
-    @Path("/set-workflow")
+    @Path("/update-workflow")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public GenericWebResponse setUserWorkflow(
             @Session HttpSession session,
             @FormDataParam("workflowID") String workflowID,
             @FormDataParam("workflowBody") String workflowBody
     ) {
+        int count = checkWorkflowExist(workflowID);
+        System.out.println(workflowID + " has count " + count);
+        // throwErrorWhenNotOne("Workflow " + workflowID + " does not exist in the database",count);
+        if (count != 1) {
+            return new GenericWebResponse(1,"workflow " + workflowID + " does not exist in the database");
+        }
 
-        int count = updateWorkflowInDataBase(workflowID,workflowBody);
-        throwErrorWhenNotOne("Error occurred while inserting workflow to database",count);
+        int result = updateWorkflowInDataBase(workflowID,workflowBody);
+        throwErrorWhenNotOne("Error occurred while updating workflow to database",result);
 
         return GenericWebResponse.generateSuccessResponse();
     }
@@ -75,10 +127,26 @@ public class UserWorkflowResource {
                 .execute();
     }
 
+    private int checkWorkflowExist(String workflowID) {
+        return UserSqlServer.createDSLContext()
+                .selectCount()
+                .from(USERWORKFLOW)
+                .where(USERWORKFLOW.WORKFLOWID.eq(workflowID))
+                .fetchOne(0, int.class);
+    }
 
+    /**
+     * This private method will be used to insert a non existing workflow into the database
+     * There is no request handler that utilize this method yet.
+     * @param userID
+     * @param workflowID
+     * @param workflowName
+     * @param workflowBody
+     * @return
+     */
     private int insertWorkflowToDataBase(String userID, String workflowID, String workflowName, String workflowBody) {
         return UserSqlServer.createDSLContext().insertInto(USERWORKFLOW)
-                 // uncomment below to give workflows the concept of ownership
+                // uncomment below to give workflows the concept of ownership
 //                .set(USERWORKFLOW.USERID,userID)
                 .set(USERWORKFLOW.WORKFLOWID, workflowID)
                 .set(USERWORKFLOW.NAME, workflowName)

@@ -1,6 +1,6 @@
 import { TestBed, inject } from '@angular/core/testing';
 
-import { SaveWorkflowService, SavedWorkflow } from './save-workflow.service';
+import { SaveWorkflowService, SavedWorkflowBody } from './save-workflow.service';
 import { mockResultPredicate, mockScanResultLink, mockScanPredicate, mockPoint } from '../workflow-graph/model/mock-workflow-data';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
 import { UndoRedoService } from './../../service/undo-redo/undo-redo.service';
@@ -50,7 +50,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(1);
         expect(savedWorkflow.operators[0].operatorID).toEqual(mockScanPredicate.operatorID);
         expect(savedWorkflow.operators[0]).toEqual(mockScanPredicate);
@@ -74,7 +74,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(0);
       }
     );
@@ -96,7 +96,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(2);
         expect(savedWorkflow.links.length).toEqual(1);
         expect(savedWorkflow.links[0]).toEqual(mockScanResultLink);
@@ -121,7 +121,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(2);
         expect(savedWorkflow.links.length).toEqual(0);
       }
@@ -146,7 +146,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(1);
         expect(savedWorkflow.operators[0]).toEqual(mockResultPredicate);
         expect(savedWorkflow.links.length).toEqual(0);
@@ -171,7 +171,7 @@ describe('SaveWorkflowService', () => {
           return;
         }
 
-        const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+        const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
         expect(savedWorkflow.operators.length).toEqual(1);
         expect(savedWorkflow.operators[0].operatorProperties).toEqual(mockProperties);
       }
@@ -185,7 +185,7 @@ describe('SaveWorkflowService', () => {
     operators.push(mockScanPredicate);
     const links: OperatorLink[] = [];
 
-    const mockWorkflow: SavedWorkflow = {
+    const mockWorkflow: SavedWorkflowBody = {
       operators, operatorPositions, links
     };
 
@@ -199,7 +199,7 @@ describe('SaveWorkflowService', () => {
       return;
     }
 
-    const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+    const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
 
     expect(savedWorkflow.operators.length).toEqual(1);
     expect(savedWorkflow.operators[0]).toEqual(mockScanPredicate);

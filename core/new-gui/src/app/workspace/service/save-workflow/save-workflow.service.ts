@@ -18,6 +18,12 @@ import { AppSettings } from 'src/app/common/app-setting';
  *
  */
 export interface SavedWorkflow {
+  workflowID: string;
+  workflowName: string;
+  workflowBody: SavedWorkflowBody;
+}
+
+export interface SavedWorkflowBody {
   operators: OperatorPredicate[];
   operatorPositions: {[key: string]: Point | undefined};
   links: OperatorLink[];
@@ -29,7 +35,7 @@ export interface SuccessSaveResponse {
 }
 
 export const FETCH_WORKFLOW_ENDPOINT = 'workflow/get';
-export const SAVE_WORKFLOW_ENDPOINT = 'workflow/set-workflow';
+export const SAVE_WORKFLOW_ENDPOINT = 'workflow/update-workflow';
 
 /**
  * SaveWorkflowService is responsible for saving the existing workflow and
@@ -61,9 +67,9 @@ export class SaveWorkflowService {
     this.handleAutoSaveWorkFlow();
 
     // commented out because fetchWorfklow will be called
-    // this.operatorMetadataService.getOperatorMetadata()
-    //   .filter(metadata => metadata.operators.length !== 0)
-    //   .subscribe(() => this.loadWorkflow());
+    this.operatorMetadataService.getOperatorMetadata()
+      .filter(metadata => metadata.operators.length !== 0)
+      .subscribe(() => this.loadWorkflow());
   }
 
   /**
@@ -82,7 +88,7 @@ export class SaveWorkflowService {
       return;
     }
 
-    const savedWorkflow: SavedWorkflow = JSON.parse(savedWorkflowJson);
+    const savedWorkflow: SavedWorkflowBody = JSON.parse(savedWorkflowJson);
 
     const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
     savedWorkflow.operators.forEach(op => {
@@ -114,14 +120,15 @@ export class SaveWorkflowService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => {
-        console.log('fetching workflow for ' + workflowID);
         this.httpClient.get<SavedWorkflow>(`${AppSettings.getApiEndpoint()}/${FETCH_WORKFLOW_ENDPOINT}/${workflowID}`)
           .subscribe(workflow => {
             console.log(workflow);
-
+            this.workflowActionService.getTexeraGraph().setID(workflow.workflowID);
+            const workflowBody = workflow.workflowBody as SavedWorkflowBody;
+            console.log(workflowBody);
             const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
-            workflow.operators.forEach(op => {
-              const opPosition = workflow.operatorPositions[op.operatorID];
+            workflowBody.operators.forEach(op => {
+              const opPosition = workflowBody.operatorPositions[op.operatorID];
               if (! opPosition) {
                 throw new Error('position error');
               }
@@ -129,9 +136,13 @@ export class SaveWorkflowService {
             });
 
             const links: OperatorLink[] = [];
-            workflow.links.forEach(link => {
+            workflowBody.links.forEach(link => {
               links.push(link);
             });
+
+            // first delete all existing operators and links;
+            this.workflowActionService.deleteOperatorsAndLinks(
+              this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
 
             this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
 
@@ -164,15 +175,16 @@ export class SaveWorkflowService {
       workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
         this.workflowActionService.getJointGraphWrapper().getOperatorPosition(op.operatorID));
 
-      const savedWorkflow: SavedWorkflow = {
+      const savedWorkflow: SavedWorkflowBody = {
         operators, operatorPositions, links
       };
 
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
-      const saveWorkflowRequestURL = `${AppSettings.getApiEndpoint()}/${SAVE_WORKFLOW_ENDPOINT}`;
 
+      const saveWorkflowRequestURL = `${AppSettings.getApiEndpoint()}/${SAVE_WORKFLOW_ENDPOINT}`;
       const formData: FormData = new FormData();
-      formData.append('workflowID', 'tobacco-analysis-workflow');
+      // formData.append('workflowID', 'tobacco-analysis-workflow');
+      formData.append('workflowID', workflow.getID());
       formData.append('workflowBody', JSON.stringify(savedWorkflow));
 
       this.httpClient.post<SuccessSaveResponse>(
