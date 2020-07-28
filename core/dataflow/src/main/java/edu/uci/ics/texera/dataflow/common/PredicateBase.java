@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.dataflow.common;
 
+import edu.uci.ics.texera.dataflow.nlp.tobacco.TobaccoRelevancyPredicate;
 import edu.uci.ics.texera.dataflow.sink.barchart.BarChartSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.piechart.PieChartSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.wordcloud.WordCloudSinkPredicate;
@@ -108,7 +109,9 @@ import edu.uci.ics.texera.dataflow.nlp.sentiment.arrow.NltkSentimentPredicate;
         @Type(value = PieChartSinkPredicate.class, name = "PieChart"),
         @Type(value = WordCloudSinkPredicate.class, name = "WordCloud"),
 
-        @Type(value = NltkSentimentPredicate.class, name = "NltkSentiment")
+        @Type(value = NltkSentimentPredicate.class, name = "NltkSentiment"),
+        @Type(value = TobaccoRelevancyPredicate.class, name = "TobaccoRelevancy")
+
 })
 public abstract class PredicateBase implements IPredicate {
     

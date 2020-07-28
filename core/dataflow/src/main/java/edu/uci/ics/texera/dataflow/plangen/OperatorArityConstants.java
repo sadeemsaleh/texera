@@ -1,5 +1,6 @@
 package edu.uci.ics.texera.dataflow.plangen;
 
+import edu.uci.ics.texera.dataflow.nlp.tobacco.TobaccoRelevancyPredicate;
 import edu.uci.ics.texera.dataflow.sink.barchart.BarChartSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.piechart.PieChartSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.wordcloud.WordCloudSink;
@@ -94,7 +95,7 @@ public class OperatorArityConstants {
         fixedInputArityMap.put(PieChartSinkPredicate.class, 1);
 
         fixedInputArityMap.put(NltkSentimentPredicate.class, 1);
-
+        fixedInputArityMap.put(TobaccoRelevancyPredicate.class, 1);
         
     }
     
@@ -142,6 +143,7 @@ public class OperatorArityConstants {
         fixedOutputArityMap.put(PieChartSinkPredicate.class, 0);
         
         fixedOutputArityMap.put(NltkSentimentPredicate.class, 1);
+        fixedOutputArityMap.put(TobaccoRelevancyPredicate.class, 1);
 
     }
     
