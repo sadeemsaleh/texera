@@ -38,11 +38,11 @@ describe('SaveWorkflowService', () => {
     workflowActionService = TestBed.get(WorkflowActionService);
   });
 
-  fit('should be created', inject([SaveWorkflowService], (service: SaveWorkflowService) => {
+  it('should be created', inject([SaveWorkflowService], (service: SaveWorkflowService) => {
     expect(service).toBeTruthy();
   }));
 
-  fit('should check if the local storage is updated when operator add event is triggered', marbles((m) => {
+  it('should check if the local storage is updated when operator add event is triggered', marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     m.hot('-e-').do(() => workflowActionService.addOperator(mockScanPredicate, mockPoint))
       .delay(100).subscribe(
@@ -63,7 +63,7 @@ describe('SaveWorkflowService', () => {
     );
   }));
 
-  fit('should check if the local storage is updated when operator delete event is triggered', marbles((m) => {
+  it('should check if the local storage is updated when operator delete event is triggered', marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     m.hot('-e-').do(() => {
       workflowActionService.addOperator(mockScanPredicate, mockPoint);
@@ -84,7 +84,7 @@ describe('SaveWorkflowService', () => {
     );
   }));
 
-  fit('should check if the local storage is updated when link add event is triggered', marbles((m) => {
+  it('should check if the local storage is updated when link add event is triggered', marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     m.hot('-e-').do(() => {
       workflowActionService.addOperator(mockScanPredicate, mockPoint);
@@ -108,7 +108,7 @@ describe('SaveWorkflowService', () => {
     );
   }));
 
-  fit('should check if the local storage is updated when link delete event is triggered', marbles((m) => {
+  it('should check if the local storage is updated when link delete event is triggered', marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     m.hot('-e-').do(() => {
       workflowActionService.addOperator(mockScanPredicate, mockPoint);
@@ -132,7 +132,7 @@ describe('SaveWorkflowService', () => {
     );
   }));
 
-  fit(`should check if the local storage is updated when operator delete event is triggered when there
+  it(`should check if the local storage is updated when operator delete event is triggered when there
       exists a link on the deleted operator`, marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     m.hot('-e-').do(() => {
@@ -159,7 +159,7 @@ describe('SaveWorkflowService', () => {
   }));
 
 
-  fit('should check if the local storage is updated when operator property change event is triggered', marbles((m) => {
+  it('should check if the local storage is updated when operator property change event is triggered', marbles((m) => {
     autoSaveWorkflowService.handleAutoSaveWorkFlow();
     const mockProperties = {tableName: 'mockTableName'};
     m.hot('-e-').do(() => {
@@ -182,7 +182,7 @@ describe('SaveWorkflowService', () => {
     );
   }));
 
-  fit('should successfully loaded what is stored inside local storage when "loadWorkflow()" is called ', marbles((m) => {
+  it('should successfully loaded what is stored inside local storage when "loadWorkflow()" is called ', marbles((m) => {
     const operatorPositions: {[key: string]: Point} = {};
     operatorPositions[mockScanPredicate.operatorID] = mockPoint;
     const operators: OperatorPredicate[] = [];
