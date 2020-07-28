@@ -8,6 +8,18 @@ import { AppSettings } from 'src/app/common/app-setting';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
+ * 1. its ID
+ * 2. its name
+ * 3. its body which is SavedWorkflowBody
+ */
+export interface SavedWorkflow {
+  workflowID: string;
+  workflowName: string;
+  workflowBody: SavedWorkflowBody;
+}
+
+/**
+ * SavedWorkflowBody is used to store the information of the workflow
  *  1. all existing operators and their properties
  *  2. operator's position on the JointJS paper
  *  3. operator link predicates
@@ -17,11 +29,6 @@ import { AppSettings } from 'src/app/common/app-setting';
  *  will then be used to reload the entire workflow.
  *
  */
-export interface SavedWorkflow {
-  workflowID: string;
-  workflowName: string;
-  workflowBody: SavedWorkflowBody;
-}
 
 export interface SavedWorkflowBody {
   operators: OperatorPredicate[];
@@ -115,8 +122,12 @@ export class SaveWorkflowService {
    * this method send an request to the backend to get
    *  the workflow of a specific id stored in the backend mysql storage
    *  and display it onto the JointJS paper.
+   *
+   * this method is called when user type in url like localhost:4200/workflow/id-1234
+   * the function call argument in this case will be id-1234
    */
   public fetchWorkflow(workflowID: String): void {
+    // wait until the frontend receives operatormetadata because otherwise workflow cannot be created
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => {
