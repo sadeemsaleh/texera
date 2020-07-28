@@ -8,7 +8,6 @@ import edu.uci.ics.texera.web.response.GenericWebResponse;
 import io.dropwizard.jersey.sessions.Session;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.jooq.Record3;
-import org.jooq.types.UInteger;
 
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.*;

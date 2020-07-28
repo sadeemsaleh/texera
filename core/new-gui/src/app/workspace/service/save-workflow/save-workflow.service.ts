@@ -120,12 +120,15 @@ export class SaveWorkflowService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => {
+        // first delete all existing operators and links;
+        this.workflowActionService.deleteOperatorsAndLinks(
+          this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
+
         this.httpClient.get<SavedWorkflow>(`${AppSettings.getApiEndpoint()}/${FETCH_WORKFLOW_ENDPOINT}/${workflowID}`)
           .subscribe(workflow => {
-            console.log(workflow);
+            // set current workflow's id
             this.workflowActionService.getTexeraGraph().setID(workflow.workflowID);
             const workflowBody = workflow.workflowBody as SavedWorkflowBody;
-            console.log(workflowBody);
             const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
             workflowBody.operators.forEach(op => {
               const opPosition = workflowBody.operatorPositions[op.operatorID];
@@ -140,13 +143,9 @@ export class SaveWorkflowService {
               links.push(link);
             });
 
-            // first delete all existing operators and links;
-            this.workflowActionService.deleteOperatorsAndLinks(
-              this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
-
             this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
 
-            // operators shouldn't be highlighted during page reload
+            // operators shouldn't be highlighted during workflow fetching
             this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
               this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
           });
@@ -181,6 +180,7 @@ export class SaveWorkflowService {
 
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
 
+      // after saving the workflow locally at frontend, send an request to save it in the backend
       const saveWorkflowRequestURL = `${AppSettings.getApiEndpoint()}/${SAVE_WORKFLOW_ENDPOINT}`;
       const formData: FormData = new FormData();
       // formData.append('workflowID', 'tobacco-analysis-workflow');
@@ -193,10 +193,9 @@ export class SaveWorkflowService {
         .subscribe(
           response => {
             // do something with response
-            console.log('success: ' + response);
           },
           errorResponse => {
-            console.log('error: ' + errorResponse.toString());
+            // do something with error
           }
       );
     });
