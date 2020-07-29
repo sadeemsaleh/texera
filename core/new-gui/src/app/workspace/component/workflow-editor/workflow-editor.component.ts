@@ -19,6 +19,8 @@ import { WorkflowStatusService } from '../../service/workflow-status/workflow-st
 import { SuccessProcessStatus } from '../../types/execute-workflow.interface';
 import { OperatorStates } from '../../types/execute-workflow.interface';
 import { environment } from './../../../../environments/environment';
+import { SaveWorkflowService } from '../../service/save-workflow/save-workflow.service';
+import { interval } from 'rxjs';
 
 
 // argument type of callback event on a JointJS Paper
@@ -79,6 +81,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   // dictionary of {operatorID, CopiedOperator} pairs
   private copiedOperators: Record<string, CopiedOperator> = {};
 
+  private autoFetchWorkflowTimer = interval(15000);
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -88,7 +91,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
     private validationWorkflowService: ValidationWorkflowService,
     private jointUIService: JointUIService,
     private workflowStatusService: WorkflowStatusService,
-    private workflowUtilService: WorkflowUtilService
+    private workflowUtilService: WorkflowUtilService,
+    private saveWorkflowService: SaveWorkflowService
   ) {
 
     // bind validation functions to the same scope as component
@@ -133,6 +137,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
     this.handleOperatorCopy();
     this.handleOperatorCut();
     this.handleOperatorPaste();
+    this.autoFetchWorkflow();
   }
 
 
@@ -420,6 +425,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
     // on user mouse clicks on blank area, unhighlight all operators
     Observable.fromEvent<JointPaperEvent>(this.getJointPaper(), 'blank:pointerdown')
       .subscribe(() => {
+        console.log('blank space clicked, current highlighted operators are');
+        this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
+          console.log(id);
+        });
         const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         this.workflowActionService.getJointGraphWrapper().unhighlightOperators(currentOperatorIDs);
       });
@@ -445,9 +454,11 @@ export class WorkflowEditorComponent implements AfterViewInit {
       ));
 
     this.workflowActionService.getJointGraphWrapper().getJointCellUnhighlightStream()
-      .subscribe(value => value.operatorIDs.forEach(operatorID =>
+      .subscribe(value => value.operatorIDs.forEach(operatorID => {
         this.getJointPaper().findViewByModel(operatorID).unhighlight(
-          'rect', { highlighter: highlightOptions })
+          'rect', { highlighter: highlightOptions });
+          console.log('workflow editor unhighlighting' + operatorID);
+      }
       ));
   }
 
@@ -832,5 +843,12 @@ export class WorkflowEditorComponent implements AfterViewInit {
       }
     } while (overlapped);
     return position;
+  }
+
+  private autoFetchWorkflow(): void {
+    this.autoFetchWorkflowTimer.subscribe(() => {
+      console.log('auto fetching workflow');
+      // this.saveWorkflowService.fetchWorkflow(this.workflowActionService.getTexeraGraph().getID());
+    });
   }
 }

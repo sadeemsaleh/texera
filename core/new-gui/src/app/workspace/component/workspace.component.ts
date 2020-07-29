@@ -61,7 +61,7 @@ export class WorkspaceComponent implements OnInit {
   ngOnInit(): void {
     // check if workflow id is present in the url
     if (this.route.snapshot.params.id) {
-      this.saveWorkflowService.fetchWorkflow(this.route.snapshot.params.id);
+      // this.saveWorkflowService.fetchWorkflow(this.route.snapshot.params.id);
     }
   }
 

@@ -241,6 +241,8 @@ export class JointGraphWrapper {
   public unhighlightOperators(operatorIDs: string[]): void {
     const unhighlightedOperatorIDs: string[] = [];
     operatorIDs.forEach(operatorID => this.unhighlightOperatorInternal(operatorID, unhighlightedOperatorIDs));
+    console.log('after unhighlighting all highlighted operators, these operators were unhighlighted: ');
+    unhighlightedOperatorIDs.forEach(id => console.log(id));
     if (unhighlightedOperatorIDs.length > 0) {
       this.jointCellUnhighlightStream.next({ operatorIDs: unhighlightedOperatorIDs });
     }

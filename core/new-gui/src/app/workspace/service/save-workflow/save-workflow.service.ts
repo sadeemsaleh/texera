@@ -65,6 +65,8 @@ export const SAVE_WORKFLOW_ENDPOINT = 'workflow/update-workflow';
 export class SaveWorkflowService {
 
   private static readonly LOCAL_STORAGE_KEY: string = 'workflow';
+  private static readonly SESSION_STORAGE_KEY_WORKFLOW: string = 'workflow';
+  private static readonly Session_STORAGE_KEY_HIGHLIGHTED: string = 'highlighted';
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -131,15 +133,20 @@ export class SaveWorkflowService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => {
-        // first delete all existing operators and links;
-        this.workflowActionService.deleteOperatorsAndLinks(
-          this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
-
         this.httpClient.get<SavedWorkflow>(`${AppSettings.getApiEndpoint()}/${FETCH_WORKFLOW_ENDPOINT}/${workflowID}`)
           .subscribe(workflow => {
             // set current workflow's id
             this.workflowActionService.getTexeraGraph().setID(workflow.workflowID);
             const workflowBody = workflow.workflowBody as SavedWorkflowBody;
+            const savedWorkflowJson = sessionStorage.getItem(SaveWorkflowService.SESSION_STORAGE_KEY_WORKFLOW);
+            if (JSON.stringify(workflowBody) === savedWorkflowJson) {
+              // do not refresh the page
+              return;
+            }
+
+            this.workflowActionService.deleteOperatorsAndLinks(
+              this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
+
             const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
             workflowBody.operators.forEach(op => {
               const opPosition = workflowBody.operatorPositions[op.operatorID];
@@ -155,10 +162,23 @@ export class SaveWorkflowService {
             });
 
             this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
-
+            console.log('after reloading, highlighted operators are ');
+            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
+              console.log(id);
+            });
             // operators shouldn't be highlighted during workflow fetching
             this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
               this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
+
+            console.log('after unhighlighting, still highlighted operatos are ');
+            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
+              console.log(id);
+            });
+            // const highlightedOperatorIDsJSON = sessionStorage.getItem(SaveWorkflowService.SESSION_STORAGE_KEY_WORKFLOW);
+            // if (highlightedOperatorIDsJSON) {
+            //   const sessionStoredHighlightedOperatorIDs: string[] = JSON.parse(highlightedOperatorIDsJSON);
+            //   this.workflowActionService.getJointGraphWrapper().highlightOperators(sessionStoredHighlightedOperatorIDs);
+            // }
           });
       });
   }
@@ -190,7 +210,11 @@ export class SaveWorkflowService {
       };
 
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
-
+      // session storeage are not shared across browser tabs,
+      // used to determine, after a workflow fetch request, if should refresh the page (is there diff?)
+      sessionStorage.setItem(SaveWorkflowService.SESSION_STORAGE_KEY_WORKFLOW, JSON.stringify(savedWorkflow));
+      sessionStorage.setItem(SaveWorkflowService.Session_STORAGE_KEY_HIGHLIGHTED,
+        JSON.stringify(this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs()));
       // after saving the workflow locally at frontend, send an request to save it in the backend
       const saveWorkflowRequestURL = `${AppSettings.getApiEndpoint()}/${SAVE_WORKFLOW_ENDPOINT}`;
       const formData: FormData = new FormData();
