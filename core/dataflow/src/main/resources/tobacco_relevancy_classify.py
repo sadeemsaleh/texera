@@ -8,8 +8,11 @@ import pyarrow.flight
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 
-count_vectorizer_model_path = sys.argv[1]
-tobacco_classifier_model_path = sys.argv[2]
+portNumber = sys.argv[1]
+count_vectorizer_model_path = sys.argv[2]
+tobacco_classifier_model_path = sys.argv[3]
+inputAttributeName = sys.argv[4]
+resultAttributeName = sys.argv[5]
 
 
 def lower_case(text):
@@ -93,6 +96,10 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 										 table.num_rows, data_size)
 
 	def list_flights(self, context, criteria):
+		"""
+		Getting a list of available datasets on the server. This method is not used here,
+		but might be useful in the future.
+		"""
 		for key, table in self.flights.items():
 			if key[1] is not None:
 				descriptor = \
@@ -103,6 +110,11 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 			yield self._make_flight_info(key, descriptor, table)
 
 	def get_flight_info(self, context, descriptor):
+		"""
+		Returning an “access plan” for a dataset of interest, possibly requiring consuming multiple data streams.
+		This request can accept custom serialized commands containing, for example, your specific
+		application parameters.
+		"""
 		key = FlightServer.descriptor_to_key(descriptor)
 		if key in self.flights:
 			table = self.flights[key]
@@ -110,10 +122,19 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 		raise KeyError('Flight not found.')
 
 	def do_put(self, context, descriptor, reader, writer):
+		"""
+		Pass Arrow stream from the client to the server. The data must be associated with a `FlightDescriptor`,
+		which can be either a path or a command. Here the path is not actually a path on the disk,
+		but rather an identifier.
+		"""
 		key = FlightServer.descriptor_to_key(descriptor)
 		self.flights[key] = reader.read_all()
 
 	def do_get(self, context, ticket):
+		"""
+		Before getting the stream, the client must first ask the server for available tickets
+		(to the specified dataset) of the specified `FlightDescriptor`.
+		"""
 		key = ast.literal_eval(ticket.ticket.decode())
 		if key not in self.flights:
 			print("Flight Server:\tNOT IN")
@@ -121,28 +142,37 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 		return pyarrow.flight.RecordBatchStream(self.flights[key])
 
 	def do_action(self, context, action):
+		"""
+		Each (implementation-specific) action is a string (defined in the script). The client is expected to know
+		available actions. When a specific action is called, the server executes the corresponding action and
+		maybe will return any results, i.e. a generalized function call.
+		"""
 		if action.type == "compute":
+			# to execute the computation of sentiments.
 			input_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'ToPython')
-			# print("Flight Server:\tComputing relevancy...")
+			# print("Flight Server:\tComputing sentiment...")
 			key = FlightServer.descriptor_to_key(input_descriptor)
 			# print("Flight Server:\t\tConverting Arrow data to pandas.Dataframe...", end=" ")
-			input_dataframe = pandas.DataFrame(self.flights[key].to_pandas())
+			input_dataframe = pandas.DataFrame(self.flights[key].column(inputAttributeName).to_pandas())
 			# print("Done.")
 			# print("Flight Server:\t\tExecuting computation...", end=" ")
 			predictions = classifier_model.predict(input_dataframe)
-			outout_data = {'pred': predictions}
-			output_dataframe = pandas.DataFrame(data=outout_data)
 			# print("Done.")
 			# print("Flight Server:\t\tConverting back to Arrow data...", end =" ")
 			output_descriptor = pyarrow.flight.FlightDescriptor.for_path(b'FromPython')
-			self.flights[FlightServer.descriptor_to_key(output_descriptor)] = pyarrow.Table.from_pandas(output_dataframe)
+			output_data = self.flights[key]
+			predictions = pyarrow.array(predictions)
+			output_data = output_data.append_column(resultAttributeName, predictions)
+			self.flights[FlightServer.descriptor_to_key(output_descriptor)] = output_data
 			# print("Done.")
 			# print("Flight Server:\tDone.")
 			self.flights.pop(key)
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
 		elif action.type == "healthcheck":
+			# to check the status of the server to see if it is running.
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is up and running!'))
 		elif action.type == "shutdown":
+			# to shutdown the server.
 			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is shut down!'))
 			# Shut down on background thread to avoid blocking current
 			# request
@@ -152,16 +182,16 @@ class FlightServer(pyarrow.flight.FlightServerBase):
 
 	def _shutdown(self):
 		"""Shut down after a delay."""
-		print("Flight Server:\tServer is shutting down...")
+		# print("Flight Server:\tServer is shutting down...")
 
 		self.shutdown()
 		self.wait()
 
 
 def main():
-	location = "grpc+tcp://localhost:5005"
+	location = "grpc+tcp://localhost:"+portNumber
 	server = FlightServer("localhost", location)
-	print("Flight Server:\tServing on", location)
+	# print("Flight Server:\tServing on", location)
 	server.serve()
 
 
