@@ -81,7 +81,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   // dictionary of {operatorID, CopiedOperator} pairs
   private copiedOperators: Record<string, CopiedOperator> = {};
 
-  private autoFetchWorkflowTimer = interval(15000);
+  private autoFetchWorkflowTimer = interval(10000);
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -425,10 +425,6 @@ export class WorkflowEditorComponent implements AfterViewInit {
     // on user mouse clicks on blank area, unhighlight all operators
     Observable.fromEvent<JointPaperEvent>(this.getJointPaper(), 'blank:pointerdown')
       .subscribe(() => {
-        console.log('blank space clicked, current highlighted operators are');
-        this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
-          console.log(id);
-        });
         const currentOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         this.workflowActionService.getJointGraphWrapper().unhighlightOperators(currentOperatorIDs);
       });
@@ -457,7 +453,6 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(value => value.operatorIDs.forEach(operatorID => {
         this.getJointPaper().findViewByModel(operatorID).unhighlight(
           'rect', { highlighter: highlightOptions });
-          console.log('workflow editor unhighlighting' + operatorID);
       }
       ));
   }
@@ -847,8 +842,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
 
   private autoFetchWorkflow(): void {
     this.autoFetchWorkflowTimer.subscribe(() => {
-      console.log('auto fetching workflow');
-      // this.saveWorkflowService.fetchWorkflow(this.workflowActionService.getTexeraGraph().getID());
+      this.saveWorkflowService.fetchWorkflow(this.workflowActionService.getTexeraGraph().getID());
     });
   }
 }

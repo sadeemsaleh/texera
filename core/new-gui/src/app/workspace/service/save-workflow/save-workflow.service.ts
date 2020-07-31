@@ -162,23 +162,16 @@ export class SaveWorkflowService {
             });
 
             this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links);
-            console.log('after reloading, highlighted operators are ');
-            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
-              console.log(id);
-            });
+
             // operators shouldn't be highlighted during workflow fetching
             this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
               this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
 
-            console.log('after unhighlighting, still highlighted operatos are ');
-            this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().forEach(id => {
-              console.log(id);
-            });
-            // const highlightedOperatorIDsJSON = sessionStorage.getItem(SaveWorkflowService.SESSION_STORAGE_KEY_WORKFLOW);
-            // if (highlightedOperatorIDsJSON) {
-            //   const sessionStoredHighlightedOperatorIDs: string[] = JSON.parse(highlightedOperatorIDsJSON);
-            //   this.workflowActionService.getJointGraphWrapper().highlightOperators(sessionStoredHighlightedOperatorIDs);
-            // }
+            const highlightedOperatorIDsJSON = sessionStorage.getItem(SaveWorkflowService.SESSION_STORAGE_KEY_WORKFLOW);
+            if (highlightedOperatorIDsJSON) {
+              const sessionStoredHighlightedOperatorIDs: string[] = JSON.parse(highlightedOperatorIDsJSON);
+              this.workflowActionService.getJointGraphWrapper().highlightOperators(sessionStoredHighlightedOperatorIDs);
+            }
           });
       });
   }
