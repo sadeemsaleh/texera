@@ -124,10 +124,10 @@ export class ResultPanelComponent {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
 
     if (highlightedOperators.length === 1) {
-      this.showResultPanel = true;
       const resultMap = this.executeWorkflowService.getResultMap();
       const result: ResultObject | undefined = resultMap.get(highlightedOperators[0]);
       if (result) {
+        this.resultPanelToggleService.openResultPanel();
         this.displayResultTable(result.table);
         if (result.chartType) {
           this.chartType = result?.chartType;
@@ -136,7 +136,7 @@ export class ResultPanelComponent {
         }
       }
     } else {
-      this.showResultPanel = false;
+      this.resultPanelToggleService.closeResultPanel();
     }
   }
 
