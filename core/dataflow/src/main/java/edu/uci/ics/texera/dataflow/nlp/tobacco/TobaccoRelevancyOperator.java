@@ -142,7 +142,7 @@ public class TobaccoRelevancyOperator implements IOperator {
                     tryCount++;
                 }
             }
-            if (tryCount == 5) throw new DataflowException("Exceeded try limit of 5 when connecting to Flight Server!");
+            if (tryCount == 10) throw new DataflowException("Exceeded try limit of 5 when connecting to Flight Server!");
         } catch (Exception e) {
             throw new DataflowException(e.getMessage(), e);
         }

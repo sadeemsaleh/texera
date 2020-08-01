@@ -90,7 +90,7 @@ public class TobaccoRelevancyPredicate extends PredicateBase {
 
     public static Map<String, Object> getOperatorMetadata() {
         return ImmutableMap.<String, Object>builder()
-                .put(PropertyNameConstants.USER_FRIENDLY_NAME, "Tobacco Tweets Relevancy Classification")
+                .put(PropertyNameConstants.USER_FRIENDLY_NAME, "Tobacco Classifier")
                 .put(PropertyNameConstants.OPERATOR_DESCRIPTION, "Use ML model to predict whether a tweet is " +
                         "related to tobaccos.")
                 .put(PropertyNameConstants.OPERATOR_GROUP_NAME, OperatorGroupConstants.ANALYTICS_GROUP)
