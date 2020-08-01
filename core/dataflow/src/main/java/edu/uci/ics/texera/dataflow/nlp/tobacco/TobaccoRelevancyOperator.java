@@ -34,7 +34,6 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.JsonStringHashMap;
-import org.jooq.meta.derby.sys.Sys;
 
 import static edu.uci.ics.texera.api.schema.AttributeType.*;
 
