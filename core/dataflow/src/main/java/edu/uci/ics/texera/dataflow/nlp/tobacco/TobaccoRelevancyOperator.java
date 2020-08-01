@@ -34,6 +34,7 @@ import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.JsonStringHashMap;
+import org.jooq.meta.derby.sys.Sys;
 
 import static edu.uci.ics.texera.api.schema.AttributeType.*;
 
@@ -185,7 +186,9 @@ public class TobaccoRelevancyOperator implements IOperator {
                 break;
             }
         }
+        System.out.println("tobacco computed " + tupleBuffer.size() + " more");
         if (tupleBuffer.isEmpty()) {
+            System.out.println("tobacco does not have more");
             return false;
         }
         writeArrowStream(tupleBuffer);
@@ -198,9 +201,11 @@ public class TobaccoRelevancyOperator implements IOperator {
             return null;
         }
         if (tupleBuffer == null){
+            System.out.println("tobacco has no tuple buffer, computing more");
             if (computeTupleBuffer()) {
                 computeClassLabel();
             } else {
+                tupleBuffer = null;
                 return null;
             }
         }
@@ -222,6 +227,7 @@ public class TobaccoRelevancyOperator implements IOperator {
     }
 
     private Tuple popupOneTuple() {
+        System.out.println("tobacco tupleBuffer has " + tupleBuffer.size() + " elements");
         tupleBuffer.remove(0);
         if (tupleBuffer.isEmpty()) {
             tupleBuffer = null;
