@@ -113,6 +113,8 @@ public class TobaccoRelevancyOperator implements IOperator {
             throw new DataflowException(ErrorMessages.INPUT_OPERATOR_NOT_SPECIFIED);
         }
 
+        inputOperator.open();
+
         // Flight related
         try {
             int portNumber = getFreeLocalPort();
@@ -132,6 +134,7 @@ public class TobaccoRelevancyOperator implements IOperator {
             int tryCount = 0;
             while (!connected && tryCount < 5) {
                 try {
+                    Thread.sleep(2000);
                     flightClient = FlightClient.builder(rootAllocator, location).build();
                     String message = new String(
                             flightClient.doAction(new Action("healthcheck")).next().getBody(), StandardCharsets.UTF_8);
@@ -142,12 +145,15 @@ public class TobaccoRelevancyOperator implements IOperator {
                     tryCount++;
                 }
             }
-            if (tryCount == 10) throw new DataflowException("Exceeded try limit of 5 when connecting to Flight Server!");
+            if (tryCount == 5) {
+                this.close();
+                throw new DataflowException("Exceeded try limit of 5 when connecting to Flight Server!");
+            }
         } catch (Exception e) {
+            this.close();
             throw new DataflowException(e.getMessage(), e);
         }
 
-        inputOperator.open();
         Schema inputSchema = inputOperator.getOutputSchema();
 
         // generate output schema by transforming the input schema
@@ -208,6 +214,7 @@ public class TobaccoRelevancyOperator implements IOperator {
             resultQueue = new LinkedList<>();
             readArrowStream();
         }catch(Exception e){
+            this.close();
             throw new DataflowException(e.getMessage(), e);
         }
     }
@@ -500,12 +507,14 @@ public class TobaccoRelevancyOperator implements IOperator {
                             texeraField = getSpanFromListVector((ListVector) vector, i);
                             break;
                         default:
+                            this.close();
                             throw (new DataflowException("Unsupported data type "+
                                     vector.getField().toString() +
                                     " when converting back to Texera table."));
                     }
                 } catch (IllegalStateException e) {
                     if (!e.getMessage().contains("Value at index is null")) {
+                        this.close();
                         throw new DataflowException(e);
                     } else {
                         switch (vector.getField().getFieldType().getType().getTypeID()) {
@@ -556,6 +565,7 @@ public class TobaccoRelevancyOperator implements IOperator {
                     attributeType = LIST;
                     break;
                 default:
+                    this.close();
                     throw (new DataflowException("Unsupported data type "+
                             arrowType.getTypeID() +
                             " when converting back to Texera table."));
