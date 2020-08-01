@@ -213,7 +213,6 @@ public class NltkSentimentOperator implements IOperator {
     }
 
     private Tuple popupOneTuple() {
-        System.out.println("nltk tupleBuffer has " + tupleBuffer.size() + " elements");
         tupleBuffer.remove(0);
         if (tupleBuffer.isEmpty()) {
             tupleBuffer = null;

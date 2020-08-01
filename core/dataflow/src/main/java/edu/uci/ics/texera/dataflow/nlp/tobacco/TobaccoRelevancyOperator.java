@@ -186,9 +186,7 @@ public class TobaccoRelevancyOperator implements IOperator {
                 break;
             }
         }
-        System.out.println("tobacco computed " + tupleBuffer.size() + " more");
         if (tupleBuffer.isEmpty()) {
-            System.out.println("tobacco does not have more");
             return false;
         }
         writeArrowStream(tupleBuffer);
@@ -201,7 +199,6 @@ public class TobaccoRelevancyOperator implements IOperator {
             return null;
         }
         if (tupleBuffer == null){
-            System.out.println("tobacco has no tuple buffer, computing more");
             if (computeTupleBuffer()) {
                 computeClassLabel();
             } else {
@@ -227,7 +224,6 @@ public class TobaccoRelevancyOperator implements IOperator {
     }
 
     private Tuple popupOneTuple() {
-        System.out.println("tobacco tupleBuffer has " + tupleBuffer.size() + " elements");
         tupleBuffer.remove(0);
         if (tupleBuffer.isEmpty()) {
             tupleBuffer = null;
