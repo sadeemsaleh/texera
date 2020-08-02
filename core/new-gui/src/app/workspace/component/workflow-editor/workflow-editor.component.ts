@@ -81,7 +81,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   // dictionary of {operatorID, CopiedOperator} pairs
   private copiedOperators: Record<string, CopiedOperator> = {};
 
-  private autoFetchWorkflowTimer = interval(10000);
+  private autoFetchWorkflowTimer = interval(2000);
 
   constructor(
     private workflowActionService: WorkflowActionService,

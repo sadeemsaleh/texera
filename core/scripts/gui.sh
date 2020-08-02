@@ -1,3 +1,3 @@
 cd new-gui
 npm install
-ng build --prod
+ng build --base-href /tobacco/ --deploy-url /tobacco/
