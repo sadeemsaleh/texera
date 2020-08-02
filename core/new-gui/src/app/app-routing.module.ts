@@ -21,7 +21,7 @@ import { UserFileSectionComponent } from './dashboard/component/feature-containe
 */
 const routes: Routes = [
   {
-    path: 'workflow/:id',
+    path: 'workflows/:id',
     component: WorkspaceComponent
   },
   {

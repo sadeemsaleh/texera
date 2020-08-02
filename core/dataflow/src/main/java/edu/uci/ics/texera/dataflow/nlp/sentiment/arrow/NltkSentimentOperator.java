@@ -66,10 +66,7 @@ public class NltkSentimentOperator implements IOperator {
     public NltkSentimentOperator(NltkSentimentPredicate predicate){
         this.predicate = predicate;
 
-        String modelFileName = predicate.getInputAttributeModel();
-        if (modelFileName == null) {
-            modelFileName = "NltkSentiment.pickle";
-        }
+        String modelFileName = "NltkSentiment.pickle";
         this.PicklePath = Utils.getResourcePath(modelFileName, TexeraProject.TEXERA_DATAFLOW).toString();
 
     }

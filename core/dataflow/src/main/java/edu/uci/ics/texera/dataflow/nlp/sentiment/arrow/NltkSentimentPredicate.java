@@ -16,7 +16,6 @@ public class NltkSentimentPredicate extends PredicateBase {
 
     private final String inputAttributeName;
     private final String resultAttributeName;
-    private final String inputAttributeModel;
     private final int batchSize;
     private final int chunkSize;
 
@@ -31,8 +30,6 @@ public class NltkSentimentPredicate extends PredicateBase {
             @JsonProperty(value = PropertyNameConstants.NLTK_BATCH_SIZE, required = true,
                     defaultValue = "10")
                     int batchSize,
-            @JsonProperty(value = PropertyNameConstants.NLTK_MODEL, required = true)
-                    String inputAttributeModel,
             @JsonProperty(value = PropertyNameConstants.ARROW_CHUNK_SIZE, required = true,
             defaultValue = "10") int chunkSize) {
         if (inputAttributeName.trim().isEmpty()) {
@@ -45,7 +42,6 @@ public class NltkSentimentPredicate extends PredicateBase {
         this.resultAttributeName = resultAttributeName;
         this.batchSize = batchSize;
         this.chunkSize = chunkSize;
-        this.inputAttributeModel = inputAttributeModel;
     };
 
     @JsonProperty(PropertyNameConstants.ATTRIBUTE_NAME)
@@ -56,11 +52,6 @@ public class NltkSentimentPredicate extends PredicateBase {
     @JsonProperty(PropertyNameConstants.RESULT_ATTRIBUTE_NAME)
     public String getResultAttributeName() {
         return this.resultAttributeName;
-    }
-
-    @JsonProperty(PropertyNameConstants.NLTK_MODEL)
-    public String getInputAttributeModel() {
-        return this.inputAttributeModel;
     }
 
     @JsonProperty(PropertyNameConstants.NLTK_BATCH_SIZE)

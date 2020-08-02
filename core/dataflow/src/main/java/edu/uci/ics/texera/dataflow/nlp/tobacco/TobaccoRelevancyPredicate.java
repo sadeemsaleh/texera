@@ -15,8 +15,6 @@ public class TobaccoRelevancyPredicate extends PredicateBase {
 
     private final String inputAttributeName;
     private final String resultAttributeName;
-    private final String inputAttributeVectorizerModel;
-    private final String inputAttributeClassifierModel;
     private final int batchSize;
     private final int chunkSize;
 
@@ -31,12 +29,6 @@ public class TobaccoRelevancyPredicate extends PredicateBase {
             @JsonProperty(value = PropertyNameConstants.TOBACCO_BATCH_SIZE, required = true,
                     defaultValue = "10")
                     int batchSize,
-            @JsonProperty(value = PropertyNameConstants.TOBACCO_VECTORIZER_MODEL, required = true,
-                    defaultValue = "tobacco_cv.sav")
-                    String inputAttributeVectorizerModel,
-            @JsonProperty(value = PropertyNameConstants.TOBACCO_CLASSIFIER_MODEL, required = true,
-                    defaultValue = "tobacco_model.sav")
-                    String inputAttributeClassifierModel,
             @JsonProperty(value = PropertyNameConstants.ARROW_CHUNK_SIZE, required = true,
                     defaultValue = "10") int chunkSize) {
         if (inputAttributeName.trim().isEmpty()) {
@@ -49,8 +41,6 @@ public class TobaccoRelevancyPredicate extends PredicateBase {
         this.resultAttributeName = resultAttributeName;
         this.batchSize = batchSize;
         this.chunkSize = chunkSize;
-        this.inputAttributeVectorizerModel = inputAttributeVectorizerModel;
-        this.inputAttributeClassifierModel = inputAttributeClassifierModel;
     };
 
     @JsonProperty(PropertyNameConstants.ATTRIBUTE_NAME)
@@ -61,16 +51,6 @@ public class TobaccoRelevancyPredicate extends PredicateBase {
     @JsonProperty(PropertyNameConstants.RESULT_ATTRIBUTE_NAME)
     public String getResultAttributeName() {
         return this.resultAttributeName;
-    }
-
-    @JsonProperty(PropertyNameConstants.TOBACCO_VECTORIZER_MODEL)
-    public String getInputAttributeVectorizerModel() {
-        return this.inputAttributeVectorizerModel;
-    }
-
-    @JsonProperty(PropertyNameConstants.TOBACCO_CLASSIFIER_MODEL)
-    public String getInputAttributeClassifierModel() {
-        return this.inputAttributeClassifierModel;
     }
 
     @JsonProperty(PropertyNameConstants.TOBACCO_BATCH_SIZE)

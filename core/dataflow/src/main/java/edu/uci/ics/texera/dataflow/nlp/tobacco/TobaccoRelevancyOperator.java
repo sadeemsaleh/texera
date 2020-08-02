@@ -67,16 +67,10 @@ public class TobaccoRelevancyOperator implements IOperator {
     public TobaccoRelevancyOperator(TobaccoRelevancyPredicate predicate){
         this.predicate = predicate;
 
-        String VectorizerFileName = predicate.getInputAttributeVectorizerModel();
-        if (VectorizerFileName == null) {
-            VectorizerFileName = "tobacco_cv.sav";
-        }
+        String VectorizerFileName = "tobacco_cv.sav";
         this.VectorizerPath = Utils.getResourcePath(VectorizerFileName, TexeraProject.TEXERA_DATAFLOW).toString();
 
-        String ClassifierFileName = predicate.getInputAttributeClassifierModel();
-        if (ClassifierFileName == null) {
-            ClassifierFileName = "tobacco_model.sav";
-        }
+        String ClassifierFileName = "tobacco_model.sav";
         this.ClassifierPath = Utils.getResourcePath(ClassifierFileName, TexeraProject.TEXERA_DATAFLOW).toString();
 
     }
