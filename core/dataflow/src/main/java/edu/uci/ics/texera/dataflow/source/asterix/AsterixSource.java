@@ -48,7 +48,7 @@ public class AsterixSource implements ISourceOperator {
             String asterixAddress = "http://" + predicate.getHost() + ":" + predicate.getPort() + 
                     "/query/service";
             String asterixQuery = generateAsterixQuery(predicate);
-            Unirest.setTimeouts(600000, 600000);
+            Unirest.setTimeouts(0, 0);
             HttpResponse<JsonNode> jsonResponse = Unirest
                     .post(asterixAddress)
                     .queryString("statement", asterixQuery)
