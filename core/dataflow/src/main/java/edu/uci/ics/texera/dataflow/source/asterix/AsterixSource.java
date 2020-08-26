@@ -84,21 +84,22 @@ public class AsterixSource implements ISourceOperator {
                     "]";
             String asterixField = "`" + predicate.getField() + "`";
             sb.append("and ftcontains(" + asDataset + "." + asterixField + ", ");
-            sb.append(asterixKeyword + ", " + "{\"mode\":\"all\"}" + ")").append("\n");
+            sb.append(asterixKeyword + ", " + "{\"mode\":\"any\"}" + ")").append("\n");
         }
         if(predicate.getStartDate() != null){
         	String startDate = predicate.getStartDate();
-        	sb.append("and create_at >= datetime(\""+startDate +"T00:00:04.000Z\")").append("\n");
+        	sb.append("and create_at >= datetime(\""+startDate +"T00:00:00.000Z\")").append("\n");
         }
         if(predicate.getEndDate() != null){
         	String endDate = predicate.getEndDate();
         	
-        	sb.append("and create_at <= datetime(\""+endDate +"T00:00:04.000Z\")").append("\n");
+        	sb.append("and create_at < datetime(\""+endDate +"T00:00:00.000Z\")").append("\n");
         }
         if (predicate.getLimit() != null) {
             sb.append("limit " + predicate.getLimit()).append("\n");
         }
         sb.append(";");
+        System.out.println("\n" + sb.toString() + "\n");
         return sb.toString();
     }
 
