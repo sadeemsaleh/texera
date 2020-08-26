@@ -13,9 +13,9 @@ import edu.uci.ics.texera.dataflow.source.asterix.AsterixSourcePredicate;
 public class AsterixTwitterIngest {
     
     public static void main(String[] args) {
-        ingestKeywords("01a_hurricane_maria",
-                "hurricane huracan government gobierno disaster desastre FEMA Puerto Rico resilience resiliencia",
-                "2017-09-01", "2018-02-01", null);
+//        ingestKeywords("01a_hurricane_maria",
+//                "hurricane huracan government gobierno disaster desastre FEMA Puerto Rico resilience resiliencia",
+//                "2017-09-01", "2018-02-01", null);
         ingestKeywords("01b_hurricane_maria_water",
                 "agua PRASA desastre water Puerto Rico comunidad AAA",
                 "2017-09-01", "2020-04-01", null);
