@@ -18,7 +18,7 @@ public class AsterixTwitterIngest {
 //                "2017-09-01", "2018-02-01", null);
         ingestKeywords("01b_hurricane_maria_water",
                 "agua PRASA desastre water Puerto Rico comunidad AAA",
-                "2017-09-01", "2020-04-01", null);
+                "2017-09-01", "2018-09-01", null);
     }
 
     public static void ingestKeywords(String tableName, String keywords, String startDate, String endDate, Integer limit) {
