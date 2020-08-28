@@ -29,7 +29,6 @@ public class DateTimeField implements IField {
         }
     }
 
-    @JsonCreator
     public DateTimeField(
             @JsonProperty(value = JsonConstants.FIELD_VALUE, required = true)
             String localDateTimeString,

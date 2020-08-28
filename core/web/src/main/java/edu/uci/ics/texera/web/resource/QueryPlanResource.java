@@ -32,6 +32,7 @@ import edu.uci.ics.texera.dataflow.common.PredicateBase;
 import edu.uci.ics.texera.dataflow.common.PropertyNameConstants;
 import edu.uci.ics.texera.dataflow.plangen.LogicalPlan;
 import edu.uci.ics.texera.dataflow.plangen.QueryContext;
+import edu.uci.ics.texera.dataflow.sink.tuple.TupleSink;
 import edu.uci.ics.texera.web.TexeraWebException;
 import edu.uci.ics.texera.dataflow.sink.VisualizationOperator;
 
@@ -56,7 +57,10 @@ public class QueryPlanResource {
      * @param plan Logical plan to be executed
      * @return Generic GenericWebResponse object
      */
-    private JsonNode executeMutipleSinkPlan(Plan plan)  {
+    private JsonNode executeMutipleSinkPlan(Plan plan) throws IOException {
+
+        String resultID = UUID.randomUUID().toString();
+
         HashMap<String, ISink> sinkMap = plan.getSinkMap();
         ObjectNode response = new ObjectMapper().createObjectNode();
         HashMap<String, List<Tuple>> executionResult = new HashMap<>();
@@ -76,6 +80,23 @@ public class QueryPlanResource {
                 sinkOperator.open();
                 sinkOperator.processTuples();
                 sinkOperator.close();
+            }
+
+            if (sinkOperator instanceof TupleSink) {
+                // make sure result directory is created
+                if (Files.notExists(resultDirectory)) {
+                    Files.createDirectories(resultDirectory);
+                }
+
+                // clean up old result files
+                cleanupOldResults();
+
+                // write original json of the result into a file
+                java.nio.file.Path resultFile = resultDirectory.resolve(resultID + ".json");
+
+                Files.createFile(resultFile);
+                Files.write(resultFile, new ObjectMapper().writeValueAsBytes(executionResult.get(sinkEntry.getKey())));
+
             }
         }
 
@@ -101,7 +122,6 @@ public class QueryPlanResource {
             arrayNode.add(operatorMap);
         }
 
-        String resultID = UUID.randomUUID().toString();
         response.put("code", executionResult.isEmpty() ? 1 : 0);
         response.put("resultID", resultID);
         response.set("result", arrayNode);
