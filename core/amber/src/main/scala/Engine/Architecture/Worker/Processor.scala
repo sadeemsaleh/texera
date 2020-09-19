@@ -167,7 +167,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     }
   }
 
-  private[this] def waitProcessing: Receive = {
+  protected[this] def waitProcessing: Receive = {
     case ExecutionPaused =>
       context.become(paused)
       onPaused()
@@ -389,7 +389,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
   override def completed: Receive =
     disallowDataMessages orElse disallowUpdateInputLinking orElse super.completed
 
-  private[this] def beforeProcessingBatch(): Unit = {
+  protected[this] def beforeProcessingBatch(): Unit = {
     if (userFixedTuple != null) {
       try {
         transferTuple(userFixedTuple, generatedCount)
@@ -410,7 +410,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     }
   }
 
-  private[this] def afterProcessingBatch(): Unit = {
+  protected[this] def afterProcessingBatch(): Unit = {
     processingIndex = 0
     synchronized {
       processingQueue.dequeue()
@@ -468,7 +468,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     super.onInterrupted(operations)
   }
 
-  private[this] def exitIfPaused(): Unit = {
+  protected[this] def exitIfPaused(): Unit = {
     onInterrupted {
       dPThreadState = ThreadState.Paused
       self ! ExecutionPaused
@@ -476,7 +476,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     }
   }
 
-  private[this] def afterFinishProcessing(): Unit = {
+  protected[this] def afterFinishProcessing(): Unit = {
     Breaks.breakable {
       processStart = System.nanoTime()
       dataProcessor.noMore()
@@ -534,7 +534,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     }
   }
 
-  private[this] def processBatch(): Unit = {
+  protected[this] def processBatch(): Unit = {
     Breaks.breakable {
       beforeProcessingBatch()
       processStart = System.nanoTime()

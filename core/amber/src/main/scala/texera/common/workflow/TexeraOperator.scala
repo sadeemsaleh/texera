@@ -13,6 +13,7 @@ import texera.operators.count.TexeraCount
 import texera.operators.filter.TexeraFilter
 import texera.operators.hdfsscan.TexeraHdfsFileScan
 import texera.operators.keyword.TexeraKeywordSearch
+import texera.operators.linearregression.TexeraLinearRegression
 import texera.operators.localscan.TexeraLocalFileScan
 import texera.operators.pythonUDF.TexeraPythonUDF
 import texera.operators.regex.TexeraRegex
@@ -39,6 +40,7 @@ import scala.collection.{JavaConverters, mutable}
     new Type(value = classOf[TexeraCount], name = "Count"),
     new Type(value = classOf[TexeraSentimentAnalysis], name = "SentimentAnalysis"),
     new Type(value = classOf[TexeraPythonUDF], name = "PythonUDF"),
+    new Type(value = classOf[TexeraLinearRegression], name = "LinearRegression"),
   )
 )
 abstract class TexeraOperator {

@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashMap;
 
+import Engine.Operators.LinearRegression.LinearRegressionTupleProcessor;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.module.jsonSchema.JsonSchemaGenerator;
 import com.fasterxml.jackson.module.scala.DefaultScalaModule;
 import texera.common.TexeraUtils;
 import texera.common.workflow.TexeraOperator;
+import texera.operators.linearregression.TexeraLinearRegression;
 
 @SuppressWarnings("unchecked")
 public class OperatorSchemaGenerator {
@@ -41,8 +43,8 @@ public class OperatorSchemaGenerator {
     }
 
     public static void main(String[] args) throws Exception {
-        generateAllOperatorSchema();
-//        generateJsonSchema(ComparablePredicate.class);
+       // generateAllOperatorSchema();
+        generateOperatorSchema(TexeraLinearRegression.class);
     }
 
     public static void generateAllOperatorSchema() throws Exception {
