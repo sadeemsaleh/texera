@@ -11,26 +11,14 @@ import Engine.Common.AmberMessage.StateMessage._
 import Engine.Common.AmberMessage.ControlMessage.{QueryState, _}
 import Engine.Common.AmberTag.{LayerTag, WorkerTag}
 import Engine.Common.AmberTuple.{AmberTuple, Tuple}
-import Engine.Common.{
-  AdvancedMessageSending,
-  Constants,
-  ElidableStatement,
-  TableMetadata,
-  ThreadState,
-  TupleProcessor
-}
+import Engine.Common.{AdvancedMessageSending, Constants, ElidableStatement, TableMetadata, ThreadState, TupleProcessor}
 import Engine.Operators.Filter.{FilterMetadata, FilterSpecializedTupleProcessor, FilterType}
 import Engine.Operators.KeywordSearch.{KeywordSearchMetadata, KeywordSearchTupleProcessor}
-import Engine.Common.{
-  AdvancedMessageSending,
-  ElidableStatement,
-  TableMetadata,
-  ThreadState,
-  TupleProcessor
-}
+import Engine.Common.{AdvancedMessageSending, ElidableStatement, TableMetadata, ThreadState, TupleProcessor}
 import Engine.Operators.Sink.SimpleSinkProcessor
 import Engine.FaultTolerance.Recovery.RecoveryPacket
 import Engine.Operators.Common.Filter.{FilterGeneralMetadata, FilterGeneralTupleProcessor}
+import Engine.Operators.LinearRegression.{LinearRegressionMetadata, LinearRegressionTupleProcessor}
 import Engine.Operators.OperatorMetadata
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
 import akka.event.LoggingAdapter
@@ -355,6 +343,9 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
         case filterOpMetadata: FilterGeneralMetadata =>
           val dp = dataProcessor.asInstanceOf[FilterGeneralTupleProcessor]
           dp.filterFunc = filterOpMetadata.filterFunc
+        case regressionOpMetadata: LinearRegressionMetadata =>
+          val dp: LinearRegressionTupleProcessor = dataProcessor.asInstanceOf[LinearRegressionTupleProcessor]
+          dp.setLearningRate(regressionOpMetadata.learningRate)
         case t => throw new NotImplementedError("Unknown operator type: " + t)
       }
       log.info(

@@ -152,8 +152,10 @@ class WorkflowWebsocketResource {
       "is_retweet" -> 6,
       "sentiment" -> 7,
       "continent" -> 0,
-      "x" -> 9,
-      "y" -> 10,
+      "9" -> 9,
+      "10" -> 10,
+      "0" -> 0,
+      "1" -> 1,
     )
 
     val scan = request.operators

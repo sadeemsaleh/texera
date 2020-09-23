@@ -14,15 +14,16 @@ public class LinearRegressionTupleProcessor implements TupleProcessor {
     private int xIdx = -1;
     private int yIdx = -1;
 
-    private double learningRate = 0.0001;
+    private double learningRate = 0.1;
     private double b_current = 0;
     private double w_current = 0;
 
     private List<Tuple> allData = new ArrayList<>();
 
-    LinearRegressionTupleProcessor(int xIdx, int yIdx){
+    LinearRegressionTupleProcessor(int xIdx, int yIdx, double learningRate){
         this.xIdx = xIdx;
         this.yIdx = yIdx;
+        this.learningRate = learningRate;
     }
 
     @Override
@@ -36,7 +37,13 @@ public class LinearRegressionTupleProcessor implements TupleProcessor {
     }
 
     @Override
+    public void setLearningRate(double rate) {
+        learningRate = rate;
+    }
+
+    @Override
     public void onUpstreamExhausted(LayerTag from) {
+        // System.out.println("----------------------------");
         double w_gradient = 0;
         double b_gradient = 0;
         double n = allData.size() * 1.0;
@@ -44,14 +51,24 @@ public class LinearRegressionTupleProcessor implements TupleProcessor {
         for(Tuple t: allData) {
             Double x = Double.valueOf(t.getString(xIdx));
             Double y = Double.valueOf(t.getString(yIdx));
-            w_gradient += -(2/n) * x * (y - ((w_current * x) + b_current));
-            b_gradient += -(2/n) * (y - ((w_current * x) + b_current));
+            w_gradient += x * (y - ((w_current * x) + b_current));
+            b_gradient += (y - ((w_current * x) + b_current));
         }
+
+        w_gradient = (-2.0/n) * Math.round(w_gradient*100.0)/100.0;
+        b_gradient = (-2.0/n) * Math.round(b_gradient*100.0)/100.0;
+        w_gradient = Math.round(w_gradient*100.0)/100.0;
+        b_gradient = Math.round(b_gradient*100.0)/100.0;
+
+        // System.out.println("gradients are "+ w_gradient + " " + b_gradient);
 
         w_current = w_current - (learningRate * w_gradient);
         b_current = b_current - (learningRate * b_gradient);
 
-        System.out.println("Current w and b values are : " + w_current + " " + b_current);
+        w_current = Math.round(w_current*100.0)/100.0;
+        b_current = Math.round(b_current*100.0)/100.0;
+
+        System.out.println("Learning Rate " + learningRate + ", Current w and b values are : " + w_current + " " + b_current);
     }
 
     @Override

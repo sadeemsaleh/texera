@@ -22,11 +22,16 @@ public class TexeraLinearRegression extends TexeraOperator {
     @JsonPropertyDescription("column representing y in y=wx+b")
     public String yIdx;
 
+    @JsonProperty("learning rate")
+    @JsonPropertyDescription("Learning Rate for Gradient Descent")
+    public String learningRate;
+
     @Override
     public OperatorMetadata amberOperator() {
         return new LinearRegressionMetadata(this.amberOperatorTag(), Constants.defaultNumWorkers(),
                 this.context().fieldIndexMapping(this.xIdx.toLowerCase().trim()),
-                this.context().fieldIndexMapping(this.yIdx.toLowerCase().trim()));
+                this.context().fieldIndexMapping(this.yIdx.toLowerCase().trim()),
+                Double.valueOf(learningRate.trim()));
     }
 
     @Override

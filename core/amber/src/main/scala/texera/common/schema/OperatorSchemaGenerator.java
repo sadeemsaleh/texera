@@ -43,8 +43,8 @@ public class OperatorSchemaGenerator {
     }
 
     public static void main(String[] args) throws Exception {
-       // generateAllOperatorSchema();
-        generateOperatorSchema(TexeraLinearRegression.class);
+        generateAllOperatorSchema();
+       // generateOperatorSchema(TexeraLinearRegression.class);
     }
 
     public static void generateAllOperatorSchema() throws Exception {

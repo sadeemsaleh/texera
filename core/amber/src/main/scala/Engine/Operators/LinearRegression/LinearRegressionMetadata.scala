@@ -18,14 +18,15 @@ class LinearRegressionMetadata(
     tag: OperatorTag,
     val numWorkers: Int,
     val xIdx: Int,
-    val yIdx: Int
+    val yIdx: Int,
+    val learningRate: Double,
 ) extends OperatorMetadata(tag) {
   override lazy val topology: Topology = {
     new Topology(
       Array(
         new MLProcessorWorkerLayer(
           LayerTag(tag, "main"),
-          _ => new LinearRegressionTupleProcessor(xIdx, yIdx),
+          _ => new LinearRegressionTupleProcessor(xIdx, yIdx, learningRate),
           numWorkers,
           FollowPrevious(),
           RoundRobinDeployment()

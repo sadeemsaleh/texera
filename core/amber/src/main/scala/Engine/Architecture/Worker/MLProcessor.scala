@@ -53,7 +53,7 @@ object MLProcessor {
 class MLProcessor(var ml_dataProcessor: TupleProcessor, val ml_tag: WorkerTag) extends Processor(ml_dataProcessor, ml_tag) {
 
   var epochCount = 0
-  val MAX_EPOCHS = 100
+  val MAX_EPOCHS = 10000
 
   override def processBatch(): Unit = {
     Breaks.breakable {
