@@ -100,6 +100,7 @@ class MLProcessor(var ml_dataProcessor: TupleProcessor, val ml_tag: WorkerTag) e
       }
       if (batch == null) {
         while(epochCount < MAX_EPOCHS) {
+          println(s"Epoch $epochCount")
           exitIfPaused()
           dataProcessor.onUpstreamExhausted(from)
           epochCount += 1
@@ -109,13 +110,14 @@ class MLProcessor(var ml_dataProcessor: TupleProcessor, val ml_tag: WorkerTag) e
       } else {
         dataProcessor.onUpstreamChanged(from)
         //no tuple remains, we continue
-        while (processingIndex < batch.length) {
-//          exitIfPaused()
+//        while (processingIndex < batch.length) {
+          exitIfPaused()
           try {
-            currentInputTuple = batch(processingIndex)
-            if (!skippedInputTuples.contains(currentInputTuple)) {
-              dataProcessor.accept(currentInputTuple)
-            }
+//            currentInputTuple = batch(processingIndex)
+//            if (!skippedInputTuples.contains(currentInputTuple)) {
+//              dataProcessor.accept(currentInputTuple)
+//            }
+            dataProcessor.acceptBatch(batch)
             processedCount += 1
           } catch {
             case e: Exception =>
@@ -177,7 +179,7 @@ class MLProcessor(var ml_dataProcessor: TupleProcessor, val ml_tag: WorkerTag) e
 //                Breaks.break()
 //            }
 //          }
-        }
+//        }
       }
       afterProcessingBatch()
       processTime += System.nanoTime() - processStart

@@ -14,4 +14,6 @@ trait TupleProcessor extends TupleProducer {
   def noMore(): Unit
 
   def setLearningRate(rate: Double): Unit = {}
+
+  def acceptBatch(batch: Array[Tuple]): Unit = {}
 }
