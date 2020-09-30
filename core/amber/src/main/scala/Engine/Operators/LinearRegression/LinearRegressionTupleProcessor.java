@@ -2,12 +2,13 @@ package Engine.Operators.LinearRegression;
 
 import Engine.Common.AmberTag.LayerTag;
 import Engine.Common.AmberTuple.Tuple;
+import Engine.Common.MLTupleProcessor;
 import Engine.Common.TupleProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class LinearRegressionTupleProcessor implements TupleProcessor {
+public class LinearRegressionTupleProcessor implements MLTupleProcessor {
 
     private Tuple tuple = null;
     private boolean nextFlag = false;

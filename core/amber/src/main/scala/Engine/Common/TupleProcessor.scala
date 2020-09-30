@@ -12,8 +12,4 @@ trait TupleProcessor extends TupleProducer {
   def onUpstreamExhausted(from: LayerTag): Unit
 
   def noMore(): Unit
-
-  def setLearningRate(rate: Double): Unit = {}
-
-  def acceptBatch(batch: Array[Tuple]): Unit = {}
 }
