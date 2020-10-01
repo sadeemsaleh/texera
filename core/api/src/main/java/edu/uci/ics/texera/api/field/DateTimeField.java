@@ -1,34 +1,51 @@
 package edu.uci.ics.texera.api.field;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.uci.ics.texera.api.constants.JsonConstants;
+import org.mockito.internal.matchers.Null;
 
 public class DateTimeField implements IField {
     
     private LocalDateTime localDateTime;
 
     public DateTimeField(LocalDateTime localDateTime) {
-        checkNotNull(localDateTime);
         this.localDateTime = localDateTime;
     }
 
     @JsonCreator
     public DateTimeField(
-            @JsonProperty(value = JsonConstants.FIELD_VALUE, required = true) 
+            @JsonProperty(value = JsonConstants.FIELD_VALUE)
             String localDateTimeString) {
-        checkNotNull(localDateTimeString);
-        this.localDateTime = LocalDateTime.parse(localDateTimeString);
+        if (localDateTimeString != null) {
+            this.localDateTime = LocalDateTime.parse(localDateTimeString);
+        } else {
+            this.localDateTime = null;
+        }
+    }
+
+    @JsonCreator
+    public DateTimeField(
+            @JsonProperty(value = JsonConstants.FIELD_VALUE, required = true)
+            String localDateTimeString,
+            DateTimeFormatter formatter) {
+        if (localDateTimeString != null) {
+            this.localDateTime = LocalDateTime.parse(localDateTimeString,formatter);
+        } else {
+            this.localDateTime = null;
+        }
     }
 
     @JsonProperty(value = JsonConstants.FIELD_VALUE)
     public String getDateTimeString() {
+        if (localDateTime == null) {
+            return "";
+        }
         return this.localDateTime.toString();
     }
 
@@ -65,7 +82,7 @@ public class DateTimeField implements IField {
 
     @Override
     public String toString() {
-        return "DateTimeField [value=" + localDateTime.toString() + "]";
+        return "DateTimeField [value=" + String.valueOf(localDateTime) + "]";
     }
 
 }

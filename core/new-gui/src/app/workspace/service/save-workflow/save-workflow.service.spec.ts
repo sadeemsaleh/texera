@@ -188,7 +188,7 @@ describe('SaveWorkflowService', () => {
     const groups: PlainGroup[] = [];
 
     const mockWorkflow: SavedWorkflow = {
-      operators, operatorPositions, links, groups
+      operators, operatorPositions, links, groups, breakpoints: {}
     };
 
     localStorage.setItem('workflow', JSON.stringify(mockWorkflow));

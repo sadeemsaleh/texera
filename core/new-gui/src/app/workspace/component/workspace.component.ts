@@ -15,6 +15,7 @@ import { SchemaPropagationService } from '../service/dynamic-schema/schema-propa
 import { ResultPanelToggleService } from '../service/result-panel-toggle/result-panel-toggle.service';
 import { SaveWorkflowService } from '../service/save-workflow/save-workflow.service';
 import { WorkflowStatusService } from '../service/workflow-status/workflow-status.service';
+import { WorkflowWebsocketService } from '../service/workflow-websocket/workflow-websocket.service';
 
 @Component({
   selector: 'texera-workspace',
@@ -36,7 +37,8 @@ import { WorkflowStatusService } from '../service/workflow-status/workflow-statu
     ResultPanelToggleService,
     SaveWorkflowService,
     ValidationWorkflowService,
-    WorkflowStatusService
+    WorkflowStatusService,
+    WorkflowWebsocketService,
   ]
 })
 export class WorkspaceComponent {
@@ -49,7 +51,8 @@ export class WorkspaceComponent {
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService,
-    private saveWorkflowService: SaveWorkflowService
+    private saveWorkflowService: SaveWorkflowService,
+    private workflowWebsocketService: WorkflowWebsocketService,
   ) {
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
       value => this.showResultPanel = value,

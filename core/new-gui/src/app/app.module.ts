@@ -11,7 +11,6 @@ import { RouterModule } from '@angular/router';
 import { TourNgBootstrapModule } from 'ngx-tour-ng-bootstrap';
 import { LoggerModule, NgxLoggerLevel } from 'ngx-logger';
 
-import { MaterialDesignFrameworkModule } from 'angular6-json-schema-form';
 import { NgxJsonViewerModule } from 'ngx-json-viewer';
 
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -86,6 +85,8 @@ import { UserFileUploadService } from './common/service/user/user-file/user-file
 import { UserDictionaryUploadService } from './common/service/user/user-dictionary/user-dictionary-upload.service';
 import { UserDictionaryService } from './common/service/user/user-dictionary/user-dictionary.service';
 import { TEXERA_FORMLY_CONFIG } from './common/formly/formly-config';
+import { VisualizationPanelComponent } from './workspace/component/visualization-panel/visualization-panel.component';
+import { VisualizationPanelContentComponent } from './workspace/component/visualization-panel-content/visualization-panel-content.component';
 
 @NgModule({
   declarations: [
@@ -129,6 +130,8 @@ import { TEXERA_FORMLY_CONFIG } from './common/formly/formly-config';
     ObjectTypeComponent,
     MultiSchemaTypeComponent,
     NullTypeComponent,
+    VisualizationPanelComponent,
+    VisualizationPanelContentComponent,
   ],
   imports: [
     BrowserModule,
@@ -144,7 +147,6 @@ import { TEXERA_FORMLY_CONFIG } from './common/formly/formly-config';
     RouterModule.forRoot([]),
     TourNgBootstrapModule.forRoot(),
 
-    MaterialDesignFrameworkModule,
     FileUploadModule,
     FormsModule,
     ReactiveFormsModule,

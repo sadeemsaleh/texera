@@ -8,11 +8,12 @@ import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 import { OperatorGroup, Group, OperatorGroupReadonly } from './operator-group';
 import { Injectable } from '@angular/core';
-import { Point, OperatorPredicate, OperatorLink, OperatorPort } from '../../../types/workflow-common.interface';
+import { Point, OperatorPredicate, OperatorLink, OperatorPort, Breakpoint } from '../../../types/workflow-common.interface';
 
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
 import { cloneDeep } from 'lodash';
+import { WorkflowEditorComponent } from './../../../component/workflow-editor/workflow-editor.component';
 
 
 export interface Command {
@@ -303,11 +304,12 @@ export class WorkflowActionService {
    * @param operatorsAndPositions
    * @param links
    */
-  public addOperatorsAndLinks(operatorsAndPositions: {op: OperatorPredicate, pos: Point}[], links: OperatorLink[]): void {
+  public addOperatorsAndLinks(operatorsAndPositions: {op: OperatorPredicate, pos: Point}[], links: OperatorLink[],
+    breakpoints?: ReadonlyMap<string, Breakpoint>
+  ): void {
     // remember currently highlighted operators and groups
     const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
     const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
-
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
@@ -319,12 +321,18 @@ export class WorkflowActionService {
           this.jointGraphWrapper.highlightOperator(o.op.operatorID);
         });
         links.forEach(l => this.addLinkInternal(l));
+        if (breakpoints !== undefined) {
+          breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, breakpoint));
+        }
       },
       undo: () => {
         // remove links
         links.forEach(l => this.deleteLinkWithIDInternal(l.linkID));
         // remove the operators from JointJS
         operatorsAndPositions.forEach(o => this.deleteOperatorInternal(o.op.operatorID));
+        if (breakpoints !== undefined) {
+          breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, undefined));
+        }
         // restore previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
         this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
@@ -608,6 +616,9 @@ export class WorkflowActionService {
 
   // problem here
   public setOperatorProperty(operatorID: string, newProperty: object): void {
+    console.log('set operator property');
+    console.log(operatorID);
+    console.log(newProperty);
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
     const group = this.getOperatorGroup().getGroupByOperator(operatorID);
     const command: Command = {
@@ -639,35 +650,29 @@ export class WorkflowActionService {
     this.executeAndStoreCommand(command);
   }
 
-  public setOperatorAdvanceStatus(operatorID: string, newShowAdvancedStatus: boolean) {
-    const group = this.getOperatorGroup().getGroupByOperator(operatorID);
+  /**
+   * set a given link's breakpoint properties to specific values
+   */
+  public setLinkBreakpoint(linkID: string, newBreakpoint: Breakpoint | undefined): void {
+    const prevBreakpoint = this.getTexeraGraph().getLinkBreakpoint(linkID);
     const command: Command = {
       execute: () => {
-        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
-          this.jointGraphWrapper.setMultiSelectMode(false);
-          this.jointGraphWrapper.highlightOperator(operatorID);
-        } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
-          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
-          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-        }
-        this.setOperatorAdvanceStatusInternal(operatorID, newShowAdvancedStatus);
+        this.setLinkBreakpointInternal(linkID, newBreakpoint);
       },
       undo: () => {
-        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-        if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
-          this.jointGraphWrapper.setMultiSelectMode(false);
-          this.jointGraphWrapper.highlightOperator(operatorID);
-        } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
-          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
-          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-        }
-        this.setOperatorAdvanceStatusInternal(operatorID, !newShowAdvancedStatus);
+        this.setLinkBreakpointInternal(linkID, prevBreakpoint);
       }
     };
     this.executeAndStoreCommand(command);
+  }
+
+  /**
+   * Set the link's breakpoint property to empty to remove the breakpoint
+   *
+   * @param linkID
+   */
+  public removeLinkBreakpoint(linkID: string): void {
+    this.setLinkBreakpoint(linkID, undefined);
   }
 
   private addOperatorInternal(operator: OperatorPredicate, point: Point): void {
@@ -685,20 +690,6 @@ export class WorkflowActionService {
     this.jointGraph.addCell(operatorJointElement);
     this.jointGraphWrapper.setCellLayer(operator.operatorID, this.operatorGroup.getHighestLayer() + 1);
 
-    // if display status feature is enabled, add the execution status tooltip for this operator
-    if (environment.executionStatusEnabled) {
-      // calculate the position for its popup window
-      const tooltipPosition = {x: point.x, y: point.y - 20};
-      // get the jointJS UI element for the popup window
-      const operatorStatusTooltipJointElement = this.jointUIService.getJointOperatorStatusTooltipElement(operator, tooltipPosition);
-      // bind the two elements together
-      operatorJointElement.embed(operatorStatusTooltipJointElement);
-      // add the status toolip to the JointJS graph
-      this.jointGraph.addCell(operatorStatusTooltipJointElement);
-      this.jointGraphWrapper.setCellLayer(JointUIService.getOperatorStatusTooltipElementID(operator.operatorID),
-        this.operatorGroup.getHighestLayer() + 1);
-    }
-
     // add operator to texera graph
     this.texeraGraph.addOperator(operator);
   }
@@ -709,11 +700,7 @@ export class WorkflowActionService {
     if (group && group.collapsed) {
       this.texeraGraph.deleteOperator(operatorID);
     } else {
-      // remove the corresponding tooltip from JointJS first
-      if (environment.executionStatusEnabled) {
-        this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
-      }
-      // then remove the operator from JointJS
+      // remove the operator from JointJS
       this.jointGraph.getCell(operatorID).remove();
       // JointJS operator delete event will propagate and trigger Texera operator delete
     }
@@ -830,15 +817,20 @@ export class WorkflowActionService {
     this.texeraGraph.setOperatorProperty(operatorID, newProperty);
   }
 
-  private setOperatorAdvanceStatusInternal(operatorID: string, newShowAdvancedStatus: boolean) {
-    this.texeraGraph.setOperatorAdvanceStatus(operatorID, newShowAdvancedStatus);
-  }
-
   private executeAndStoreCommand(command: Command): void {
     this.undoRedoService.setListenJointCommand(false);
     command.execute();
     this.undoRedoService.addCommand(command);
     this.undoRedoService.setListenJointCommand(true);
+  }
+
+  private setLinkBreakpointInternal(linkID: string, newBreakpoint: Breakpoint | undefined): void {
+    this.texeraGraph.setLinkBreakpoint(linkID, newBreakpoint);
+    if (newBreakpoint === undefined || Object.keys(newBreakpoint).length === 0) {
+      this.getJointGraphWrapper().hideLinkBreakpoint(linkID);
+    } else {
+      this.getJointGraphWrapper().showLinkBreakpoint(linkID);
+    }
   }
 
 }

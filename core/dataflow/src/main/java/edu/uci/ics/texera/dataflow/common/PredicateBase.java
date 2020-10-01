@@ -1,5 +1,9 @@
 package edu.uci.ics.texera.dataflow.common;
 
+import edu.uci.ics.texera.dataflow.sink.barchart.BarChartSinkPredicate;
+import edu.uci.ics.texera.dataflow.sink.linechart.LineChartSinkPredicate;
+import edu.uci.ics.texera.dataflow.sink.piechart.PieChartSinkPredicate;
+import edu.uci.ics.texera.dataflow.sink.wordcloud.WordCloudSinkPredicate;
 import java.util.UUID;
 
 import edu.uci.ics.texera.dataflow.aggregator.AggregatorPredicate;
@@ -29,7 +33,6 @@ import edu.uci.ics.texera.dataflow.keywordmatcher.KeywordSourcePredicate;
 import edu.uci.ics.texera.dataflow.nlp.entity.NlpEntityPredicate;
 import edu.uci.ics.texera.dataflow.nlp.sentiment.EmojiSentimentPredicate;
 import edu.uci.ics.texera.dataflow.nlp.sentiment.NlpSentimentPredicate;
-import edu.uci.ics.texera.dataflow.nlp.sentiment.NltkSentimentOperatorPredicate;
 import edu.uci.ics.texera.dataflow.nlp.splitter.NlpSplitPredicate;
 import edu.uci.ics.texera.dataflow.projection.ProjectionPredicate;
 import edu.uci.ics.texera.dataflow.regexmatcher.RegexPredicate;
@@ -40,11 +43,12 @@ import edu.uci.ics.texera.dataflow.sink.mysql.MysqlSinkPredicate;
 import edu.uci.ics.texera.dataflow.sink.tuple.TupleSinkPredicate;
 import edu.uci.ics.texera.dataflow.source.asterix.AsterixSourcePredicate;
 import edu.uci.ics.texera.dataflow.source.file.FileSourcePredicate;
+import edu.uci.ics.texera.dataflow.source.mysql.MysqlSourcePredicate;
 import edu.uci.ics.texera.dataflow.source.scan.ScanSourcePredicate;
 import edu.uci.ics.texera.dataflow.twitter.TwitterJsonConverterPredicate;
 import edu.uci.ics.texera.dataflow.wordcount.WordCountIndexSourcePredicate;
 import edu.uci.ics.texera.dataflow.wordcount.WordCountOperatorPredicate;
-
+import edu.uci.ics.texera.dataflow.nlp.sentiment.arrow.NltkSentimentPredicate;
 
 /**
  * PredicateBase is the base for all predicates which follow the 
@@ -77,7 +81,6 @@ import edu.uci.ics.texera.dataflow.wordcount.WordCountOperatorPredicate;
         @Type(value = NlpEntityPredicate.class, name = "NlpEntity"),
         @Type(value = NlpSentimentPredicate.class, name = "NlpSentiment"),
         @Type(value = EmojiSentimentPredicate.class, name = "EmojiSentiment"),
-        @Type(value = NltkSentimentOperatorPredicate.class, name = "NltkSentiment"),
 
         @Type(value = ProjectionPredicate.class, name = "Projection"),
         @Type(value = RegexSplitPredicate.class, name = "RegexSplit"),
@@ -88,7 +91,8 @@ import edu.uci.ics.texera.dataflow.wordcount.WordCountOperatorPredicate;
         // TODO: fix the problem and add Comparable matcher back later
          @Type(value = ComparablePredicate.class, name = "Comparison"),
         
-        @Type(value = AsterixSourcePredicate.class, name = "AsterixSource"),        
+        @Type(value = AsterixSourcePredicate.class, name = "AsterixSource"),
+        @Type(value = MysqlSourcePredicate.class, name = "MysqlSource"),
         @Type(value = TwitterJsonConverterPredicate.class, name = "TwitterJsonConverter"),
         
         @Type(value = ScanSourcePredicate.class, name = "ScanSource"),
@@ -100,6 +104,15 @@ import edu.uci.ics.texera.dataflow.wordcount.WordCountOperatorPredicate;
         @Type(value = WordCountIndexSourcePredicate.class, name = "WordCountIndexSource"),
         @Type(value = WordCountOperatorPredicate.class, name = "WordCount"),
         @Type(value = AggregatorPredicate.class, name = "Aggregation"),
+
+        @Type(value = BarChartSinkPredicate.class, name = "BarChart"),
+        @Type(value = PieChartSinkPredicate.class, name = "PieChart"),
+        @Type(value = LineChartSinkPredicate.class, name = "LineChart"),
+        @Type(value = NltkSentimentPredicate.class, name = "NltkSentiment"),
+
+        @Type(value = WordCloudSinkPredicate.class, name = "WordCloud"),
+
+        @Type(value = NltkSentimentPredicate.class, name = "NltkSentiment")
 })
 public abstract class PredicateBase implements IPredicate {
     

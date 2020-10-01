@@ -8,7 +8,7 @@ package edu.uci.ics.texera.dataflow.common;
  *
  */
 public class PropertyNameConstants {
-    
+
     private PropertyNameConstants() {};
     
     // operator metadata names, used in generating operator json schema
@@ -70,16 +70,12 @@ public class PropertyNameConstants {
     public static final String NLP_LANGUAGE = "nlpLanguage";
     public static final String NLP_OUTPUT_TYPE = "splitOption";
     public static final String NLP_SPLIT_KEY = "nlpSplit";
-    
+
     // related to regex splitter
     public static final String SPLIT_TYPE = "splitType";
     public static final String SPLIT_REGEX = "splitRegex";
     public static final String REGEX_OUTPUT_TYPE = "splitOption";
     public static final String REGEX_SPLIT_KEY = "regexSplit";
-    
-    //related to nltk operator
-    public static final String NLP_NLTK_BATCH_SIZE = "batchSize";
-    public static final String NLP_NLTK_MODEL = "inputAttributeModel";
 
     // related to sampler
     public static final String SAMPLE_SIZE = "sampleSize";
@@ -119,6 +115,10 @@ public class PropertyNameConstants {
     public static final String MYSQL_LIMIT = "limit";
     public static final String MYSQL_OFFSET = "offset";
     
+    //related to MysqlSource
+    public static final String MYSQL_KEYWORDS = "boolean expression";
+    public static final String MYSQL_COLUMN = "column";
+    
     // related to Twitter converter
     public static final String TWITTER_CONVERTER_RAW_JSON = "rawJsonStringAttributeName";
 
@@ -140,4 +140,23 @@ public class PropertyNameConstants {
     public static final String INVALID_SAMPLE_SIZE_EXCEPTION = "Sample size should be greater than 0.";
     public static final String INVALID_LIMIT_EXCEPTION = "limit must be greater than or equal to 0";
     public static final String INVALID_OFFSET_EXCEPTION = "offset must be greater than or equal to 0";
+
+
+    // related to Visualization Operator
+    public static final String NAME_COLUMN = "nameColumn";
+    public static final String DATA_COLUMN = "dataColumn";
+    public static final String PRUNE_RATIO = "pruneRatio";
+
+    public static final String CHART_STYLE = "chartStyle";
+
+    public static final String WORD_COLUMN = "wordColumn";
+    public static final String COUNT_COLUMN = "countColumn";
+
+
+    // related to duplicated NltkSentiment
+    public static final String NLTK_BATCH_SIZE = "batchSize";
+    public static final String NLTK_MODEL = "inputAttributeModel";
+
+    public static final String ARROW_CHUNK_SIZE = "arrowBatchSize";
+
 }
