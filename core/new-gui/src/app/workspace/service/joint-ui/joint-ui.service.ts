@@ -84,6 +84,8 @@ export const operatorOutputCountClass = 'texera-operator-output-count';
 
 export const operatorNameClass = 'texera-operator-name';
 
+export const linkPathStrokeColor = '#919191';
+
 /**
  * Extends a basic Joint operator element and adds our own HTML markup.
  * Our own HTML markup includes the SVG element for the delete button,
@@ -415,8 +417,12 @@ export class JointUIService {
            </g>
          </g>`,
       attrs: {
+        '.connection': {
+          'stroke': linkPathStrokeColor,
+          'stroke-width': '2px',
+        },
         '.connection-wrap': {
-          'stroke-width': 0,
+          'stroke-width': '0px',
           // 'display': 'inline'
         },
         '.marker-source': {

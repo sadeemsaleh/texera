@@ -1,6 +1,6 @@
 import { ValidationWorkflowService } from './../../service/validation/validation-workflow.service';
 import { DragDropService } from './../../service/drag-drop/drag-drop.service';
-import { JointUIService } from './../../service/joint-ui/joint-ui.service';
+import { JointUIService, linkPathStrokeColor } from './../../service/joint-ui/joint-ui.service';
 import { WorkflowActionService } from './../../service/workflow-graph/model/workflow-action.service';
 import { WorkflowUtilService } from './../../service/workflow-graph/util/workflow-util.service';
 import { Component, AfterViewInit, ElementRef } from '@angular/core';
@@ -16,7 +16,6 @@ import { ResultPanelToggleService } from '../../service/result-panel-toggle/resu
 import { Point, OperatorPredicate, OperatorLink } from '../../types/workflow-common.interface';
 import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
-import { OperatorStates } from '../../types/execute-workflow.interface';
 import { environment } from './../../../../environments/environment';
 import { ExecuteWorkflowService } from '../../service/execute-workflow/execute-workflow.service';
 import { ExecutionState, OperatorStatistics, OperatorState } from '../../types/execute-workflow.interface';
@@ -384,13 +383,13 @@ export class WorkflowEditorComponent implements AfterViewInit {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
         if (event[1].shiftKey && highlightedOperatorIDs.includes(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().unhighlightOperator(elementID);
+          this.workflowActionService.getJointGraphWrapper().unhighlightOperators(elementID);
         } else if (event[1].shiftKey && highlightedGroupIDs.includes(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().unhighlightGroup(elementID);
+          this.workflowActionService.getJointGraphWrapper().unhighlightGroups(elementID);
         } else if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().highlightOperator(elementID);
+          this.workflowActionService.getJointGraphWrapper().highlightOperators(elementID);
         } else {
-          this.workflowActionService.getJointGraphWrapper().highlightGroup(elementID);
+          this.workflowActionService.getJointGraphWrapper().highlightGroups(elementID);
         }
       });
 
@@ -399,8 +398,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(() => {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-        this.workflowActionService.getJointGraphWrapper().unhighlightOperators(highlightedOperatorIDs);
-        this.workflowActionService.getJointGraphWrapper().unhighlightGroups(highlightedGroupIDs);
+        const hilightedLinkIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
+        this.workflowActionService.getJointGraphWrapper().unhighlightOperators(...highlightedOperatorIDs);
+        this.workflowActionService.getJointGraphWrapper().unhighlightGroups(...highlightedGroupIDs);
+        this.workflowActionService.getJointGraphWrapper().unhighlightLinks(...hilightedLinkIDs);
       });
   }
 
@@ -740,8 +741,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
           .filter(operatorID => !this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID)?.collapsed);
         const allGroups = this.workflowActionService.getOperatorGroup().getAllGroups().map(group => group.groupID);
         this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(allOperators.length + allGroups.length > 1);
-        this.workflowActionService.getJointGraphWrapper().highlightOperators(allOperators);
-        this.workflowActionService.getJointGraphWrapper().highlightGroups(allGroups);
+        this.workflowActionService.getJointGraphWrapper().highlightOperators(...allOperators);
+        this.workflowActionService.getJointGraphWrapper().highlightGroups(...allGroups);
       });
   }
 
@@ -980,10 +981,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
   private handleLinkBreakpointButtonClick(): void {
     Observable
       .fromEvent<JointPaperEvent>(this.getJointPaper(), 'tool:breakpoint', {passive: true})
-      .map(value => value[0])
       .subscribe(
-        elementView => {
-          this.workflowActionService.getJointGraphWrapper().highlightLink(elementView.model.id.toString());
+        event => {
+          this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(<boolean> event[1].shiftKey);
+          this.workflowActionService.getJointGraphWrapper().highlightLinks(event[0].model.id.toString());
         }
     );
   }
@@ -993,29 +994,30 @@ export class WorkflowEditorComponent implements AfterViewInit {
    */
   private handleLinkBreakpointHighlighEvents(): void {
     this.workflowActionService.getJointGraphWrapper().getLinkHighlightStream()
-      .subscribe(linkID => {
-        const linkView = this.getJointPaper().findViewByModel(linkID.linkID);
-        linkView.highlight('connection');
-        // linkView.highlight() function turns the link to orange
-        // thus also changing the markers on the two ends to match the color.
-        this.getJointPaper().getModelById(linkID.linkID).attr({
-          '.marker-source': { fill: 'orange'},
-          '.marker-target': { fill: 'orange'}
+      .subscribe(linkIDs => {
+        linkIDs.forEach(linkID => {
+          this.getJointPaper().getModelById(linkID).attr({
+            '.connection': { stroke: 'orange' },
+            '.marker-source': { fill: 'orange'},
+            '.marker-target': { fill: 'orange'}
+          });
         });
       }
     );
 
     this.workflowActionService.getJointGraphWrapper().getLinkUnhighlightStream()
-      .subscribe(linkID => {
-        const linkView = this.getJointPaper().findViewByModel(linkID.linkID);
-        linkView.unhighlight('connection');
-        // ensure that the link still exist
-        if (this.getJointPaper().getModelById(linkID.linkID)) {
-          this.getJointPaper().getModelById(linkID.linkID).attr({
-            '.marker-source': { fill: 'none'},
-            '.marker-target': { fill: 'none'}
-          });
-        }
+      .subscribe(linkIDs => {
+        linkIDs.forEach(linkID => {
+          const linkView = this.getJointPaper().findViewByModel(linkID);
+          // ensure that the link still exist
+          if (this.getJointPaper().getModelById(linkID)) {
+            this.getJointPaper().getModelById(linkID).attr({
+              '.connection': { stroke: linkPathStrokeColor },
+              '.marker-source': { fill: 'none'},
+              '.marker-target': { fill: 'none'}
+            });
+          }
+        });
       }
     );
   }

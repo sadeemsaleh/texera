@@ -262,29 +262,4 @@ export class NavigationComponent implements OnInit {
       this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs().length === 0;
   }
 
-  /**
-   * Handler for the execution result to extract successful execution ID
-   */
-  private handleResultData(response: ExecutionResult): void {
-    if (!environment.downloadExecutionResultEnabled) {
-      return;
-    }
-
-    // backend returns error, display error message
-    if (response.code === 1) {
-
-      this.executionResultID = undefined;
-      return;
-    }
-
-    // execution success, but result is empty, also display message
-    if (response.result.length === 0) {
-      this.executionResultID = undefined;
-      return;
-    }
-
-    // set the current execution result ID to the result ID
-    this.executionResultID = response.resultID;
-  }
-
 }

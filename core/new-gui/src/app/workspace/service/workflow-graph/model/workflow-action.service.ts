@@ -111,18 +111,18 @@ export class WorkflowActionService {
         const command: Command = {
           execute: () => { },
           undo: () => {
-            this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+            this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
             this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
             currentHighlighted.forEach(operatorID => {
-              this.jointGraphWrapper.highlightOperator(operatorID);
+              this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, -offsetX, -offsetY);
             });
           },
           redo: () => {
-            this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+            this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
             this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
             currentHighlighted.forEach(operatorID => {
-              this.jointGraphWrapper.highlightOperator(operatorID);
+              this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY);
             });
           }
@@ -234,17 +234,17 @@ export class WorkflowActionService {
         // add operator
         this.addOperatorInternal(operator, point);
         // highlight the newly added operator
-        this.jointGraphWrapper.highlightOperator(operator.operatorID);
+        this.jointGraphWrapper.highlightOperators(operator.operatorID);
       },
       undo: () => {
         // remove the operator from JointJS
         this.deleteOperatorInternal(operator.operatorID);
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
+        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
       }
     };
     this.executeAndStoreCommand(command);
@@ -292,7 +292,7 @@ export class WorkflowActionService {
         if (!group || !group.collapsed) {
           // turn off multiselect since only the deleted operator will be added
           this.getJointGraphWrapper().setMultiSelectMode(false);
-          this.getJointGraphWrapper().highlightOperator(operatorID);
+          this.getJointGraphWrapper().highlightOperators(operatorID);
         }
       }
     };
@@ -313,12 +313,12 @@ export class WorkflowActionService {
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
-        this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         this.jointGraphWrapper.setMultiSelectMode(operatorsAndPositions.length > 1);
         operatorsAndPositions.forEach(o => {
           this.addOperatorInternal(o.op, o.pos);
-          this.jointGraphWrapper.highlightOperator(o.op.operatorID);
+          this.jointGraphWrapper.highlightOperators(o.op.operatorID);
         });
         links.forEach(l => this.addLinkInternal(l));
         if (breakpoints !== undefined) {
@@ -334,11 +334,11 @@ export class WorkflowActionService {
           breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, undefined));
         }
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
+        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
       }
     };
     this.executeAndStoreCommand(command);
@@ -421,11 +421,11 @@ export class WorkflowActionService {
           }
         });
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
+        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(currentHighlightedGroups);
+        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
+        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
       }
     };
 
@@ -626,11 +626,11 @@ export class WorkflowActionService {
         const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
-          this.jointGraphWrapper.highlightOperator(operatorID);
+          this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
           currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
-          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
-          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+          this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
         this.setOperatorPropertyInternal(operatorID, newProperty);
       },
@@ -638,11 +638,11 @@ export class WorkflowActionService {
         const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
-          this.jointGraphWrapper.highlightOperator(operatorID);
+          this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
           currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
-          this.jointGraphWrapper.unhighlightOperators(currentHighlightedOperators);
-          this.jointGraphWrapper.unhighlightGroups(this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+          this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
+          this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
         this.setOperatorPropertyInternal(operatorID, prevProperty);
       }

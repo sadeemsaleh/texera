@@ -96,6 +96,10 @@ export class JointGraphWrapper {
   private jointGroupHighlightStream = new Subject<string[]>();
   // event stream of un-highlighting a group
   private jointGroupUnhighlightStream = new Subject<string[]>();
+  // event stream of highlighing a link
+  private jointLinkHighlightStream = new Subject<string[]>();
+  // event stream of unhighlighing a link
+  private jointLinkUnhighlightStream = new Subject<string[]>();
 
   // event stream of zooming the jointJS paper
   private workflowEditorZoomSubject: Subject<number> = new Subject<number>();
@@ -103,10 +107,6 @@ export class JointGraphWrapper {
   private restorePaperOffsetSubject: Subject<Point> = new Subject<Point>();
   // event stream of panning to make mini-map and main workflow paper compatible in offset
   private panPaperOffsetSubject: Subject<Point> = new Subject<Point>();
-  // event stream of highlighing a link
-  private jointLinkHighlightStream = new Subject<linkIDType>();
-  // event stream of unhighlighing a link
-  private jointLinkUnhighlightStream = new Subject<linkIDType>();
   // event stream of showing the breakpoint button of a link
   private jointLinkBreakpointShowStream = new Subject<linkIDType>();
   // event stream of hiding the breakpoint button of a link
@@ -147,7 +147,7 @@ export class JointGraphWrapper {
 
 
   constructor(private jointGraph: joint.dia.Graph) {
-    // handle if the currently highlighted operator/group is deleted, it should be unhighlighted
+    // handle if the currently highlighted operator/group/link is deleted, it should be unhighlighted
     this.handleElementDeleteUnhighlight();
 
     this.jointCellAddStream.filter(cell => cell.isElement()).subscribe(element => {
@@ -158,13 +158,6 @@ export class JointGraphWrapper {
     this.jointCellDeleteStream.filter(cell => cell.isElement()).subscribe(element =>
       this.elementPositions.delete(element.id.toString()));
 
-    // handle if the current highlighted operator's position is changed,
-    // other highlighted operators should move with it.
-    this.handleHighlightedOperatorPositionChange();
-    if (environment.linkBreakpointEnabled) {
-      // handle if a link is deleted, it should be unhighlighted
-      this.handleLinkDeleteUnhighlight();
-    }
   }
 
 
@@ -252,26 +245,6 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Highlights the operator with given operatorID.
-   * Emits an event to the operator highlight stream.
-   * @param operatorID
-   */
-  public highlightOperator(operatorID: string): void {
-    if (environment.linkBreakpointEnabled) {
-      // if there are highlighed links, unhighlight them
-      if (this.currentHighlightedLinks.length > 0) {
-        const highlightedLinks = Object.assign([], this.currentHighlightedLinks);
-        highlightedLinks.forEach(highlightedLink => this.unhighlightLink(highlightedLink));
-      }
-    }
-    const highlightedOperatorIDs: string[] = [];
-    this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs);
-    if (highlightedOperatorIDs.length > 0) {
-      this.jointOperatorHighlightStream.next(highlightedOperatorIDs);
-    }
-  }
-
-  /**
    * Highlights operators in the given list.
    *
    * Emits an event to the operator highlight stream with a list of operatorIDs
@@ -279,33 +252,12 @@ export class JointGraphWrapper {
    *
    * @param operatorIDs
    */
-  public highlightOperators(operatorIDs: string[]): void {
-    if (environment.linkBreakpointEnabled) {
-      // if there are highlighed links, unhighlight them
-      if (this.currentHighlightedLinks.length > 0) {
-        const highlightedLinks = Object.assign([], this.currentHighlightedLinks);
-        highlightedLinks.forEach(highlightedLink => this.unhighlightLink(highlightedLink));
-      }
-    }
-    // then
+  public highlightOperators(...operatorIDs: string[]): void {
     const highlightedOperatorIDs: string[] = [];
     operatorIDs.forEach(operatorID =>
       this.highlightElement(operatorID, this.currentHighlightedOperators, highlightedOperatorIDs));
     if (highlightedOperatorIDs.length > 0) {
       this.jointOperatorHighlightStream.next(highlightedOperatorIDs);
-    }
-  }
-
-  /**
-   * Unhighlights the given highlighted operator.
-   * Emits an event to the operator unhighlight stream.
-   * @param operatorID
-   */
-  public unhighlightOperator(operatorID: string): void {
-    const unhighlightedOperatorIDs: string[] = [];
-    this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs);
-    if (unhighlightedOperatorIDs.length > 0) {
-      this.jointOperatorUnhighlightStream.next(unhighlightedOperatorIDs);
     }
   }
 
@@ -317,25 +269,12 @@ export class JointGraphWrapper {
    *
    * @param operatorIDs
    */
-  public unhighlightOperators(operatorIDs: string[]): void {
+  public unhighlightOperators(...operatorIDs: string[]): void {
     const unhighlightedOperatorIDs: string[] = [];
     operatorIDs.forEach(operatorID =>
       this.unhighlightElement(operatorID, this.currentHighlightedOperators, unhighlightedOperatorIDs));
     if (unhighlightedOperatorIDs.length > 0) {
       this.jointOperatorUnhighlightStream.next(unhighlightedOperatorIDs);
-    }
-  }
-
-  /**
-   * Highlights the group with given groupID.
-   * Emits an event to the group highlight stream.
-   * @param groupID
-   */
-  public highlightGroup(groupID: string): void {
-    const highlightedGroupIDs: string[] = [];
-    this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs);
-    if (highlightedGroupIDs.length > 0) {
-      this.jointGroupHighlightStream.next(highlightedGroupIDs);
     }
   }
 
@@ -347,25 +286,12 @@ export class JointGraphWrapper {
    *
    * @param groupIDs
    */
-  public highlightGroups(groupIDs: string[]): void {
+  public highlightGroups(...groupIDs: string[]): void {
     const highlightedGroupIDs: string[] = [];
     groupIDs.forEach(groupID =>
       this.highlightElement(groupID, this.currentHighlightedGroups, highlightedGroupIDs));
     if (highlightedGroupIDs.length > 0) {
       this.jointGroupHighlightStream.next(highlightedGroupIDs);
-    }
-  }
-
-  /**
-   * Unhighlights the given highlighted group.
-   * Emits an event to the group unhighlight stream.
-   * @param groupID
-   */
-  public unhighlightGroup(groupID: string): void {
-    const unhighlightedGroupIDs: string[] = [];
-    this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs);
-    if (unhighlightedGroupIDs.length > 0) {
-      this.jointGroupUnhighlightStream.next(unhighlightedGroupIDs);
     }
   }
 
@@ -377,12 +303,40 @@ export class JointGraphWrapper {
    *
    * @param groupIDs
    */
-  public unhighlightGroups(groupIDs: string[]): void {
+  public unhighlightGroups(...groupIDs: string[]): void {
     const unhighlightedGroupIDs: string[] = [];
     groupIDs.forEach(groupID =>
       this.unhighlightElement(groupID, this.currentHighlightedGroups, unhighlightedGroupIDs));
     if (unhighlightedGroupIDs.length > 0) {
       this.jointGroupUnhighlightStream.next(unhighlightedGroupIDs);
+    }
+  }
+
+  /**
+   * Highlights the link with given linkID.
+   * Emits an event to the link highlight stream.
+   * @param linkID
+   */
+  public highlightLinks(...linkIDs: string[]): void {
+    const highlightedLinkIDs: string[] = [];
+    linkIDs.forEach(linkID =>
+      this.highlightElement(linkID, this.currentHighlightedLinks, highlightedLinkIDs));
+    if (highlightedLinkIDs.length > 0) {
+      this.jointLinkHighlightStream.next(highlightedLinkIDs);
+    }
+  }
+
+  /**
+   * Unhighlights the given highlighted link.
+   * Emits an event to the link unhighlight stream.
+   * @param unhighlightedLinkID
+   */
+  public unhighlightLinks(...linkIDs: string[]): void {
+    const unhighlightedLinkIDs: string[] = [];
+    linkIDs.forEach(linkID =>
+      this.unhighlightElement(linkID, this.currentHighlightedLinks, unhighlightedLinkIDs));
+    if (unhighlightedLinkIDs.length > 0) {
+      this.jointLinkUnhighlightStream.next(unhighlightedLinkIDs);
     }
   }
 
@@ -418,14 +372,14 @@ export class JointGraphWrapper {
   /**
    * get the event stream of a link being highlighted.
    */
-  public getLinkHighlightStream(): Observable<linkIDType> {
+  public getLinkHighlightStream(): Observable<string[]> {
     return this.jointLinkHighlightStream.asObservable();
   }
 
   /**
    * get the event stream of a link being unhighlighted.
    */
-  public getLinkUnhighlightStream(): Observable<linkIDType> {
+  public getLinkUnhighlightStream(): Observable<string[]> {
     return this.jointLinkUnhighlightStream.asObservable();
   }
 
@@ -641,49 +595,6 @@ export class JointGraphWrapper {
   }
 
   /**
-   * Highlights the link with given linkID.
-   * Emits an event to the link highlight stream.
-   * If the target link is already highlighted, the action will be ignored.
-   * At current design, there can only be one link highlighted at a time,
-   *  no mutiselect mode for links.
-   * Before a link is highlighted, all the currently highlighted operators will
-   *  be unhighlighted.
-   *
-   * @param linkID
-   */
-  public highlightLink(linkID: string): void {
-    if (!this.jointGraph.getCell(linkID)) {
-      throw new Error(`link with ID ${linkID} doesn't exist`);
-    }
-    if (this.currentHighlightedLinks.includes(linkID)) {
-      return;
-    }
-    // only allow one link highlighted at a time
-    if (this.currentHighlightedLinks.length > 0) {
-      const highlightedLinks = Object.assign([], this.currentHighlightedLinks);
-      highlightedLinks.forEach(highlightedLink => this.unhighlightLink(highlightedLink));
-    }
-    this.getCurrentHighlightedOperatorIDs()
-        .forEach(operatorID => this.unhighlightOperator(operatorID));
-    this.currentHighlightedLinks.push(linkID);
-    this.jointLinkHighlightStream.next({ linkID });
-  }
-
-  /**
-   * Unhighlights the given highlighted link.
-   * Emits an event to the link unhighlight stream.
-   * @param unhighlightedLinkID
-   */
-  public unhighlightLink(linkID: string): void {
-    if (!this.currentHighlightedLinks.includes(linkID)) {
-      return;
-    }
-    const unhighlightedLinkIndex = this.currentHighlightedLinks.indexOf(linkID);
-    this.currentHighlightedLinks.splice(unhighlightedLinkIndex, 1);
-    this.jointLinkUnhighlightStream.next({ linkID });
-  }
-
-  /**
    * Show the breakpoint button of a given link
    * emits an event to the link breakpoint show stream.
    * @param linkID
@@ -786,8 +697,9 @@ export class JointGraphWrapper {
     }
     // if the multiselect mode is off, unhighlight other highlighted elements first
     if (!this.multiSelect) {
-      this.unhighlightOperators(this.getCurrentHighlightedOperatorIDs());
-      this.unhighlightGroups(this.getCurrentHighlightedGroupIDs());
+      this.unhighlightOperators(...this.getCurrentHighlightedOperatorIDs());
+      this.unhighlightGroups(...this.getCurrentHighlightedGroupIDs());
+      this.unhighlightLinks(...this.getCurrentHighlightedLinkIDs());
     }
     // highlight the element and add it to the list of highlighted elements
     currentHighlightedElements.push(elementID);
@@ -814,45 +726,11 @@ export class JointGraphWrapper {
     this.getJointElementCellDeleteStream().subscribe(deletedElement => {
       const deletedElementID = deletedElement.id.toString();
       if (this.currentHighlightedOperators.includes(deletedElementID)) {
-        this.unhighlightOperator(deletedElementID);
+        this.unhighlightOperators(deletedElementID);
       } else if (this.currentHighlightedGroups.includes(deletedElementID)) {
-        this.unhighlightGroup(deletedElementID);
-      }
-    });
-  }
-
-  /**
-   * Subscribes to operator position change event stream,
-   *  checks if the operator is moved by user and if the moved operator is currently highlighted,
-   *  if it is, move other highlighted operators along with it.
-   */
-  private handleHighlightedOperatorPositionChange(): void {
-    this.getOperatorPositionChangeEvent()
-      .filter(() => this.listenPositionChange)
-      .filter(() => this.undoRedoService.listenJointCommand)
-      .filter(movedOperator => this.currentHighlightedOperators.includes(movedOperator.operatorID))
-      .subscribe(movedOperator => {
-        const offsetX = movedOperator.newPosition.x - movedOperator.oldPosition.x;
-        const offsetY = movedOperator.newPosition.y - movedOperator.oldPosition.y;
-        this.listenPositionChange = false;
-        this.undoRedoService.setListenJointCommand(false);
-        this.currentHighlightedOperators
-          .filter(operatorID => operatorID !== movedOperator.operatorID)
-          .forEach(operatorID => this.setOperatorPosition(operatorID, offsetX, offsetY));
-        this.listenPositionChange = true;
-        this.undoRedoService.setListenJointCommand(true);
-      });
-  }
-
-  /**
-   * Subscribes to link delete event stream,
-   *  unhighlight the removed link if it is currently highlighted
-   */
-  private handleLinkDeleteUnhighlight(): void {
-    this.getJointLinkCellDeleteStream().subscribe(deletedLinkCell => {
-      const deletedLinkID = deletedLinkCell.id.toString();
-      if (this.currentHighlightedLinks.includes(deletedLinkID)) {
-        this.unhighlightLink(deletedLinkID);
+        this.unhighlightGroups(deletedElementID);
+      } else if (this.currentHighlightedLinks.includes(deletedElementID)) {
+        this.unhighlightLinks(deletedElementID);
       }
     });
   }

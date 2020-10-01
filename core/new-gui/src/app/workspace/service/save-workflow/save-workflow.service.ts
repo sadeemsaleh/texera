@@ -110,9 +110,9 @@ export class SaveWorkflowService {
 
     // operators and groups shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
-      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
+      ...this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
     this.workflowActionService.getJointGraphWrapper().unhighlightGroups(
-      this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs());
+      ...this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs());
   }
 
   /**
@@ -126,14 +126,12 @@ export class SaveWorkflowService {
       this.workflowActionService.getTexeraGraph().getLinkAddStream(),
       this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
       this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
-      this.workflowActionService.getTexeraGraph().getOperatorAdvancedOptionChangeSteam(),
       this.workflowActionService.getJointGraphWrapper().getElementPositionChangeEvent(),
       this.workflowActionService.getOperatorGroup().getGroupAddStream(),
       this.workflowActionService.getOperatorGroup().getGroupDeleteStream(),
       this.workflowActionService.getOperatorGroup().getGroupCollapseStream(),
-      this.workflowActionService.getOperatorGroup().getGroupExpandStream()
+      this.workflowActionService.getOperatorGroup().getGroupExpandStream(),
       this.workflowActionService.getTexeraGraph().getBreakpointChangeStream(),
-      this.workflowActionService.getJointGraphWrapper().getOperatorPositionChangeEvent()
     ).debounceTime(100).subscribe(() => {
       const workflow = this.workflowActionService.getTexeraGraph();
 

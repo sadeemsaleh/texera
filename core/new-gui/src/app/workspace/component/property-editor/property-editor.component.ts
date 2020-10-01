@@ -148,7 +148,7 @@ export class PropertyEditorComponent {
     if (this.currentLinkID) {
       // remove breakpoint in texera workflow first, then unhighlight it
       this.workflowActionService.removeLinkBreakpoint(this.currentLinkID);
-      this.workflowActionService.getJointGraphWrapper().unhighlightLink(this.currentLinkID);
+      this.workflowActionService.getJointGraphWrapper().unhighlightLinks(this.currentLinkID);
     }
     this.clearPropertyEditor();
   }

@@ -178,9 +178,6 @@ export class OperatorGroup {
 
     if (group.collapsed) {
       this.setSyncTexeraGraph(false);
-      if (environment.executionStatusEnabled) {
-        this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
-      }
       this.jointGraph.getCell(operatorID).remove();
       this.setSyncTexeraGraph(true);
     } else {
@@ -809,9 +806,6 @@ export class OperatorGroup {
     });
 
     group.operators.forEach((operatorInfo, operatorID) => {
-      if (environment.executionStatusEnabled) {
-        this.jointGraph.getCell(JointUIService.getOperatorStatusTooltipElementID(operatorID)).remove();
-      }
       this.jointGraph.getCell(operatorID).remove();
     });
 
@@ -834,7 +828,6 @@ export class OperatorGroup {
       const operatorJointElement = this.jointUIService.getJointOperatorElement(operatorInfo.operator, operatorInfo.position);
       this.jointGraph.addCell(operatorJointElement);
       this.jointGraphWrapper.setCellLayer(operatorID, operatorInfo.layer);
-      this.addOperatorTooltip(operatorInfo.operator, operatorInfo.position, operatorInfo.layer + 1);
     });
 
     group.links.forEach((linkInfo, linkID) => {
@@ -856,19 +849,6 @@ export class OperatorGroup {
     });
 
     this.setSyncTexeraGraph(true);
-  }
-
-  /**
-   * Adds operator tooltip to the graph.
-   */
-  private addOperatorTooltip(operator: OperatorPredicate, position: Point, layer: number): void {
-    if (environment.executionStatusEnabled) {
-      const tooltipPosition = {x: position.x, y: position.y - 20};
-      const operatorStatusTooltipJointElement = this.jointUIService.getJointOperatorStatusTooltipElement(operator, tooltipPosition);
-      this.jointGraph.getCell(operator.operatorID).embed(operatorStatusTooltipJointElement);
-      this.jointGraph.addCell(operatorStatusTooltipJointElement);
-      this.jointGraphWrapper.setCellLayer(JointUIService.getOperatorStatusTooltipElementID(operator.operatorID), layer);
-    }
   }
 
 }
