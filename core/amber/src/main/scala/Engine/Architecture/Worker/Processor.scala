@@ -362,6 +362,11 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
       )
   }
 
+  final def allowQueryInternalState: Receive = {
+    case QueryOperatorInternalState(query:String) =>
+      sender ! dataProcessor.queryState(query)
+  }
+
   override def postStop(): Unit = {
     processingQueue.clear()
     input.endToBeReceived.clear()
@@ -381,7 +386,7 @@ class Processor(var dataProcessor: TupleProcessor, val tag: WorkerTag) extends W
     receiveDataMessages orElse disallowUpdateInputLinking orElse reactOnUpstreamExhausted orElse super.running
 
   override def paused: Receive =
-    saveDataMessages orElse allowUpdateInputLinking orElse allowOperatorLogicUpdate orElse super.paused
+    saveDataMessages orElse allowUpdateInputLinking orElse allowOperatorLogicUpdate orElse allowQueryInternalState orElse super.paused
 
   override def breakpointTriggered: Receive =
     saveDataMessages orElse allowUpdateInputLinking orElse allowOperatorLogicUpdate orElse super.breakpointTriggered

@@ -16,4 +16,7 @@ trait TupleProducer {
   @throws(classOf[Exception])
   def dispose(): Unit
 
+  @throws(classOf[Exception])
+  def queryState(query: String): String = {}
+
 }

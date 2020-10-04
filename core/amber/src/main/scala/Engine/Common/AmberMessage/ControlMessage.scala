@@ -47,4 +47,6 @@ object ControlMessage {
   final case class ResumeTuple(faultedTuple: FaultedTuple)
 
   final case class KillAndRecover()
+
+  final case class QueryOperatorInternalState(query: String)
 }

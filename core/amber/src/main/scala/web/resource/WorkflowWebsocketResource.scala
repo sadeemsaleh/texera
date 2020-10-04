@@ -4,18 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import Engine.Architecture.Controller.{Controller, ControllerEventListener}
 import Engine.Architecture.Principal.PrincipalStatistics
-import Engine.Common.AmberMessage.ControlMessage.{
-  ModifyLogic,
-  Pause,
-  Resume,
-  SkipTuple,
-  SkipTupleGivenWorkerRef,
-  Start
-}
-import Engine.Common.AmberMessage.ControllerMessage.{
-  AckedControllerInitialization,
-  PassBreakpointTo
-}
+import Engine.Common.AmberMessage.ControlMessage.{ModifyLogic, Pause, Resume, SkipTuple, SkipTupleGivenWorkerRef, Start}
+import Engine.Common.AmberMessage.ControllerMessage.{AckedControllerInitialization, PassBreakpointTo, QueryOperatorInternalState}
 import Engine.Common.AmberTag.WorkflowTag
 import akka.actor.{ActorRef, PoisonPill}
 import javax.websocket.server.ServerEndpoint
@@ -74,6 +64,9 @@ class WorkflowWebsocketResource {
           skipTuple(session, skipTupleMsg)
         case breakpoint: AddBreakpointRequest =>
           addBreakpoint(session, breakpoint)
+        case query: QueryOperatorInternalStateRequest =>
+          queryOperatorInternalState(session, query)
+
       }
     } catch {
       case e: Throwable => {
@@ -118,6 +111,11 @@ class WorkflowWebsocketResource {
     val (compiler, controller) = WorkflowWebsocketResource.sessionJobs(session.getId)
     compiler.initOperator(texeraOperator)
     controller ! ModifyLogic(texeraOperator.amberOperator)
+  }
+
+  def queryOperatorInternalState(session: Session, query: QueryOperatorInternalStateRequest): Unit = {
+    val controller = WorkflowWebsocketResource.sessionJobs(session.getId)._2
+    controller ! QueryOperatorInternalState(query.operator.amberOperator, query.paramToQuery)
   }
 
   def pauseWorkflow(session: Session): Unit = {
@@ -202,6 +200,9 @@ class WorkflowWebsocketResource {
       },
       modifyLogicCompletedListener = _ => {
         send(session, ModifyLogicCompletedEvent())
+      },
+      queryOperatorInternalStateListener = operatorInternalState => {
+        send(session, QueryOperatorInternalStateEvent(operatorInternalState.states))
       },
       breakpointTriggeredListener = breakpointTriggered => {
         send(session, BreakpointTriggeredEvent.apply(breakpointTriggered))

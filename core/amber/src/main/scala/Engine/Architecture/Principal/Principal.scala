@@ -3,67 +3,24 @@ package Engine.Architecture.Principal
 import Clustering.ClusterListener.GetAvailableNodeAddresses
 import Engine.Architecture.Breakpoint.FaultedTuple
 import Engine.Architecture.Breakpoint.GlobalBreakpoint.GlobalBreakpoint
+import Engine.Architecture.Controller.ControllerEvent.OperatorInternalStateResult
 import Engine.Architecture.DeploySemantics.Layer.ActorLayer
 import Engine.Architecture.LinkSemantics.LinkStrategy
 import Engine.Architecture.Worker.{WorkerState, WorkerStatistics}
 import Engine.Common.AmberException.AmberException
 import Engine.Common.AmberMessage.PrincipalMessage.{AssignBreakpoint, _}
 import Engine.Common.AmberMessage.StateMessage._
-import Engine.Common.AmberMessage.ControlMessage.{
-  Ack,
-  AckWithInformation,
-  CollectSinkResults,
-  KillAndRecover,
-  LocalBreakpointTriggered,
-  ModifyLogic,
-  ModifyTuple,
-  Pause,
-  QueryState,
-  QueryStatistics,
-  ReleaseOutput,
-  RequireAck,
-  Resume,
-  ResumeTuple,
-  SkipTuple,
-  Start,
-  StashOutput
-}
+import Engine.Common.AmberMessage.ControlMessage.{Ack, AckWithInformation, CollectSinkResults, KillAndRecover, LocalBreakpointTriggered, ModifyLogic, ModifyTuple, Pause, QueryOperatorInternalState, QueryState, QueryStatistics, ReleaseOutput, RequireAck, Resume, ResumeTuple, SkipTuple, Start, StashOutput}
 import Engine.Common.AmberMessage.ControllerMessage.ReportGlobalBreakpointTriggered
 import Engine.Common.AmberMessage.{PrincipalMessage, WorkerMessage}
-import Engine.Common.AmberMessage.WorkerMessage.{
-  AckedWorkerInitialization,
-  CheckRecovery,
-  DataMessage,
-  EndSending,
-  ExecutionCompleted,
-  ExecutionPaused,
-  QueryBreakpoint,
-  QueryTriggeredBreakpoints,
-  RemoveBreakpoint,
-  ReportFailure,
-  ReportWorkerPartialCompleted,
-  ReportedQueriedBreakpoint,
-  ReportedTriggeredBreakpoints,
-  Reset,
-  UpdateOutputLinking
-}
+import Engine.Common.AmberMessage.WorkerMessage.{AckedWorkerInitialization, CheckRecovery, DataMessage, EndSending, ExecutionCompleted, ExecutionPaused, QueryBreakpoint, QueryTriggeredBreakpoints, RemoveBreakpoint, ReportFailure, ReportWorkerPartialCompleted, ReportedQueriedBreakpoint, ReportedTriggeredBreakpoints, Reset, UpdateOutputLinking}
 import Engine.Common.AmberTuple.Tuple
 import Engine.Common.AmberTag.{AmberTag, LayerTag, OperatorTag, WorkerTag}
 import Engine.Common.{AdvancedMessageSending, AmberUtils, Constants, TableMetadata}
 import Engine.FaultTolerance.Recovery.RecoveryPacket
 import Engine.Operators.OperatorMetadata
 import Engine.Operators.Sink.SimpleSinkOperatorMetadata
-import akka.actor.{
-  Actor,
-  ActorLogging,
-  ActorPath,
-  ActorRef,
-  Address,
-  Cancellable,
-  PoisonPill,
-  Props,
-  Stash
-}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Address, Cancellable, PoisonPill, Props, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import akka.pattern.after
@@ -622,6 +579,12 @@ class Principal(val metadata: OperatorMetadata) extends Actor with ActorLogging 
       this.allWorkers.foreach(worker => worker ! ModifyLogic(newMetadata))
 //      allWorkers.foreach(worker => AdvancedMessageSending.blockingAskWithRetry(worker, ModifyLogic(newMetadata), 3))
       log.info("modify logic received  by principal, sent to worker")
+    case QueryOperatorInternalState(query) =>
+      var resultFromWorkers: List[String] = List()
+      allWorkers.foreach(worker => {
+        resultFromWorkers += AdvancedMessageSending.blockingAskWithRetry(worker, QueryOperatorInternalState(query), 3).asInstanceOf[String]
+      })
+      OperatorInternalStateResult(Map((metadata,query) -> resultFromWorkers))
     case QueryStatistics =>
       this.allWorkers.foreach(worker => worker ! QueryStatistics)
     case WorkerMessage.ReportStatistics(statistics) =>

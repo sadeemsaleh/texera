@@ -5,6 +5,7 @@ import Engine.Architecture.Breakpoint.GlobalBreakpoint.GlobalBreakpoint
 import Engine.Architecture.Breakpoint.LocalBreakpoint.LocalBreakpoint
 import Engine.Architecture.Controller.ControllerState
 import Engine.Common.AmberTag.OperatorTag
+import Engine.Operators.OperatorMetadata
 import akka.actor.ActorRef
 
 import scala.collection.mutable
@@ -24,5 +25,7 @@ object ControllerMessage {
   )
 
   final case class PassBreakpointTo(operatorID: String, breakpoint: GlobalBreakpoint)
+
+  final case class QueryOperatorInternalState(operatorID: OperatorMetadata, query: String)
 
 }

@@ -3,6 +3,7 @@ package Engine.Architecture.Controller
 import Engine.Architecture.Breakpoint.FaultedTuple
 import Engine.Architecture.Principal.{PrincipalState, PrincipalStatistics}
 import Engine.Common.AmberTuple.Tuple
+import Engine.Operators.OperatorMetadata
 import akka.actor.ActorRef
 
 import scala.collection.mutable
@@ -22,6 +23,9 @@ object ControllerEvent {
   )
 
   case class ModifyLogicCompleted()
+
+  // map from (operatorMetadata, param name) to values of param in different actors
+  case class OperatorInternalStateResult(states: Map[(OperatorMetadata, String), List[String]])
 
   case class BreakpointTriggered(
       report: mutable.HashMap[(ActorRef, FaultedTuple), ArrayBuffer[String]],
