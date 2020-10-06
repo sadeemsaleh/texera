@@ -3,7 +3,7 @@ import { WorkflowActionService } from '../workflow-graph/model/workflow-action.s
 import { Observable } from '../../../../../node_modules/rxjs';
 import { OperatorLink, OperatorPredicate, Point, Breakpoint } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
-import { OperatorInfo, LinkInfo } from '../workflow-graph/model/operator-group';
+import { OperatorInfo, LinkInfo, OperatorGroup, Group } from '../workflow-graph/model/operator-group';
 
 /**
  * SavedWorkflow is used to store the information of the workflow
@@ -100,19 +100,17 @@ export class SaveWorkflowService {
 
     const breakpoints = new Map(Object.entries(savedWorkflow.breakpoints));
 
-    this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, breakpoints);
-
-    savedWorkflow.groups.map(group => {
+    const groups: readonly Group[] = savedWorkflow.groups.map(group => {
       return {groupID: group.groupID, operators: this.recordToMap(group.operators),
         links: this.recordToMap(group.links), inLinks: group.inLinks, outLinks: group.outLinks,
         collapsed: group.collapsed};
-    }).forEach(group => this.workflowActionService.addGroup(group));
+    });
 
-    // operators and groups shouldn't be highlighted during page reload
-    this.workflowActionService.getJointGraphWrapper().unhighlightOperators(
-      ...this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs());
-    this.workflowActionService.getJointGraphWrapper().unhighlightGroups(
-      ...this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs());
+    this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, breakpoints);
+
+    // operators, links, and groups shouldn't be highlighted during page reload
+    this.workflowActionService.getJointGraphWrapper().unhighlightElements(
+      this.workflowActionService.getJointGraphWrapper().getCurrentHighlights());
   }
 
   /**

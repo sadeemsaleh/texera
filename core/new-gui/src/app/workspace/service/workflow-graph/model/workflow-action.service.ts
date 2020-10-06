@@ -11,9 +11,7 @@ import { Injectable } from '@angular/core';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort, Breakpoint } from '../../../types/workflow-common.interface';
 
 import * as joint from 'jointjs';
-import { environment } from './../../../../../environments/environment';
 import { cloneDeep } from 'lodash';
-import { WorkflowEditorComponent } from './../../../component/workflow-editor/workflow-editor.component';
 
 
 export interface Command {
@@ -135,7 +133,8 @@ export class WorkflowActionService {
    * Subscribes to element position change event stream,
    *  checks if the element (operator or group) is moved by user and
    *  if the moved element is currently highlighted,
-   *  if it is, moves other highlighted elements (operators and groups) along with it.
+   *  if it is, moves other highlighted elements (operators and groups) along with it,
+   *    links will automatically move with operators.
    *
    * If a group is highlighted, we consider the whole group as highlighted, including all the
    *  operators embedded in the group and regardless of whether or not they're actually highlighted.
@@ -148,7 +147,7 @@ export class WorkflowActionService {
       .filter(movedElement => this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().includes(movedElement.elementID) ||
         this.jointGraphWrapper.getCurrentHighlightedGroupIDs().includes(movedElement.elementID))
       .subscribe(movedElement => {
-        const selectedElements = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+        const selectedElements = this.jointGraphWrapper.getCurrentHighlightedGroupIDs().slice();
         const movedGroup = this.operatorGroup.getGroupByOperator(movedElement.elementID);
         if (movedGroup && selectedElements.includes(movedGroup.groupID)) {
           movedGroup.operators.forEach((operatorInfo, operatorID) => selectedElements.push(operatorID));
@@ -224,8 +223,7 @@ export class WorkflowActionService {
    */
   public addOperator(operator: OperatorPredicate, point: Point): void {
     // remember currently highlighted operators and groups
-    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+    const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
     const command: Command = {
       execute: () => {
@@ -240,11 +238,10 @@ export class WorkflowActionService {
         // remove the operator from JointJS
         this.deleteOperatorInternal(operator.operatorID);
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
+        this.jointGraphWrapper.unhighlightElements(this.jointGraphWrapper.getCurrentHighlights());
+        this.jointGraphWrapper.setMultiSelectMode(
+          currentHighlights.operators.length + currentHighlights.groups.length + currentHighlights.links.length > 1);
+        this.jointGraphWrapper.highlightElements(currentHighlights);
       }
     };
     this.executeAndStoreCommand(command);
@@ -304,41 +301,45 @@ export class WorkflowActionService {
    * @param operatorsAndPositions
    * @param links
    */
-  public addOperatorsAndLinks(operatorsAndPositions: {op: OperatorPredicate, pos: Point}[], links: OperatorLink[],
+  public addOperatorsAndLinks(
+    operatorsAndPositions: readonly {op: OperatorPredicate, pos: Point}[],
+    links?: readonly OperatorLink[],
+    groups?: readonly Group[],
     breakpoints?: ReadonlyMap<string, Breakpoint>
   ): void {
     // remember currently highlighted operators and groups
-    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+    const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
-        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+        this.jointGraphWrapper.unhighlightElements(currentHighlights);
         this.jointGraphWrapper.setMultiSelectMode(operatorsAndPositions.length > 1);
         operatorsAndPositions.forEach(o => {
           this.addOperatorInternal(o.op, o.pos);
           this.jointGraphWrapper.highlightOperators(o.op.operatorID);
         });
-        links.forEach(l => this.addLinkInternal(l));
-        if (breakpoints !== undefined) {
-          breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, breakpoint));
+        if (links) {
+          links.forEach(l => this.addLinkInternal(l));
+          if (breakpoints !== undefined) {
+            breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, breakpoint));
+          }
         }
       },
       undo: () => {
         // remove links
-        links.forEach(l => this.deleteLinkWithIDInternal(l.linkID));
+        if (links) {
+          links.forEach(l => this.deleteLinkWithIDInternal(l.linkID));
+        }
         // remove the operators from JointJS
         operatorsAndPositions.forEach(o => this.deleteOperatorInternal(o.op.operatorID));
         if (breakpoints !== undefined) {
           breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, undefined));
         }
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
+        this.jointGraphWrapper.unhighlightElements(this.jointGraphWrapper.getCurrentHighlights());
+        this.jointGraphWrapper.setMultiSelectMode(
+          currentHighlights.operators.length + currentHighlights.groups.length + currentHighlights.links.length > 1);
+        this.jointGraphWrapper.highlightElements(currentHighlights);
       }
     };
     this.executeAndStoreCommand(command);
@@ -349,7 +350,7 @@ export class WorkflowActionService {
    * @param operatorIDs
    * @param linkIDs
    */
-  public deleteOperatorsAndLinks(operatorIDs: string[], linkIDs: string[]): void {
+  public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[]): void {
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
     operatorIDs.forEach(operatorID => operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
@@ -376,8 +377,7 @@ export class WorkflowActionService {
     });
 
     // remember currently highlighted operators and groups
-    const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
-    const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+    const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
     const command: Command = {
       execute: () => {
@@ -421,11 +421,10 @@ export class WorkflowActionService {
           }
         });
         // restore previous highlights
-        this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-        this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
-        this.jointGraphWrapper.highlightOperators(...currentHighlightedOperators);
-        this.jointGraphWrapper.highlightGroups(...currentHighlightedGroups);
+        this.jointGraphWrapper.unhighlightElements(this.jointGraphWrapper.getCurrentHighlights());
+        this.jointGraphWrapper.setMultiSelectMode(
+          currentHighlights.operators.length + currentHighlights.groups.length + currentHighlights.links.length > 1);
+        this.jointGraphWrapper.highlightElements(currentHighlights);
       }
     };
 
@@ -476,27 +475,10 @@ export class WorkflowActionService {
   }
 
   /**
-   * Adds a group to the workflow graph. All cells related to the group
-   * (including the group itself) will be moved to the front.
-   *
-   * @param group
-   */
-  public addGroup(group: Group): void {
-    const command: Command = {
-      execute: () => {
-        this.addGroupInternal(group);
-        this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
-      },
-      undo: () => {}
-    };
-    this.executeAndStoreCommand(command);
-  }
-
-  /**
    * Adds given groups to the workflow graph.
    * @param groups
    */
-  public addGroups(groups: Group[]): void {
+  public addGroups(...groups: readonly Group[]): void {
     const command: Command = {
       execute: () => {
         groups.forEach(group => {
@@ -504,21 +486,11 @@ export class WorkflowActionService {
           this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
         });
       },
-      undo: () => {}
-    };
-    this.executeAndStoreCommand(command);
-  }
-
-  /**
-   * Deletes a group from the workflow graph.
-   * Throws an error if the group ID doesn't exist in group ID map.
-   *
-   * @param group
-   */
-  public deleteGroup(groupID: string): void {
-    const command: Command = {
-      execute: () => this.deleteGroupInternal(groupID),
-      undo: () => {}
+      undo: () => {
+        groups.forEach(group => {
+          this.deleteGroupInternal(group.groupID);
+        });
+      }
     };
     this.executeAndStoreCommand(command);
   }
@@ -527,25 +499,9 @@ export class WorkflowActionService {
    * Deletes given groups from the workflow graph.
    * @param groupIDs
    */
-  public deleteGroups(groupIDs: string[]): void {
+  public deleteGroups(...groupIDs: readonly string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.deleteGroupInternal(groupID)),
-      undo: () => {}
-    };
-    this.executeAndStoreCommand(command);
-  }
-
-  /**
-   * Collapses the given group on the graph.
-   * Throws an error if the group is already collapsed, otherwise hides all
-   * operators and links within the group.
-   *
-   * @param groupID
-   */
-  public collapseGroup(groupID: string): void {
-    // TO-DO: highlight group on collapsing & expanding
-    const command: Command = {
-      execute: () => this.collapseGroupInternal(groupID),
       undo: () => {}
     };
     this.executeAndStoreCommand(command);
@@ -555,24 +511,9 @@ export class WorkflowActionService {
    * Collapses given groups on the graph.
    * @param groupIDs
    */
-  public collapseGroups(groupIDs: string[]): void {
+  public collapseGroups(...groupIDs: readonly string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
-      undo: () => {}
-    };
-    this.executeAndStoreCommand(command);
-  }
-
-  /**
-   * Expands the given group on the graph.
-   * Throws an error if the group is already expanded, otherwise shows all
-   * hidden operators and links in the group.
-   *
-   * @param groupID
-   */
-  public expandGroup(groupID: string): void {
-    const command: Command = {
-      execute: () => this.expandGroupInternal(groupID),
       undo: () => {}
     };
     this.executeAndStoreCommand(command);
@@ -582,21 +523,9 @@ export class WorkflowActionService {
    * Expands given groups on the graph.
    * @param groupIDs
    */
-  public expandGroups(groupIDs: string[]): void {
+  public expandGroups(...groupIDs: string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
-      undo: () => {}
-    };
-    this.executeAndStoreCommand(command);
-  }
-
-  /**
-   * Deletes the given group and all operators embedded in it.
-   * @param groupID
-   */
-  public deleteGroupAndOperators(groupID: string): void {
-    const command: Command = {
-      execute: () => this.deleteGroupAndOperatorsInternal(groupID),
       undo: () => {}
     };
     this.executeAndStoreCommand(command);
@@ -606,7 +535,7 @@ export class WorkflowActionService {
    * Deletes given groups and all operators embedded in them.
    * @param groupID
    */
-  public deleteGroupsAndOperators(groupIDs: string[]): void {
+  public deleteGroupsAndOperators(...groupIDs: readonly string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID)),
       undo: () => {}
@@ -614,11 +543,7 @@ export class WorkflowActionService {
     this.executeAndStoreCommand(command);
   }
 
-  // problem here
   public setOperatorProperty(operatorID: string, newProperty: object): void {
-    console.log('set operator property');
-    console.log(operatorID);
-    console.log(newProperty);
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
     const group = this.getOperatorGroup().getGroupByOperator(operatorID);
     const command: Command = {
@@ -628,7 +553,7 @@ export class WorkflowActionService {
           this.jointGraphWrapper.setMultiSelectMode(false);
           this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          currentHighlightedOperators.slice().splice(currentHighlightedOperators.indexOf(operatorID), 1);
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
@@ -640,7 +565,7 @@ export class WorkflowActionService {
           this.jointGraphWrapper.setMultiSelectMode(false);
           this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          currentHighlightedOperators.slice().splice(currentHighlightedOperators.indexOf(operatorID), 1);
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }

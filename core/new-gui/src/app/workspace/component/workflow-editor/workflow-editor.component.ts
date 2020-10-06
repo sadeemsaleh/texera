@@ -543,7 +543,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.workflowActionService.collapseGroup(groupID);
+          this.workflowActionService.collapseGroups(groupID);
         }
       );
   }
@@ -565,7 +565,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(
         elementView => {
           const groupID = elementView.model.id.toString();
-          this.workflowActionService.expandGroup(groupID);
+          this.workflowActionService.expandGroups(groupID);
         }
       );
   }
@@ -724,7 +724,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
         this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, []);
-        this.workflowActionService.deleteGroupsAndOperators(highlightedGroupIDs);
+        this.workflowActionService.deleteGroupsAndOperators(...highlightedGroupIDs);
       });
   }
 
@@ -818,7 +818,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
             operatorsAndPositions.push({op: newOperator, pos: newOperatorPosition});
             positions.push(newOperatorPosition);
           });
-          this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, []);
+          this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, [], [], new Map());
         }
       });
   }

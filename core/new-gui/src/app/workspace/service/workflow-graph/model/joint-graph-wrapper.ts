@@ -50,6 +50,12 @@ type PositionInfo = {
   lastPos: Point | undefined
 };
 
+export type JointHighlights = Readonly<{
+  operators: readonly string[],
+  groups: readonly string[],
+  links: readonly string[]
+}>;
+
 /**
  * JointGraphWrapper wraps jointGraph to provide:
  *  - getters of the properties (to hide the methods that could alther the jointGraph directly)
@@ -84,22 +90,27 @@ export class JointGraphWrapper {
 
   // flag that indicates whether multiselect mode is on
   private multiSelect: boolean = false;
+
+  private currentHighlights: JointHighlights = {
+    operators: [], groups: [], links: []
+  };
+
   // the currently highlighted operators' IDs
   private currentHighlightedOperators: string[] = [];
   // the currently highlighted groups' IDs
   private currentHighlightedGroups: string[] = [];
   // event stream of highlighting an operator
-  private jointOperatorHighlightStream = new Subject<string[]>();
+  private jointOperatorHighlightStream = new Subject<readonly string[]>();
   // event stream of un-highlighting an operator
-  private jointOperatorUnhighlightStream = new Subject<string[]>();
+  private jointOperatorUnhighlightStream = new Subject<readonly string[]>();
   // event stream of highlighting a group
-  private jointGroupHighlightStream = new Subject<string[]>();
+  private jointGroupHighlightStream = new Subject<readonly string[]>();
   // event stream of un-highlighting a group
-  private jointGroupUnhighlightStream = new Subject<string[]>();
+  private jointGroupUnhighlightStream = new Subject<readonly string[]>();
   // event stream of highlighing a link
-  private jointLinkHighlightStream = new Subject<string[]>();
+  private jointLinkHighlightStream = new Subject<readonly string[]>();
   // event stream of unhighlighing a link
-  private jointLinkUnhighlightStream = new Subject<string[]>();
+  private jointLinkUnhighlightStream = new Subject<readonly string[]>();
 
   // event stream of zooming the jointJS paper
   private workflowEditorZoomSubject: Subject<number> = new Subject<number>();
@@ -183,8 +194,8 @@ export class JointGraphWrapper {
    * The returned array is not the original one so that other
    * services/components can't modify it directly.
    */
-  public getCurrentHighlightedOperatorIDs(): string[] {
-    return Object.assign([], this.currentHighlightedOperators);
+  public getCurrentHighlightedOperatorIDs(): readonly string[] {
+    return this.currentHighlightedOperators;
   }
 
   /**
@@ -194,8 +205,23 @@ export class JointGraphWrapper {
    * The returned array is not the original one so that other
    * services/components can't modify it directly.
    */
-  public getCurrentHighlightedGroupIDs(): string[] {
-    return Object.assign([], this.currentHighlightedGroups);
+  public getCurrentHighlightedGroupIDs(): readonly string[] {
+    return this.currentHighlightedGroups;
+  }
+
+  /**
+   * get the ids of all the links that are currently highlighted
+   */
+  public getCurrentHighlightedLinkIDs(): readonly string[] {
+    return this.currentHighlightedLinks;
+  }
+
+  public getCurrentHighlights(): JointHighlights {
+    return {
+      operators: this.currentHighlightedOperators,
+      groups: this.currentHighlightedGroups,
+      links: this.currentHighlightedLinks
+    };
   }
 
   /**
@@ -242,6 +268,18 @@ export class JointGraphWrapper {
           newLayer: e[1]
         };
       });
+  }
+
+  public highlightElements(elements: JointHighlights): void {
+    this.highlightOperators(...elements.operators);
+    this.highlightGroups(...elements.groups);
+    this.highlightLinks(...elements.links);
+  }
+
+  public unhighlightElements(elements: JointHighlights): void {
+    this.unhighlightOperators(...elements.operators);
+    this.unhighlightGroups(...elements.groups);
+    this.unhighlightLinks(...elements.links);
   }
 
   /**
@@ -343,7 +381,7 @@ export class JointGraphWrapper {
   /**
    * Gets the event stream of an operator being highlighted.
    */
-  public getJointOperatorHighlightStream(): Observable<string[]> {
+  public getJointOperatorHighlightStream(): Observable<readonly string[]> {
     return this.jointOperatorHighlightStream.asObservable();
   }
 
@@ -351,35 +389,28 @@ export class JointGraphWrapper {
    * Gets the event stream of an operator being unhighlighted.
    * The operator could be unhighlighted because it's deleted.
    */
-  public getJointOperatorUnhighlightStream(): Observable<string[]> {
+  public getJointOperatorUnhighlightStream(): Observable<readonly string[]> {
     return this.jointOperatorUnhighlightStream.asObservable();
-  }
-
-  /**
-   * get the ids of all the links that are currently highlighted
-   */
-  public getCurrentHighlightedLinkIDs(): string[] {
-    return Object.assign([], this.currentHighlightedLinks);
   }
 
   /**
    * get the ids of all the links that have a breakpoint
    */
-  public getLinkIDsWithBreakpoint(): string[] {
-    return Object.assign([], this.linksWithBreakpoints);
+  public getLinkIDsWithBreakpoint(): readonly string[] {
+    return this.linksWithBreakpoints;
   }
 
   /**
    * get the event stream of a link being highlighted.
    */
-  public getLinkHighlightStream(): Observable<string[]> {
+  public getLinkHighlightStream(): Observable<readonly string[]> {
     return this.jointLinkHighlightStream.asObservable();
   }
 
   /**
    * get the event stream of a link being unhighlighted.
    */
-  public getLinkUnhighlightStream(): Observable<string[]> {
+  public getLinkUnhighlightStream(): Observable<readonly string[]> {
     return this.jointLinkUnhighlightStream.asObservable();
   }
 
@@ -400,7 +431,7 @@ export class JointGraphWrapper {
   /**
    * Gets the event stream of an operator being dragged.
    */
-  public getJointGroupHighlightStream(): Observable<string[]> {
+  public getJointGroupHighlightStream(): Observable<readonly string[]> {
     return this.jointGroupHighlightStream.asObservable();
   }
 
@@ -408,7 +439,7 @@ export class JointGraphWrapper {
    * Gets the event stream of a group being unhighlighted.
    * The group could be unhighlighted because it's deleted.
    */
-  public getJointGroupUnhighlightStream(): Observable<string[]> {
+  public getJointGroupUnhighlightStream(): Observable<readonly string[]> {
     return this.jointGroupUnhighlightStream.asObservable();
   }
 

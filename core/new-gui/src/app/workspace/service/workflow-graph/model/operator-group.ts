@@ -533,7 +533,7 @@ export class OperatorGroup {
    *
    * @param operatorIDs
    */
-  public operatorsGroupable(operatorIDs: string[]): boolean {
+  public operatorsGroupable(operatorIDs: readonly string[]): boolean {
     for (const operatorID of operatorIDs) {
       if (this.getGroupByOperator(operatorID)) {
         return false;
@@ -624,7 +624,7 @@ export class OperatorGroup {
    *
    * @param operatorIDs
    */
-  public getNewGroup(operatorIDs: string[]): Group {
+  public getNewGroup(operatorIDs: readonly string[]): Group {
     if (!this.operatorsGroupable(operatorIDs)) {
       throw Error('given operators are not groupable');
     }

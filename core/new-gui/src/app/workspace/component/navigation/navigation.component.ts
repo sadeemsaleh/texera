@@ -230,7 +230,7 @@ export class NavigationComponent implements OnInit {
     const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
     if (this.highlightedElementsGroupable()) {
       const group = this.workflowActionService.getOperatorGroup().getNewGroup(highlightedOperators);
-      this.workflowActionService.addGroup(group);
+      this.workflowActionService.addGroups(group);
     }
   }
 
@@ -250,7 +250,7 @@ export class NavigationComponent implements OnInit {
   public onClickUngroupOperators(): void {
     const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
     if (this.highlightedElementsUngroupable()) {
-      this.workflowActionService.deleteGroups(highlightedGroups);
+      this.workflowActionService.deleteGroups(...highlightedGroups);
     }
   }
 
