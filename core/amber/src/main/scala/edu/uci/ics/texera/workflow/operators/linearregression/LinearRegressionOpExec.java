@@ -1,13 +1,22 @@
 package edu.uci.ics.texera.workflow.operators.linearregression;
 
+import edu.uci.ics.amber.engine.common.amberexception.BreakpointException;
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpExec;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
 import scala.collection.immutable.List;
 
-public class LinearRegressionOpExec extends MLModelOpExec{
+import java.io.Serializable;
+import java.util.function.Function;
+
+public class LinearRegressionOpExec extends MLModelOpExec implements Serializable {
 
   private String xAttr;
   private String yAttr;
+
+  // Conditions to be evaluated
+  private Function<Double,Boolean> predicateToEvaluate;
+  private int CONSECUTIVE_EPOCHS_TO_TRACK;
+  private int predicateTrueEpochCount = 0;
 
   private double learningRate = 0.1;
   private double b_current = 0;
@@ -21,6 +30,12 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     this.xAttr = xAttr;
     this.yAttr = yAttr;
     this.learningRate = learningRate;
+    this.predicateToEvaluate = (Function<Double, Boolean> & Serializable)this::evaluateGradient;
+    this.CONSECUTIVE_EPOCHS_TO_TRACK = 4;
+  }
+
+  private Boolean evaluateGradient(double w_grad) {
+    return Math.abs(w_current) > 0.09;
   }
 
   @Override
@@ -59,6 +74,10 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     b_gradient = Math.round(b_gradient*100.0)/100.0;
   }
 
+  private Boolean isEpochEnd() {
+    return nextMiniBatchStartIdx()==0;
+  }
+
   @Override
   public void readjustWeight() {
     w_current = w_current - (learningRate * w_gradient);
@@ -67,5 +86,17 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     b_current = Math.round(b_current*100.0)/100.0;
 
     System.out.println("Epoch "+ currentEpoch() + " Learning Rate " + learningRate + ", Current w and b values are : " + w_current + " " + b_current);
+    breakpointPredicateCheck();
+  }
+
+  private void breakpointPredicateCheck() {
+    if(isEpochEnd() && predicateToEvaluate.apply(w_gradient)) {
+      predicateTrueEpochCount++;
+      if(predicateTrueEpochCount == CONSECUTIVE_EPOCHS_TO_TRACK) {
+        throw new BreakpointException();
+      }
+    } else {
+      predicateTrueEpochCount = 0;
+    }
   }
 }

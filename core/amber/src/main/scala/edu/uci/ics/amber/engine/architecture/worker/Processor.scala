@@ -458,6 +458,9 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
         try {
           nextTuple = outputIterator.next()
         } catch {
+          case e: BreakpointException =>
+            self ! LocalBreakpointTriggered
+            Breaks.break()
           case e: Exception =>
             if (breakpoints.nonEmpty) {
               synchronized {
