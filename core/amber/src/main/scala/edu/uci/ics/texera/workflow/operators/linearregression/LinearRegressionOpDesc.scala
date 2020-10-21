@@ -22,5 +22,5 @@ class LinearRegressionOpDesc extends MLModelOpDesc {
 
   override def operatorExecutor = new MLModelOpExecConfig(this.operatorIdentifier, 1, () => new LinearRegressionOpExec(xAttr, yAttr, learningRate))
 
-  override def operatorInfo = OperatorInfo("Linear Regression", "Trains a Linear Regression model", OperatorGroupConstants.UTILITY_GROUP, 1, 1)
+  override def operatorInfo = OperatorInfo("Linear Regression", "Trains a Linear Regression model y=wx+b", OperatorGroupConstants.UTILITY_GROUP, 1, 1)
 }
