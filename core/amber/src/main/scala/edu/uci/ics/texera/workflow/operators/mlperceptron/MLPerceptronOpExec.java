@@ -4,6 +4,7 @@ import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpExec;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MLPerceptronOpExec extends MLModelOpExec{
@@ -55,5 +56,10 @@ public class MLPerceptronOpExec extends MLModelOpExec{
   @Override
   public void readjustWeight() {
     mlp.updateWeights(learningRate);
+    System.out.print("Epoch "+ currentEpoch() + " Learning Rate " + learningRate + ", Results are " );
+    for(float[] result: results) {
+      System.out.print(Arrays.toString(result)+", ");
+    }
+    System.out.println();
   }
 }
