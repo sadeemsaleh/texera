@@ -32,7 +32,7 @@ export class WorkflowGraph {
   private readonly linkAddSubject = new Subject<OperatorLink>();
   private readonly linkDeleteSubject = new Subject<{ deletedLink: OperatorLink }>();
   private readonly operatorPropertyChangeSubject = new Subject<{ oldProperty: object, operator: OperatorPredicate }>();
-  private readonly breakpointChangeSubject = new Subject<{oldBreakpoint: object | undefined, linkID: string}>();
+  private readonly breakpointChangeSubject = new Subject<{oldBreakpoint: Breakpoint | undefined, linkID: string}>();
 
   constructor(
     operatorPredicates: OperatorPredicate[] = [],
@@ -318,7 +318,7 @@ export class WorkflowGraph {
   /**
    * Gets the observable event stream of a link breakpoint is changed.
    */
-  public getBreakpointChangeStream(): Observable<{oldBreakpoint: object | undefined, linkID: string}> {
+  public getBreakpointChangeStream(): Observable<{oldBreakpoint: Breakpoint | undefined, linkID: string}> {
     return this.breakpointChangeSubject.asObservable();
   }
 

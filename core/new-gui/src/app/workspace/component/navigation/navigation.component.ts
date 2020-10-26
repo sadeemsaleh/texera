@@ -8,6 +8,8 @@ import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-grap
 import { ValidationWorkflowService } from '../../service/validation/validation-workflow.service';
 import { ExecutionState } from './../../types/execute-workflow.interface';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
+import { ActionTraceService } from '../../service/action-trace/action-trace.service';
+import { saveAs } from 'file-saver';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -49,7 +51,8 @@ export class NavigationComponent implements OnInit {
     public workflowActionService: WorkflowActionService,
     public workflowStatusService: WorkflowStatusService,
     public undoRedo: UndoRedoService,
-    public validationWorkflowService: ValidationWorkflowService
+    public validationWorkflowService: ValidationWorkflowService,
+    public actionTraceService: ActionTraceService
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -227,6 +230,27 @@ export class NavigationComponent implements OnInit {
   public onClickDeleteAllOperators(): void {
     const allOperatorIDs = this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID);
     this.workflowActionService.deleteOperatorsAndLinks(allOperatorIDs, []);
+  }
+
+  /**
+   * Delete all operators on the graph
+   */
+  public onClickStartActionTrace(): void {
+    this.actionTraceService.clearActionTrace();
+    this.actionTraceService.startActionTrace();
+  }
+
+    /**
+   * Delete all operators on the graph
+   */
+  public onClickStopActionTrace(): void {
+    this.actionTraceService.stopActionTrace();
+  }
+
+  public onClickDownloadActionTrace(): void {
+    const actionTraceHistory = this.actionTraceService.getActionTraceHistory();
+    const blob = new Blob([JSON.stringify(actionTraceHistory, null, 2)], {type: 'text/json;charset=utf-8'});
+    saveAs(blob, 'texera_trace.json');
   }
 
   /**
