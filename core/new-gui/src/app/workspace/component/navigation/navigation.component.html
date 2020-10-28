@@ -37,11 +37,13 @@
             </li>
           </ul>
         </nz-dropdown-menu>
+        <button nz-button [disabled] = "!highlightedElementsGroupable()" (click)="onClickGroupOperators()" title="group">
+          <i nz-icon nzType="group" nzTheme="outline"></i>
+        </button>
+        <button nz-button [disabled] = "!highlightedElementsUngroupable()" (click)="onClickUngroupOperators()" title="ungroup">
+          <i nz-icon nzType="ungroup" nzTheme="outline"></i>
+        </button>
       </nz-button-group>
-      <i class="navbar-brand fa fa-object-group" [ngClass]="{'utility-button-disabled': !highlightedElementsGroupable(),
-      'utility-button': highlightedElementsGroupable()}" (click)="onClickGroupOperators()" title="group"></i>
-      <i class="navbar-brand fa fa-object-ungroup" [ngClass]="{'utility-button-disabled': !highlightedElementsUngroupable(),
-        'utility-button': highlightedElementsUngroupable()}" (click)="onClickUngroupOperators()" title="ungroup"></i>
     </div>
 
     <div
