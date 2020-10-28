@@ -233,18 +233,24 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
-   * Delete all operators on the graph
+   * Start action trace
    */
   public onClickStartActionTrace(): void {
-    this.actionTraceService.clearActionTrace();
     this.actionTraceService.startActionTrace();
   }
 
-    /**
-   * Delete all operators on the graph
+  /**
+   * Stop action trace
    */
   public onClickStopActionTrace(): void {
     this.actionTraceService.stopActionTrace();
+  }
+
+  /**
+   * Clear action trace
+   */
+  public onClickClearAcionTrace(): void {
+    this.actionTraceService.clearActionTrace();
   }
 
   public onClickDownloadActionTrace(): void {
