@@ -8,11 +8,15 @@ import {
    PauseWorkflowActionTrace, ResumeWorkflowActionTrace } from '../../types/action-trace.interface';
 import { SaveWorkflowService } from '../save-workflow/save-workflow.service';
 import { ExecutionState } from '../../types/execute-workflow.interface';
+import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ActionTraceService {
+
+  public static TRACE_HISTORY_LOCAL_STORAGE_KEY = 'texeraActionTraceHistory';
+  public static TRACING_ON_LOCAL_STORAGE_KEY = 'texeraActionTracingOn';
 
   private startTrace: boolean = false;
 
@@ -24,10 +28,15 @@ export class ActionTraceService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private executeWorkflowService: ExecuteWorkflowService
+    private executeWorkflowService: ExecuteWorkflowService,
+    private operatorMetadataService: OperatorMetadataService,
   ) {
     const graph = workflowActionService.getTexeraGraph();
     const joint = workflowActionService.getJointGraphWrapper();
+
+    this.operatorMetadataService.getOperatorMetadata()
+      .filter(metadata => metadata.operators.length !== 0)
+      .subscribe(() => this.loadActionTrace());
 
     graph.getOperatorAddStream().filter(e => this.startTrace).subscribe(event => {
       const actionTrace: AddOperatorActionTrace = {
@@ -189,14 +198,17 @@ export class ActionTraceService {
 
   public startActionTrace(): void {
     this.startTrace = true;
+    localStorage.setItem(ActionTraceService.TRACING_ON_LOCAL_STORAGE_KEY, JSON.stringify(this.startTrace));
   }
 
   public stopActionTrace(): void {
     this.startTrace = false;
+    localStorage.setItem(ActionTraceService.TRACING_ON_LOCAL_STORAGE_KEY, JSON.stringify(this.startTrace));
   }
 
   public clearActionTrace(): void {
     this.actionTraceHistory = [];
+    localStorage.setItem(ActionTraceService.TRACE_HISTORY_LOCAL_STORAGE_KEY, JSON.stringify(this.actionTraceHistory));
   }
 
   private addActionTrace(actionTrace: ActionTrace): void {
@@ -205,6 +217,18 @@ export class ActionTraceService {
     this.actionTraceHistory.push({
       timestamp, actionTrace, currentState
     });
+    localStorage.setItem(ActionTraceService.TRACE_HISTORY_LOCAL_STORAGE_KEY, JSON.stringify(this.actionTraceHistory));
+  }
+
+  private loadActionTrace(): void {
+    const actionTraceHistoryJson = localStorage.getItem(ActionTraceService.TRACE_HISTORY_LOCAL_STORAGE_KEY);
+    if (actionTraceHistoryJson) {
+      this.actionTraceHistory = JSON.parse(actionTraceHistoryJson);
+    }
+    const tracingOnJson = localStorage.getItem(ActionTraceService.TRACING_ON_LOCAL_STORAGE_KEY);
+    if (tracingOnJson) {
+      this.startTrace = JSON.parse(tracingOnJson);
+    }
   }
 
 
