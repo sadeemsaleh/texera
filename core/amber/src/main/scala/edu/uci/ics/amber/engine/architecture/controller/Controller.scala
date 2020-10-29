@@ -65,7 +65,7 @@ object Controller {
 
   private def fromJsonString(jsonString: String, withCheckpoint: Boolean): Controller = {
     val json: JsValue = Json.parse(jsonString)
-    val tag: WorkflowTag = WorkflowTag("sample")
+    val tag: WorkflowTag = WorkflowTag("linearregression")
     val linkArray: JsArray = (json \ "links").as[JsArray]
     val links: Map[OperatorIdentifier, Set[OperatorIdentifier]] =
       linkArray.value

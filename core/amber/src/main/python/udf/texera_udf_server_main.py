@@ -8,7 +8,7 @@ import traceback
 import pyarrow
 import pyarrow.flight
 
-from udf_v2.texera_udf_operator_base_v2 import *
+from udf.texera_udf_operator_base import *
 
 portNumber = sys.argv[1]
 UDFOperatorScript = sys.argv[2]
@@ -57,11 +57,9 @@ class UDFServer(pyarrow.flight.FlightServerBase):
 
 	def _make_flight_info(self, key, descriptor, table):
 		if self.tls_certificates:
-			flight_location = pyarrow.flight.Location.for_grpc_tls(
-				self.host, self.port)
+			flight_location = pyarrow.flight.Location.for_grpc_tls(self.host, self.port)
 		else:
-			flight_location = pyarrow.flight.Location.for_grpc_tcp(
-				self.host, self.port)
+			flight_location = pyarrow.flight.Location.for_grpc_tcp(self.host, self.port)
 		endpoints = [pyarrow.flight.FlightEndpoint(repr(key), [flight_location]), ]
 
 		mock_sink = pyarrow.MockOutputStream()
@@ -125,70 +123,53 @@ class UDFServer(pyarrow.flight.FlightServerBase):
 		available actions. When a specific action is called, the server executes the corresponding action and
 		maybe will return any results, i.e. a generalized function call.
 		"""
-		if action.type == "healthcheck":
-			# to check the status of the server to see if it is running.
-			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is up and running!'))
-		elif action.type == "shutdown":
-			# to shutdown the server.
-			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is shut down!'))
-			# Shut down on background thread to avoid blocking current
-			# request
-			threading.Thread(target=self._shutdown).start()
-		elif action.type == "open":
-			# open UDF
-			user_args_table = self.flights[self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'args'))]
-			user_args_list = user_args_table.to_pydict()['args']
-			self.udf_op.open(user_args_list)
-			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
-		elif action.type == "processTuple":
-			# execute UDF
-			# prepare input data
-			input_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'toPython'))
-			try:
+		try:
+			if action.type == "healthcheck":
+				# to check the status of the server to see if it is running.
+				yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is up and running!'))
+			elif action.type == "shutdown":
+				# to shutdown the server.
+				yield pyarrow.flight.Result(pyarrow.py_buffer(b'Flight Server is shut down!'))
+				# Shut down on background thread to avoid blocking current
+				# request
+				threading.Thread(target=self._shutdown).start()
+			elif action.type == "open":
+				# open UDF
+				args = str(action.body, "utf-8")
+				self.udf_op.open(args)
+				yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
+			elif action.type == "processTuple":
+				# execute UDF
+				# prepare input data
+				input_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'toPython'))
 				input_table = self.flights[input_key]  # type: pyarrow.Table
 				input_dataframe = input_table.to_pandas()  # type: pandas.DataFrame
-				# execute and get output data
 				self.udf_output_generator = self.process_batch(input_dataframe)
-			except:
-				result_buffer = json.dumps({'status': 'Fail', 'errorMessage': traceback.format_exc()})
-				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-		elif action.type == "inputExhausted":
-			try:
-				# execute and get output data
+			elif action.type == "inputExhausted":
 				self.udf_output_generator = self.process_batch("InputExhausted")
-				# for index, row in input_dataframe.iterrows():
-				# 	self.udf_op.accept(row)
-				# 	while self.udf_op.has_next():
-				# 		output_data_list.append(self.udf_op.next())
-				# output_dataframe = pandas.DataFrame.from_records(output_data_list)
-				# # send output data to Java
-				# output_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'fromPython'))
-				# self.flights[output_key] = pyarrow.Table.from_pandas(output_dataframe)
-			except:
-				result_buffer = json.dumps({'status': 'Fail', 'errorMessage': traceback.format_exc()})
-				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-		elif action.type == "getNext":
-			try:
-				output = next(self.udf_output_generator)
-				if output is not None:
-					self.output_data_list.append(output)
-				result_buffer = json.dumps({'status': 'Success'})
-				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-			except StopIteration:
-				output_dataframe = pandas.DataFrame.from_records(self.output_data_list)
-				# send output data to Java
-				output_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'fromPython'))
-				self.flights[output_key] = pyarrow.Table.from_pandas(output_dataframe)
-				result_buffer = json.dumps({'status': 'StopIteration'})
-				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-			except:
-				result_buffer = json.dumps({'status': 'Fail', 'errorMessage': traceback.format_exc()})
-				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-		elif action.type == "compute":
-			# execute UDF
-			# prepare input data
-			input_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'toPython'))
-			try:
+			elif action.type == "getNext":
+				try:
+					output = next(self.udf_output_generator)
+					if output is not None:
+						self.output_data_list.append(output)
+					result_buffer = json.dumps({'status': 'Success'})
+					yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
+				except StopIteration:
+					output_dataframe = pandas.DataFrame.from_records(self.output_data_list)
+					# prepare output data for Java to fetch
+					output_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'fromPython'))
+					self.flights[output_key] = pyarrow.Table.from_pandas(output_dataframe)
+					input_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'toPython'))
+					self.flights.pop(input_key)
+					result_buffer = json.dumps({'status': 'StopIteration'})
+					yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
+			elif action.type == "eval":
+
+				pass
+			elif action.type == "compute":
+				# execute UDF
+				# prepare input data
+				input_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'toPython'))
 				input_table = self.flights[input_key]  # type: pyarrow.Table
 				input_dataframe = input_table.to_pandas()  # type: pandas.DataFrame
 				output_data_list = []
@@ -201,18 +182,18 @@ class UDFServer(pyarrow.flight.FlightServerBase):
 				# send output data to Java
 				output_key = self.descriptor_to_key(pyarrow.flight.FlightDescriptor.for_path(b'fromPython'))
 				self.flights[output_key] = pyarrow.Table.from_pandas(output_dataframe)
-			except:
-				result_buffer = json.dumps({'status': 'Fail', 'errorMessage': traceback.format_exc()})
+				self.flights.pop(input_key)
+				result_buffer = json.dumps({'status': 'Success'})
 				yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-			self.flights.pop(input_key)
-			result_buffer = json.dumps({'status': 'Success'})
+			elif action.type == "close":
+				# close UDF
+				self.udf_op.close()
+				yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
+			else:
+				raise KeyError("Unknown action {!r}".format(action.type))
+		except:
+			result_buffer = json.dumps({'status': 'Fail', 'errorMessage': traceback.format_exc()})
 			yield pyarrow.flight.Result(pyarrow.py_buffer(result_buffer.encode('utf-8')))
-		elif action.type == "close":
-			# close UDF
-			self.udf_op.close()
-			yield pyarrow.flight.Result(pyarrow.py_buffer(b'Success!'))
-		else:
-			raise KeyError("Unknown action {!r}".format(action.type))
 
 	def process_batch(self, input_dataframe):
 		if input_dataframe == "InputExhausted":

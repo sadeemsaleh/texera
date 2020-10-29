@@ -87,6 +87,7 @@ public class PythonUDFOpExecV2 implements OperatorExecutor {
                     Arrays.asList(PYTHON, DAEMON_SCRIPT_PATH, Integer.toString(portNumber), pythonScriptPath)
             );
 
+
             ProcessBuilder processBuilder = new ProcessBuilder(args).inheritIO();
             // Start Flight server (Python process)
             processBuilder.start();

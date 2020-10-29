@@ -1,12 +1,12 @@
 import pandas
-from typing import Generator
+from typing import *
 
 
 class InputExhausted:
 	pass
 
 
-class TexeraUDFOperatorV2(object):
+class TexeraUDFOperator(object):
 	"""
 	Base class for row-oriented one-table input, one-table output user-defined operators. This must be implemented
 	before using.
@@ -24,7 +24,8 @@ class TexeraUDFOperatorV2(object):
 		"""
 		self._args = args
 
-	def process_tuple(self, row: pandas.Series | InputExhausted, nth_child: int) -> Generator[pandas.Series | None]:
+	def process_tuple(self, row: Union[pandas.Series, InputExhausted], nth_child: int)\
+		-> Generator[Optional[pandas.Series], None, None]:
 		"""
 		This is what the UDF operator should do for every row. Do not return anything here, just accept it. The result
 		should be retrieved with next().
@@ -40,10 +41,10 @@ class TexeraUDFOperatorV2(object):
 		"""
 		Close this operator, releasing any resources. For example, you might want to close a model file.
 		"""
-		raise NotImplementedError
+		pass
 
 
-class TexeraMapOperatorV2(TexeraUDFOperatorV2):
+class TexeraMapOperator(TexeraUDFOperator):
 	"""
 	Base class for one-input-tuple to one-output-tuple mapping operator. Either inherit this class (in case you want to
 	override open() and close(), e.g., open and close a model file.) or init this class object with a map function.
@@ -56,7 +57,7 @@ class TexeraMapOperatorV2(TexeraUDFOperatorV2):
 		super().__init__()
 		self._map_function = map_function
 
-	def process_tuple(self, row: pandas.Series | InputExhausted, nth_child: int):
+	def process_tuple(self, row: Union[pandas.Series, InputExhausted], nth_child: int):
 		if self._map_function is None:
 			raise NotImplementedError
 		if isinstance(row, InputExhausted):
@@ -68,7 +69,7 @@ class TexeraMapOperatorV2(TexeraUDFOperatorV2):
 		pass
 
 
-class TexeraFilterOperatorV2(TexeraUDFOperatorV2):
+class TexeraFilterOperator(TexeraUDFOperator):
 	"""
 		Base class for filter operators. Either inherit this class (in case you want to
 		override open() and close(), e.g., open and close a model file.) or init this class object with a filter function.
@@ -81,7 +82,7 @@ class TexeraFilterOperatorV2(TexeraUDFOperatorV2):
 		super().__init__()
 		self._filter_function = filter_function
 
-	def process_tuple(self, row: pandas.Series | InputExhausted, nth_child: int):
+	def process_tuple(self, row: Union[pandas.Series, InputExhausted], nth_child: int):
 		if self._filter_function is None:
 			raise NotImplementedError
 		if isinstance(row, InputExhausted):
