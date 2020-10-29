@@ -15,6 +15,7 @@ import edu.uci.ics.texera.workflow.operators.localscan.LocalCsvFileScanOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+import edu.uci.ics.texera.workflow.operators.keywordSearch.KeywordSearchOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 
 @JsonTypeInfo(
@@ -29,8 +30,9 @@ import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStrin
     new Type(value = classOf[RegexOpDesc], name = "Regex"),
     new Type(value = classOf[SpecializedFilterOpDesc], name = "Filter"),
     new Type(value = classOf[SentimentAnalysisOpDesc], name = "SentimentAnalysis"),
-    new Type(value = classOf[AverageOpDesc], name = "Average")
+    new Type(value = classOf[AverageOpDesc], name = "Average"),
 //    new Type(value = classOf[TexeraPythonUDFOpDesc], name = "PythonUDF"),
+    new Type(value = classOf[KeywordSearchOpDesc], name = "KeywordSearch")
   )
 )
 abstract class OperatorDescriptor extends Serializable {
