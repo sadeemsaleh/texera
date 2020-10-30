@@ -11,7 +11,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.{AttributeType, Schema}
 
 case class AveragePartialObj(sum: Double, count: Double) extends Serializable {}
 
-class AverageOpDesc extends AggregateOpDesc {
+class SpecializedAverageOpDesc extends AggregateOpDesc {
 
   @JsonProperty(required = true)
   @JsonSchemaTitle("Aggregation Function")
@@ -163,8 +163,8 @@ class AverageOpDesc extends AggregateOpDesc {
 
   override def operatorInfo: OperatorInfo =
     OperatorInfo(
-      "Average",
-      "calculate the average value of a column",
+      "Aggregate",
+      "calculate different types of aggregation values",
       OperatorGroupConstants.UTILITY_GROUP,
       1,
       1
