@@ -52,6 +52,7 @@ export class DynamicSchemaService {
     this.workflowActionService.getTexeraGraph().getOperatorAddStream()
       .subscribe(operator => {
         this.setDynamicSchema(operator.operatorID, this.getInitialDynamicSchema(operator));
+        console.log(this.dynamicSchemaMap);
       });
 
     // when an operator is deleted, remove it from the dynamic schema map

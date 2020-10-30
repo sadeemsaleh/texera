@@ -46,11 +46,13 @@ export class VisualizationPanelContentComponent implements OnInit, AfterViewInit
       case ChartType.DONUT:
       // correspond to TexeraLineChart.java
       case ChartType.LINE:
-      case ChartType.SPLINE: this.onClickGenerateChart(); break;
+      case ChartType.SPLINE: this.onClickGenerateLineChart(); break;
+      case ChartType.XYLINE: this.onClickGenerateXYLineChart(); break;
     }
   }
 
   onClickGenerateWordCloud() {
+    console.log('word cloud??');
     const dataToDisplay: object[] = [];
     const wordCloudTuples = this.table as ReadonlyArray<WordCloudTuple>;
 
@@ -63,7 +65,7 @@ export class VisualizationPanelContentComponent implements OnInit, AfterViewInit
            { list: dataToDisplay } );
   }
 
-  onClickGenerateChart() {
+  onClickGenerateLineChart() {
     const dataToDisplay: Array<[string, ...PrimitiveArray]> = [];
     const category: string[] = [];
     for (let i = 1; i < this.columns?.length; i++) {
@@ -94,6 +96,45 @@ export class VisualizationPanelContentComponent implements OnInit, AfterViewInit
           type: 'category',
           categories: category
         }
+      },
+      bindto: VisualizationPanelContentComponent.CHART_ID
+    });
+  }
+
+  onClickGenerateXYLineChart() {
+    const xAxisData: [string, ...PrimitiveArray] = ['x'];
+    const yAxisData: [string, ...PrimitiveArray] = ['y'];
+
+
+    const dataToDisplay: Array<[string, ...PrimitiveArray]> = [];
+    const category: string[] = [];
+    for (let i = 1; i < this.columns?.length; i++) {
+      category.push(this.columns[i]);
+    }
+
+    const columnCount = this.columns.length;
+
+    for (const row of this.table) {
+      const xValue = Number((row as any)['x']);
+      const yValue = Number((row as any)['y']);
+      xAxisData.push(xValue);
+      yAxisData.push(yValue);
+    }
+
+    console.log('dataToDisplay');
+    console.log(dataToDisplay);
+    c3.generate({
+      size: {
+        height: VisualizationPanelContentComponent.HEIGHT,
+        width: VisualizationPanelContentComponent.WIDTH
+      },
+      data: {
+        x: 'x',
+        columns: [
+          xAxisData,
+          yAxisData
+        ],
+        type: 'line'
       },
       bindto: VisualizationPanelContentComponent.CHART_ID
     });

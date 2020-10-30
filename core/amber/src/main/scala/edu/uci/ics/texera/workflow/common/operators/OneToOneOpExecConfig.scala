@@ -4,7 +4,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint.GlobalBreakpoint
-import edu.uci.ics.amber.engine.architecture.deploysemantics.deploymentfilter.FollowPrevious
+import edu.uci.ics.amber.engine.architecture.deploysemantics.deploymentfilter.{FollowPrevious, UseAll}
 import edu.uci.ics.amber.engine.architecture.deploysemantics.deploystrategy.RoundRobinDeployment
 import edu.uci.ics.amber.engine.architecture.deploysemantics.layer.{ActorLayer, ProcessorWorkerLayer}
 import edu.uci.ics.amber.engine.architecture.worker.WorkerState
@@ -25,7 +25,7 @@ class OneToOneOpExecConfig(override val tag: OperatorIdentifier, val opExec: Int
           LayerTag(tag, "main"),
           opExec,
           Constants.defaultNumWorkers,
-          FollowPrevious(),
+          UseAll(),
           RoundRobinDeployment()
         )
       ),

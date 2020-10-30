@@ -7,7 +7,7 @@ import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
 import edu.uci.ics.texera.workflow.common.operators.OneToOneOpExecConfig;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
-import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator;
+import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOpDesc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,7 +18,7 @@ import java.util.List;
  * @author Mingji Han, Xiaozhen Liu
  *
  */
-public class LineChartOpDesc extends VisualizationOperator {
+public class LineChartOpDesc extends VisualizationOpDesc {
     @JsonProperty(value = "name column", required = true)
     @JsonPropertyDescription("column of name (for x-axis)")
     public String nameColumn;
@@ -52,7 +52,7 @@ public class LineChartOpDesc extends VisualizationOperator {
                 "Line Chart",
                 "View the result in line chart",
                 OperatorGroupConstants.VISUALIZATION_GROUP(),
-                1, 1);
+                1, 1, false);
     }
 
     @Override

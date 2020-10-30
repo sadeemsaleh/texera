@@ -157,6 +157,8 @@ export class JointUIService {
 
     // set operator element ID to be operator ID
     operatorElement.set('id', operator.operatorID);
+    console.log('setting operator id to be: ' + operator.operatorID);
+    console.log(operator);
 
     // set the input ports and output ports based on operator predicate
     operator.inputPorts.forEach(

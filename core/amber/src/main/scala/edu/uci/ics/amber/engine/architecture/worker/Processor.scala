@@ -473,8 +473,10 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
             }
         }
         try {
-          generatedCount += 1
-          transferTuple(nextTuple, generatedCount)
+          if (nextTuple != null) {
+            generatedCount += 1
+            transferTuple(nextTuple, generatedCount)
+          }
         } catch {
           case e: BreakpointException =>
             synchronized {
@@ -533,8 +535,10 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
             }
         }
         try {
-          generatedCount += 1
-          transferTuple(nextTuple, generatedCount)
+          if (nextTuple != null) {
+            generatedCount += 1
+            transferTuple(nextTuple, generatedCount)
+          }
         } catch {
           case e: BreakpointException =>
             synchronized {
@@ -610,8 +614,10 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
 //              if(breakpoints.exists(_.isTriggered)){
 //                log.info("break point triggered but it is not stopped")
 //              }
-              generatedCount += 1
-              transferTuple(nextTuple, generatedCount)
+              if (nextTuple != null) {
+                generatedCount += 1
+                transferTuple(nextTuple, generatedCount)
+              }
               exitIfPaused()
             } catch {
               case e: BreakpointException =>

@@ -2,14 +2,22 @@ package edu.uci.ics.texera.workflow.operators.linearregression;
 
 import edu.uci.ics.texera.workflow.common.operators.mlmodel.MLModelOpExec;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
+import scala.collection.Iterator;
+import scala.collection.JavaConverters;
 import scala.collection.immutable.List;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class LinearRegressionOpExec extends MLModelOpExec{
 
   private String xAttr;
   private String yAttr;
 
-  private double learningRate = 0.1;
+  private double learningRate;
   private double b_current = 0;
   private double w_current = 0;
 
@@ -17,10 +25,10 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   private double w_gradient = 0;
   private double b_gradient = 0;
 
-  LinearRegressionOpExec(String xAttr, String yAttr, double learningRate){
+  LinearRegressionOpExec(String xAttr, String yAttr, Double learningRate){
     this.xAttr = xAttr;
     this.yAttr = yAttr;
-    this.learningRate = learningRate;
+    this.learningRate = learningRate == null ? 0.1 : learningRate;
   }
 
   @Override
@@ -67,5 +75,24 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     b_current = Math.round(b_current*100.0)/100.0;
 
     System.out.println("Epoch "+ currentEpoch() + " Learning Rate " + learningRate + ", Current w and b values are : " + w_current + " " + b_current);
+  }
+
+  @Override
+  public Iterator<Tuple> getResultIterator() {
+
+    double xMin = JavaConverters.asJavaCollection(allData()).stream()
+            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr))).min().getAsDouble();
+    Object[] minTuple = {w_current, b_current, xMin};
+    System.out.println("min!!!");
+    Tuple xMinTuple = Tuple.newBuilder().add(LinearRegressionOpDesc.schema(), minTuple).build();
+
+    double xMax = JavaConverters.asJavaCollection(allData()).stream()
+            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr))).max().getAsDouble();
+    Object[] maxTuple = {w_current, b_current, xMax };
+    System.out.println("max!!!");
+    Tuple xMaxTuple = Tuple.newBuilder().add(LinearRegressionOpDesc.schema(), maxTuple).build();
+
+    return JavaConverters.asScalaIterator(Arrays.asList(xMinTuple, xMaxTuple).iterator());
+
   }
 }
