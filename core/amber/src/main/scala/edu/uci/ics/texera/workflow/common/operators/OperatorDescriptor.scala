@@ -48,7 +48,7 @@ import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStrin
     new Type(value = classOf[LinearRegressionChartOpDesc], name = "LinearRegressionChart"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
-    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
+//    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
 //    new Type(value = classOf[MysqlSourceOpDesc], name = "MysqlSource"),
   )
 )
