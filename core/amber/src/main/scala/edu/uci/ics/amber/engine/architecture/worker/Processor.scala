@@ -382,6 +382,7 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
           processTime += System.nanoTime() - processStart
           Breaks.break()
         case e: Exception =>
+          e.printStackTrace()
           self ! ReportFailure(e)
           processTime += System.nanoTime() - processStart
           Breaks.break()
@@ -488,6 +489,7 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
             processTime += System.nanoTime() - processStart
             Breaks.break()
           case e: Exception =>
+            e.printStackTrace()
             self ! ReportFailure(e)
             processTime += System.nanoTime() - processStart
             Breaks.break()
@@ -498,6 +500,7 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
         dataProcessor.close()
       } catch {
         case e: Exception =>
+          e.printStackTrace()
           self ! ReportFailure(e)
           processTime += System.nanoTime() - processStart
           Breaks.break()
@@ -550,6 +553,7 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
             processTime += System.nanoTime() - processStart
             Breaks.break()
           case e: Exception =>
+            e.printStackTrace()
             self ! ReportFailure(e)
             processTime += System.nanoTime() - processStart
             Breaks.break()
@@ -631,6 +635,7 @@ class Processor(var dataProcessor: IOperatorExecutor, val tag: WorkerTag) extend
                 Breaks.break()
               case e: Exception =>
                 log.info(e.toString)
+                e.printStackTrace()
                 self ! ReportFailure(e)
                 processTime += System.nanoTime() - processStart
                 Breaks.break()

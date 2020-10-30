@@ -19,11 +19,8 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOpDesc;
  */
 
 public class WordCloudOpDesc extends VisualizationOpDesc {
-    @JsonProperty(value = "text column", required = true)
-    public String textColumn;
-
-    @JsonProperty(value = "lucene analyzer name", required = true, defaultValue = "standard")
-    public String luceneAnalyzerName;
+    @JsonProperty(required = true)
+    public String attribute;
 
     @Override
     public String chartType() {
@@ -32,7 +29,7 @@ public class WordCloudOpDesc extends VisualizationOpDesc {
 
     @Override
     public OpExecConfig operatorExecutor() {
-        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.defaultNumWorkers(), textColumn, luceneAnalyzerName);
+        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.defaultNumWorkers(), attribute, "standard");
     }
 
     @Override

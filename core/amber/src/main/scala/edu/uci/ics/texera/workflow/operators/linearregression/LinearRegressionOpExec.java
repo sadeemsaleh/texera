@@ -81,13 +81,13 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   public Iterator<Tuple> getResultIterator() {
 
     double xMin = JavaConverters.asJavaCollection(allData()).stream()
-            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr))).min().getAsDouble();
+            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr).toString())).min().getAsDouble();
     Object[] minTuple = {w_current, b_current, xMin};
     System.out.println("min!!!");
     Tuple xMinTuple = Tuple.newBuilder().add(LinearRegressionOpDesc.schema(), minTuple).build();
 
     double xMax = JavaConverters.asJavaCollection(allData()).stream()
-            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr))).max().getAsDouble();
+            .mapToDouble(t -> Double.parseDouble(t.getField(xAttr).toString())).max().getAsDouble();
     Object[] maxTuple = {w_current, b_current, xMax };
     System.out.println("max!!!");
     Tuple xMaxTuple = Tuple.newBuilder().add(LinearRegressionOpDesc.schema(), maxTuple).build();

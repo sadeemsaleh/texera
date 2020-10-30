@@ -1,5 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.breakpoint.globalbreakpoint
 
+import java.io.PrintWriter
+import java.io.StringWriter
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
 import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{
   ConditionalBreakpoint,
@@ -50,9 +52,15 @@ class ExceptionGlobalBreakpoint(id: String) extends GlobalBreakpoint(id) {
     for (i <- exceptions) {
       val k = (i._1, new FaultedTuple(i._2.triggeredTuple, i._2.triggeredTupleId, i._2.isInput))
       if (map.contains(k)) {
-        map(k).append(i._2.error.toString)
+        val sw = new StringWriter
+        val pw = new PrintWriter(sw)
+        i._2.error.printStackTrace(pw)
+        map(k).append(sw.toString)
       } else {
-        map(k) = ArrayBuffer[String](i._2.error.toString)
+        val sw = new StringWriter
+        val pw = new PrintWriter(sw)
+        i._2.error.printStackTrace(pw)
+        map(k) = ArrayBuffer[String](sw.toString)
       }
     }
     exceptions.clear()

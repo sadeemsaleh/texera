@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.uci.ics.texera.workflow.common.WorkflowContext;
 import edu.uci.ics.texera.workflow.common.tuple.Tuple;
+import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
+import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 
 public class FilterPredicate {
 
@@ -19,22 +21,46 @@ public class FilterPredicate {
 
     @JsonIgnore
     public boolean evaluate(Tuple tuple, WorkflowContext context) {
-        String tupleValue = tuple.getField(attribute).toString().trim();
-        switch (condition) {
-            case EQUAL_TO:
-                return tupleValue.equalsIgnoreCase(value);
-            case GREATER_THAN:
-                return tupleValue.compareToIgnoreCase(value) > 0;
-            case GREATER_THAN_OR_EQUAL_TO:
-                return tupleValue.compareToIgnoreCase(value) >= 0;
-            case LESS_THAN:
-                return tupleValue.compareToIgnoreCase(value) < 0;
-            case LESS_THAN_OR_EQUAL_TO:
-                return tupleValue.compareToIgnoreCase(value) <= 0;
-            case NOT_EQUAL_TO:
-                return !tupleValue.equalsIgnoreCase(value);
+        Attribute attr = tuple.getSchema().getAttribute(this.attribute);
+        String tupleValue = tuple.getField(this.attribute).toString().trim();
+
+        try {
+            double doubleTupleValue = Double.parseDouble(tupleValue);
+            double doubleValue = Double.parseDouble(value);
+
+            switch (condition) {
+                case EQUAL_TO:
+                    return doubleTupleValue == doubleValue;
+                case GREATER_THAN:
+                    return doubleTupleValue > doubleValue;
+                case GREATER_THAN_OR_EQUAL_TO:
+                    return doubleTupleValue >= doubleValue;
+                case LESS_THAN:
+                    return doubleTupleValue < doubleValue;
+                case LESS_THAN_OR_EQUAL_TO:
+                    return doubleTupleValue <= doubleValue;
+                case NOT_EQUAL_TO:
+                    return doubleTupleValue != doubleValue;
+            }
+            return false;
+        } catch (NumberFormatException e) {
+            switch (condition) {
+                case EQUAL_TO:
+                    return tupleValue.equalsIgnoreCase(value);
+                case GREATER_THAN:
+                    return tupleValue.compareToIgnoreCase(value) > 0;
+                case GREATER_THAN_OR_EQUAL_TO:
+                    return tupleValue.compareToIgnoreCase(value) >= 0;
+                case LESS_THAN:
+                    return tupleValue.compareToIgnoreCase(value) < 0;
+                case LESS_THAN_OR_EQUAL_TO:
+                    return tupleValue.compareToIgnoreCase(value) <= 0;
+                case NOT_EQUAL_TO:
+                    return !tupleValue.equalsIgnoreCase(value);
+            }
+            return false;
         }
-        return false;
+
     }
 
 }

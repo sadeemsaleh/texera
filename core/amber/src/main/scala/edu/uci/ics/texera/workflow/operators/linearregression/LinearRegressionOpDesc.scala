@@ -26,11 +26,11 @@ class LinearRegressionOpDesc extends MLModelOpDesc {
   @JsonPropertyDescription("column representing y in y=wx+b")
   var yAttr: String = _
 
-  @JsonProperty(value = "learning rate", required = false)
-  @JsonPropertyDescription("Learning Rate")
-  var learningRate: Double = _
+//  @JsonProperty(value = "learning rate", required = false)
+//  @JsonPropertyDescription("Learning Rate")
+//  var learningRate: Double = _
 
-  override def operatorExecutor = new MLModelOpExecConfig(this.operatorIdentifier, 1, () => new LinearRegressionOpExec(xAttr, yAttr, learningRate))
+  override def operatorExecutor = new MLModelOpExecConfig(this.operatorIdentifier, 1, () => new LinearRegressionOpExec(xAttr, yAttr, 0.1))
 
   override def operatorInfo = OperatorInfo("Linear Regression", "Trains a Linear Regression model", OperatorGroupConstants.UTILITY_GROUP, 1, 1)
 
