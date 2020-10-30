@@ -28,12 +28,12 @@ public class LinearRegressionOpExec extends MLModelOpExec{
   LinearRegressionOpExec(String xAttr, String yAttr, Double learningRate){
     this.xAttr = xAttr;
     this.yAttr = yAttr;
-    this.learningRate = learningRate == null ? 0.1 : learningRate;
+    this.learningRate = learningRate == null ? 0.0001 : learningRate;
   }
 
   @Override
   public int getTotalEpochsCount() {
-    return 100;
+    return 1000;
   }
 
   @Override
