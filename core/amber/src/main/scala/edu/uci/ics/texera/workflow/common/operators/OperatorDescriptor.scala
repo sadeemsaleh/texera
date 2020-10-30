@@ -18,13 +18,18 @@ import edu.uci.ics.texera.workflow.operators.pythonUDF.PythonUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
+<<<<<<< HEAD
 import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 import edu.uci.ics.texera.workflow.operators.mysqlsource.MysqlSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
+=======
+import edu.uci.ics.texera.workflow.operators.mysqlsource.MysqlSourceOpDesc
+>>>>>>> ff970048b3bcadda40f6274f7015a5c83137e4a3
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.linearRegressionChart.LinearRegressionChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.pieChart.PieChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}
 
 @JsonTypeInfo(
@@ -46,9 +51,9 @@ import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStrin
     new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
     new Type(value = classOf[WordCloudOpDesc], name = "WordCloud"),
     new Type(value = classOf[LinearRegressionChartOpDesc], name = "LinearRegressionChart"),
-    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
+    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
     new Type(value = classOf[MysqlSourceOpDesc], name = "MysqlSource"),
   )
 )
