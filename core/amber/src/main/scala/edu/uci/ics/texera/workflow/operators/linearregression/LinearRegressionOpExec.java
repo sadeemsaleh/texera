@@ -55,8 +55,8 @@ public class LinearRegressionOpExec extends MLModelOpExec{
     b_gradient = 0;
     int tIdx = 0;
     for(Double result: results) {
-      Double x = Double.valueOf(minibatch[tIdx].getField(xAttr));
-      Double y = Double.valueOf(minibatch[tIdx].getField(yAttr));
+      Double x = Double.parseDouble(minibatch[tIdx].getField(xAttr).toString());
+      Double y = Double.parseDouble(minibatch[tIdx].getField(yAttr).toString());
       w_gradient += x * (y - result);
       b_gradient += (y - result);
       tIdx++;
