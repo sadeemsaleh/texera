@@ -18,13 +18,8 @@ import edu.uci.ics.texera.workflow.operators.pythonUDF.PythonUDFOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
-<<<<<<< HEAD
-import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
-import edu.uci.ics.texera.workflow.operators.mysqlsource.MysqlSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
-=======
 import edu.uci.ics.texera.workflow.operators.mysqlsource.MysqlSourceOpDesc
->>>>>>> ff970048b3bcadda40f6274f7015a5c83137e4a3
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.linearRegressionChart.LinearRegressionChartOpDesc
