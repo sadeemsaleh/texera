@@ -624,12 +624,14 @@ export class OperatorGroup {
    *
    * @param operatorIDs
    */
-  public getNewGroup(operatorIDs: readonly string[]): Group {
+  public getNewGroup(operatorIDs: readonly string[], groupID?: string): Group {
     if (!this.operatorsGroupable(operatorIDs)) {
       throw Error('given operators are not groupable');
     }
 
-    const groupID = this.workflowUtilService.getGroupRandomUUID();
+    if (!groupID) {
+      groupID = this.workflowUtilService.getGroupRandomUUID();
+    }
 
     const operators = new Map<string, OperatorInfo>();
     operatorIDs.forEach(operatorID => {

@@ -479,6 +479,8 @@ export class WorkflowActionService {
    * @param groups
    */
   public addGroups(...groups: readonly Group[]): void {
+    const operatorIDs = groups.map(group => Array.from(group.operators.keys()));
+
     const command: Command = {
       execute: () => {
         groups.forEach(group => {
@@ -490,6 +492,13 @@ export class WorkflowActionService {
         groups.forEach(group => {
           this.deleteGroupInternal(group.groupID);
         });
+      }, redo: () => {
+        operatorIDs.forEach( (operatorsInGroup, i) => {
+          const recreatedGroup = this.operatorGroup.getNewGroup(
+            operatorsInGroup, groups[i].groupID);
+          this.addGroupInternal(recreatedGroup);
+          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
+        });
       }
     };
     this.executeAndStoreCommand(command);
@@ -500,9 +509,18 @@ export class WorkflowActionService {
    * @param groupIDs
    */
   public deleteGroups(...groupIDs: readonly string[]): void {
+    const operatorIDs = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.keys()));
+
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.deleteGroupInternal(groupID)),
-      undo: () => {}
+      undo: () => {
+        operatorIDs.forEach( (operatorsInGroup, i) => {
+          const recreatedGroup = this.operatorGroup.getNewGroup(
+            operatorsInGroup, groupIDs[i]);
+          this.addGroupInternal(recreatedGroup);
+          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
+        });
+      },
     };
     this.executeAndStoreCommand(command);
   }
@@ -514,7 +532,7 @@ export class WorkflowActionService {
   public collapseGroups(...groupIDs: readonly string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
-      undo: () => {}
+      undo: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
     };
     this.executeAndStoreCommand(command);
   }
@@ -526,7 +544,7 @@ export class WorkflowActionService {
   public expandGroups(...groupIDs: string[]): void {
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
-      undo: () => {}
+      undo: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
     };
     this.executeAndStoreCommand(command);
   }
@@ -536,9 +554,29 @@ export class WorkflowActionService {
    * @param groupID
    */
   public deleteGroupsAndOperators(...groupIDs: readonly string[]): void {
+
+    const operators = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
+    const links = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
+    const inLinks = groupIDs.map(
+      groupID => this.operatorGroup.getGroup(groupID).inLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
+    const outLinks = groupIDs.map(
+      groupID => this.operatorGroup.getGroup(groupID).outLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
+
     const command: Command = {
       execute: () => groupIDs.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID)),
-      undo: () => {}
+      undo: () => {
+        for (let i = 0; i < operators.length; i++) {
+          operators[i].forEach(operatorInfo => this.addOperatorInternal(operatorInfo.operator, operatorInfo.position));
+          links[i].forEach(linkInfo => this.addLinkInternal(linkInfo.link));
+          inLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+          outLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+          const recreatedGroup = this.operatorGroup.getNewGroup(
+            operators[i].map(operatorInfo => operatorInfo.operator.operatorID), groupIDs[i]);
+          this.addGroupInternal(recreatedGroup);
+          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
+        }
+
+      },
     };
     this.executeAndStoreCommand(command);
   }
