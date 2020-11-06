@@ -13,13 +13,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ProjectionOpDesc extends MapOpDesc {
-    @JsonProperty(value = "attribute", required = true)
+    @JsonProperty(value = "attributes", required = true)
     @JsonPropertyDescription("a subset of column to keeps")
-    public String attribute;
+    public List<String> attributes;
 
     @Override
     public OneToOneOpExecConfig operatorExecutor() {
-        if (attribute == null) {
+        if (attributes == null) {
             throw new RuntimeException("Projection: attribute is null");
         }
         return new OneToOneOpExecConfig(operatorIdentifier(), () -> new ProjectionOpExec(this));
@@ -39,7 +39,7 @@ public class ProjectionOpDesc extends MapOpDesc {
     public Schema getOutputSchema(Schema[] schemas) {
         Preconditions.checkArgument(schemas.length == 1);
         List<String> attributesToRemove = schemas[0].getAttributeNames().stream()
-                .filter(item -> !item.equals(this.attribute))
+                .filter(item -> !this.attributes.contains(item))
                 .collect(Collectors.toList());
         return Schema.newBuilder().add(schemas[0]).removeIfExists(attributesToRemove).build();
     }

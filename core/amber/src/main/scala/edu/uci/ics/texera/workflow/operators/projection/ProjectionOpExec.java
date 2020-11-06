@@ -19,10 +19,9 @@ public class ProjectionOpExec extends MapOpExec {
     }
 
     public Tuple processTuple(Tuple t) {
-        String attribute = opDesc.attribute;
-        System.out.println(attribute);
+        List<String> attributes = opDesc.attributes;
         List<String> attributesToRemove = t.getSchema().getAttributeNames().stream()
-                .filter(item -> item.equals(attribute))
+                .filter(item -> !attributes.contains(item))
                 .collect(Collectors.toList());
 
         return Tuple.newBuilder().add(t).removeIfExists(attributesToRemove).build();
