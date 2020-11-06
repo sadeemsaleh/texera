@@ -309,6 +309,7 @@ export class WorkflowActionService {
   ): void {
     // remember currently highlighted operators and groups
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
+    const operatorIDs = (groups ?? []).map(group => Array.from(group.operators.keys()));
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
@@ -324,8 +325,16 @@ export class WorkflowActionService {
             breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, breakpoint));
           }
         }
+        (groups ?? []).forEach(group => {
+          this.addGroupInternal(group);
+          this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+        });
       },
       undo: () => {
+        (groups ?? []).forEach(group => {
+          this.deleteGroupInternal(group.groupID);
+        });
+
         // remove links
         if (links) {
           links.forEach(l => this.deleteLinkWithIDInternal(l.linkID));
