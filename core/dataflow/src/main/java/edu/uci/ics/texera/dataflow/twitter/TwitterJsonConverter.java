@@ -93,7 +93,8 @@ public class TwitterJsonConverter implements IOperator {
     private Optional<List<IField>> generateFieldsFromJson(String rawJsonData) {
         try {
             // read the JSON string into a JSON object
-            JsonNode tweet = new ObjectMapper().readTree(rawJsonData);
+            JsonNode tweet_outer = new ObjectMapper().readTree(rawJsonData);
+            JsonNode tweet = tweet_outer.get("ds_tweet");
             
             // extract fields from the JSON object
             String text = tweet.get("text").asText();
