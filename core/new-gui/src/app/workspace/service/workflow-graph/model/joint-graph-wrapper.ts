@@ -195,7 +195,7 @@ export class JointGraphWrapper {
    * services/components can't modify it directly.
    */
   public getCurrentHighlightedOperatorIDs(): readonly string[] {
-    return this.currentHighlightedOperators;
+    return this.currentHighlightedOperators.slice();
   }
 
   /**
@@ -206,7 +206,7 @@ export class JointGraphWrapper {
    * services/components can't modify it directly.
    */
   public getCurrentHighlightedGroupIDs(): readonly string[] {
-    return this.currentHighlightedGroups;
+    return this.currentHighlightedGroups.slice();
   }
 
   /**
