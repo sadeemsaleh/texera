@@ -15,7 +15,9 @@ import edu.uci.ics.texera.workflow.operators.limit.LimitOpDesc
 import edu.uci.ics.texera.workflow.operators.linearregression.LinearRegressionOpDesc
 import edu.uci.ics.texera.workflow.operators.localscan.LocalCsvFileScanOpDesc
 import edu.uci.ics.texera.workflow.operators.pythonUDF.PythonUDFOpDesc
+import edu.uci.ics.texera.workflow.operators.randomksampling.RandomKSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.regex.RegexOpDesc
+import edu.uci.ics.texera.workflow.operators.reservoirsampling.ReservoirSamplingOpDesc
 import edu.uci.ics.texera.workflow.operators.sentiment.SentimentAnalysisOpDesc
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.union.UnionOpDesc
@@ -43,13 +45,15 @@ import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStrin
     new Type(value = classOf[LinearRegressionOpDesc], name = "LinearRegression"),
     new Type(value = classOf[LineChartOpDesc], name = "LineChart"),
     new Type(value = classOf[BarChartOpDesc], name = "BarChart"),
-//    new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
+    new Type(value = classOf[PieChartOpDesc], name = "PieChart"),
     new Type(value = classOf[WordCloudOpDesc], name = "WordCloud"),
     new Type(value = classOf[LinearRegressionChartOpDesc], name = "LinearRegressionChart"),
     new Type(value = classOf[LimitOpDesc], name = "Limit"),
     new Type(value = classOf[UnionOpDesc], name = "Union"),
-//    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
-//    new Type(value = classOf[MysqlSourceOpDesc], name = "MysqlSource"),
+    new Type(value = classOf[PythonUDFOpDesc], name = "PythonUDF"),
+    new Type(value = classOf[MysqlSourceOpDesc], name = "MysqlSource"),
+    new Type(value = classOf[RandomKSamplingOpDesc], name = "RandomKSampling"),
+    new Type(value = classOf[ReservoirSamplingOpDesc], name = "ReservoirSampling")
   )
 )
 abstract class OperatorDescriptor extends Serializable {
