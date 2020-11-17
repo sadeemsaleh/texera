@@ -6,7 +6,7 @@ import { SyncOperatorGroup } from './sync-operator-group';
 import { JointGraphWrapper } from './joint-graph-wrapper';
 import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
-import { OperatorGroup, Group, OperatorGroupReadonly } from './operator-group';
+import { OperatorGroup, Group, OperatorGroupReadonly, OperatorInfo, LinkInfo } from './operator-group';
 import { Injectable } from '@angular/core';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort, Breakpoint } from '../../../types/workflow-common.interface';
 
@@ -89,10 +89,17 @@ export class WorkflowActionService {
   public handleJointOperatorDrag(): void {
     let oldPosition: Point = {x: 0, y: 0};
     let gotOldPosition = false;
+
+    this.jointGraphWrapper.getElementPositionChangeEvent().subscribe(event => {
+      console.log('pchange', event);
+    });
+
     this.jointGraphWrapper.getElementPositionChangeEvent()
       .filter(() => !gotOldPosition)
       .filter(() => this.undoRedoService.listenJointCommand)
       .subscribe(event => {
+
+        console.log("dragsave",event);
         oldPosition = event.oldPosition;
         gotOldPosition = true;
       });
@@ -101,27 +108,39 @@ export class WorkflowActionService {
       .filter(() => this.undoRedoService.listenJointCommand)
       .debounceTime(100)
       .subscribe(event => {
+        console.log("drag",event);
         gotOldPosition = false;
         const offsetX = event.newPosition.x - oldPosition.x;
         const offsetY = event.newPosition.y - oldPosition.y;
         // remember currently highlighted operators
-        const currentHighlighted = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
         const command: Command = {
           execute: () => { },
           undo: () => {
             this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-            currentHighlighted.forEach(operatorID => {
+            this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+            currentHighlightedOperators.forEach(operatorID => {
               this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, -offsetX, -offsetY);
+            });
+            currentHighlightedGroups.forEach(groupID => {
+              this.jointGraphWrapper.highlightGroups(groupID);
+              this.jointGraphWrapper.setElementPosition(groupID, -offsetX, -offsetY);
             });
           },
           redo: () => {
             this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlighted.length > 1);
-            currentHighlighted.forEach(operatorID => {
+            this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
+            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+            currentHighlightedOperators.forEach(operatorID => {
               this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY);
+            });
+            currentHighlightedGroups.forEach(groupID => {
+              this.jointGraphWrapper.highlightGroups(groupID);
+              this.jointGraphWrapper.setElementPosition(groupID, offsetX, offsetY);
             });
           }
         };
@@ -309,7 +328,9 @@ export class WorkflowActionService {
   ): void {
     // remember currently highlighted operators and groups
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
-    const operatorIDs = (groups ?? []).map(group => Array.from(group.operators.keys()));
+
+    let groupsCopy: readonly Group[];
+
     const command: Command = {
       execute: () => {
         // unhighlight previous highlights
@@ -325,15 +346,27 @@ export class WorkflowActionService {
             breakpoints.forEach((breakpoint, linkID) => this.setLinkBreakpointInternal(linkID, breakpoint));
           }
         }
-        (groups ?? []).forEach(group => {
-          this.addGroupInternal(group);
-          this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
-        });
+
+        if (groups) {
+          groupsCopy = cloneDeep(groups);
+          groups.forEach(group => {
+            console.log("groups",group, group.operators);
+            this.addGroupInternal(group);
+            this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+          });
+          groups = groupsCopy;
+        }
+
+
       },
       undo: () => {
-        (groups ?? []).forEach(group => {
-          this.deleteGroupInternal(group.groupID);
-        });
+        if (groups) {
+          groups.forEach(group => {
+            console.log("groups",group, group.operators);
+            this.deleteGroupInternal(group.groupID);
+          });
+          groups = groupsCopy;
+        }
 
         // remove links
         if (links) {
@@ -359,7 +392,11 @@ export class WorkflowActionService {
    * @param operatorIDs
    * @param linkIDs
    */
-  public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[]): void {
+  public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[], groupIDs?: readonly string[] ): void {
+
+    const operatorIDsCopy = operatorIDs.slice();
+    const groupIDsCopy = (groupIDs ?? []).slice();
+
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
     operatorIDs.forEach(operatorID => operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
@@ -385,13 +422,19 @@ export class WorkflowActionService {
       }
     });
 
+    let operators: OperatorInfo[][];
+    let links: LinkInfo[][];
+    let inLinks: OperatorLink[][];
+    let outLinks: OperatorLink[][];
+
     // remember currently highlighted operators and groups
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
     const command: Command = {
       execute: () => {
         linksToDelete.forEach((layer, link) => this.deleteLinkWithIDInternal(link.linkID));
-        operatorIDs.forEach(operatorID => {
+        console.log(operatorIDsCopy);
+        operatorIDsCopy.forEach(operatorID => {
           this.deleteOperatorInternal(operatorID);
           // if the group has less than 2 operators left, delete the group
           const groupInfo = groups.get(operatorID);
@@ -400,8 +443,28 @@ export class WorkflowActionService {
             this.deleteGroupInternal(groupInfo.group.groupID);
           }
         });
+
+        operators = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
+        links = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
+        inLinks = groupIDsCopy.map(
+          groupID => this.operatorGroup.getGroup(groupID).inLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
+        outLinks = groupIDsCopy.map(
+          groupID => this.operatorGroup.getGroup(groupID).outLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
+
+        groupIDsCopy.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID));
       },
       undo: () => {
+        for (let i = 0; i < operators.length; i++) {
+          operators[i].forEach(operatorInfo => this.addOperatorInternal(operatorInfo.operator, operatorInfo.position));
+          links[i].forEach(linkInfo => this.addLinkInternal(linkInfo.link));
+          inLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+          outLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+          const recreatedGroup = this.operatorGroup.getNewGroup(
+            operators[i].map(operatorInfo => operatorInfo.operator.operatorID), groupIDsCopy[i]);
+          this.addGroupInternal(recreatedGroup);
+          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
+        }
+
         operatorsAndPositions.forEach((pos, operator) => {
           this.addOperatorInternal(operator, pos.position);
           this.getJointGraphWrapper().setCellLayer(operator.operatorID, pos.layer);
@@ -804,5 +867,4 @@ export class WorkflowActionService {
       this.getJointGraphWrapper().showLinkBreakpoint(linkID);
     }
   }
-
 }

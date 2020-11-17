@@ -723,8 +723,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(() => {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-        this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, []);
-        this.workflowActionService.deleteGroupsAndOperators(...highlightedGroupIDs);
+        this.workflowActionService.deleteOperatorsAndLinks(highlightedOperatorIDs, [], highlightedGroupIDs);
       });
   }
 
