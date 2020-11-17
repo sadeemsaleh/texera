@@ -89,6 +89,7 @@ export class WorkflowActionService {
   public handleJointOperatorDrag(): void {
     let oldPosition: Point = {x: 0, y: 0};
     let gotOldPosition = false;
+    let dragRoot: string; // element that was clicked to start the drag
 
     this.jointGraphWrapper.getElementPositionChangeEvent().subscribe(event => {
       console.log('pchange', event);
@@ -102,10 +103,12 @@ export class WorkflowActionService {
         console.log("dragsave",event);
         oldPosition = event.oldPosition;
         gotOldPosition = true;
+        dragRoot = event.elementID;
       });
 
     this.jointGraphWrapper.getElementPositionChangeEvent()
       .filter(() => this.undoRedoService.listenJointCommand)
+      .filter(value => value.elementID === dragRoot)
       .debounceTime(100)
       .subscribe(event => {
         console.log("drag",event);
@@ -113,14 +116,21 @@ export class WorkflowActionService {
         const offsetX = event.newPosition.x - oldPosition.x;
         const offsetY = event.newPosition.y - oldPosition.y;
         // remember currently highlighted operators
-        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        let currentHighlightedOperators = new Set(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
         const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+
+        currentHighlightedGroups.forEach(groupID => {
+          this.operatorGroup.getGroup(groupID).operators.forEach((operatorInfo, operatorID) => {
+            currentHighlightedOperators.delete(operatorID);
+          });
+        });
+
         const command: Command = {
           execute: () => { },
           undo: () => {
             this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
             this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.size + currentHighlightedGroups.length > 1);
             currentHighlightedOperators.forEach(operatorID => {
               this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, -offsetX, -offsetY);
@@ -133,7 +143,7 @@ export class WorkflowActionService {
           redo: () => {
             this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
             this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
-            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.length + currentHighlightedGroups.length > 1);
+            this.jointGraphWrapper.setMultiSelectMode(currentHighlightedOperators.size + currentHighlightedGroups.length > 1);
             currentHighlightedOperators.forEach(operatorID => {
               this.jointGraphWrapper.highlightOperators(operatorID);
               this.jointGraphWrapper.setElementPosition(operatorID, offsetX, offsetY);
