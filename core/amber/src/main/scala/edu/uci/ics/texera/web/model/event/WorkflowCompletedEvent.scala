@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 import scala.collection.mutable
 
-case class OperatorResult(operatorID: String, table: List[ObjectNode], chartType: String, tableTotalLen: Int, pageCount: Int)
+case class OperatorResult(operatorID: String, table: List[ObjectNode], chartType: String, totalRowCount: Int)
 
 object WorkflowCompletedEvent {
 
@@ -27,7 +27,7 @@ object WorkflowCompletedEvent {
         case _ => null
       }
 
-      resultList += OperatorResult(operatorID, table, chartType, pair._2.length, (pair._2.length / 10.0).ceil.toInt)
+      resultList += OperatorResult(operatorID, table, chartType, pair._2.length)
     })
     WorkflowCompletedEvent(resultList.toList)
   }

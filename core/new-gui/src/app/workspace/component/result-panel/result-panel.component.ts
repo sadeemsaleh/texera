@@ -11,10 +11,7 @@ import { isEqual, repeat, range } from 'lodash';
 import { ResultObject } from '../../types/execute-workflow.interface';
 import { WorkflowActionService } from '../../service/workflow-graph/model/workflow-action.service';
 import { BreakpointTriggerInfo } from '../../types/workflow-common.interface';
-import { OperatorMetadata } from '../../types/operator-schema.interface';
-import { OperatorMetadataService } from '../../service/operator-metadata/operator-metadata.service';
-import { DynamicSchemaService } from '../../service/dynamic-schema/dynamic-schema.service';
-import { environment } from 'src/environments/environment';
+import { NzTableQueryParams } from 'ng-zorro-antd/table';
 
 /**
  * ResultPanelCompoent is the bottom level area that displays the
@@ -56,10 +53,18 @@ export class ResultPanelComponent {
   public breakpointTriggerInfo: BreakpointTriggerInfo | undefined;
   public breakpointAction: boolean = false;
 
-  // paginator, used when displaying rows
-  private currentMaxPageSize: number = 0;
-  private currentPageSize: number = 0;
-  private currentPageIndex: number = 0;
+  // paginator section, used when displaying rows
+
+  // this attribute stores whether front-end should handle pagination
+  //   if false, it means the pagination is managed by the server
+  //   see https://ng.ant.design/components/table/en#components-table-demo-ajax
+  //   for more details
+  public isFrontPagination: boolean = true;
+  public isLoadingResult: boolean = false;
+  public currentPageSize: number = 10;
+  // this starts from **ONE**, not zero
+  public currentPageIndex: number = 1;
+  public total: number = 0;
 
   constructor(
     private executeWorkflowService: ExecuteWorkflowService,
@@ -136,7 +141,8 @@ export class ResultPanelComponent {
         const result = executionState.resultMap.get(highlightedOperators[0]);
         if (result) {
           this.chartType = result.chartType;
-          this.setupResultTable(result.table);
+          this.isFrontPagination = false;
+          this.setupResultTable(result.table, result.totalRowCount);
         }
       }
     } else if (executionState.state === ExecutionState.Paused) {
@@ -167,9 +173,11 @@ export class ResultPanelComponent {
     this.breakpointTriggerInfo = undefined;
     this.breakpointAction = false;
 
-    this.currentMaxPageSize = 0;
-    this.currentPageIndex = 0;
-    this.currentPageSize = 0;
+    this.isFrontPagination = true;
+    this.currentPageIndex = 1;
+    this.currentPageSize = 10;
+    this.total = 0;
+    this.isLoadingResult = false;
   }
 
 
@@ -186,7 +194,7 @@ export class ResultPanelComponent {
     //  multiply by the page size previously.
     const selectedRowIndex = this.currentResult.findIndex(eachRow => isEqual(eachRow, rowData));
 
-    const rowPageIndex = selectedRowIndex - this.currentPageIndex * this.currentMaxPageSize;
+    const rowPageIndex = selectedRowIndex - this.currentPageIndex * this.currentPageSize;
 
     // generate a new row data that shortens the column text to limit rendering time for pretty json
     const rowDataCopy = ResultPanelComponent.trimDisplayJsonData(rowData as IndexableObject);
@@ -234,12 +242,33 @@ export class ResultPanelComponent {
   }
 
   /**
+   * Callback function for table query params changed event
+   *   params containing new page index, new page size, and more
+   *   (this function will be called when user switch page)
+   *
+   * @param params new parameters
+   */
+  public onTableQueryParamsChange(params: NzTableQueryParams) {
+    console.log(params);
+    const { pageSize: newPageSize, pageIndex: newPageIndex } = params;
+    this.currentPageSize = newPageSize;
+    this.currentPageIndex = newPageIndex;
+
+    if (this.isFrontPagination) {
+      return;
+    }
+
+    console.log('asking server for new page...');
+  }
+
+  /**
    * Updates all the result table properties based on the execution result,
    *  displays a new data table with a new paginator on the result panel.
    *
-   * @param response
+   * @param resultData rows of the result (may not be all rows if displaying result for workflow completed event)
+   * @param totalRowCount if present, is the total number of rows for the result; otherwise, use length of resultData
    */
-  private setupResultTable(resultData: ReadonlyArray<object>) {
+  private setupResultTable(resultData: ReadonlyArray<object>, totalRowCount?: number) {
 
     if (resultData.length < 1) {
       return;
@@ -262,8 +291,6 @@ export class ResultPanelComponent {
 
     let columns: {columnKey: any, columnText: string}[];
 
-    const firstRow = resultData[0];
-
     const columnKeys = Object.keys(resultData[0]).filter(x => x !== '_id');
     this.currentDisplayColumns = columnKeys;
     columns = columnKeys.map(v => ({columnKey: v, columnText: v}));
@@ -271,9 +298,11 @@ export class ResultPanelComponent {
     // generate columnDef from first row, column definition is in order
     this.currentColumns = ResultPanelComponent.generateColumns(columns);
 
-    // get the current page size, if the result length is less than 10, then the maximum number of items
-    //   each page will be the length of the result, otherwise 10.
-    this.currentMaxPageSize = this.currentPageSize = resultData.length < 10 ? resultData.length : 10;
+    this.total = totalRowCount ?? resultData.length;
+
+    // get the current page size, if the result length is less than `this.currentPageSize`,
+    //  then the maximum number of items each page will be the length of the result, otherwise `this.currentPageSize`.
+    this.currentPageSize = Math.min(this.total, this.currentPageSize);
   }
 
   /**
