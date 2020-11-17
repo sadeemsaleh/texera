@@ -8,7 +8,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 import scala.collection.mutable
 
-case class OperatorResult(operatorID: String, table: List[ObjectNode], chartType: String)
+case class OperatorResult(operatorID: String, table: List[ObjectNode], chartType: String, tableTotalLen: Int, pageCount: Int)
 
 object WorkflowCompletedEvent {
 
@@ -17,7 +17,7 @@ object WorkflowCompletedEvent {
     val resultList = new mutable.MutableList[OperatorResult]
     workflowCompleted.result.foreach(pair => {
       val operatorID = pair._1
-      val table = pair._2.map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+      val table = pair._2.slice(0, 10).map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
 
       // add chartType to result
       val precedentOpID = workflowCompiler.workflowInfo.links.find(link => link.destination == operatorID).get.origin
@@ -27,7 +27,7 @@ object WorkflowCompletedEvent {
         case _ => null
       }
 
-      resultList += OperatorResult(operatorID, table, chartType)
+      resultList += OperatorResult(operatorID, table, chartType, pair._2.length, (pair._2.length / 10.0).ceil.toInt)
     })
     WorkflowCompletedEvent(resultList.toList)
   }

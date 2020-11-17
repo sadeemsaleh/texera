@@ -8,6 +8,7 @@ import edu.uci.ics.amber.engine.architecture.principal.PrincipalStatistics
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
 import edu.uci.ics.amber.engine.common.ambermessage.ControllerMessage.AckedControllerInitialization
 import edu.uci.ics.amber.engine.common.ambertag.WorkflowTag
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.TexeraWebApplication
 import edu.uci.ics.texera.web.model.event._
 import edu.uci.ics.texera.web.model.request._
@@ -32,6 +33,9 @@ object WorkflowWebsocketResource {
 class WorkflowWebsocketResource {
 
   final val objectMapper = Utils.objectMapper
+
+  // variable for storing previous WorkflowCompleted event result
+  var completedResults: Map[String, List[ITuple]] = _
 
   @OnOpen
   def myOnOpen(session: Session): Unit = {
@@ -150,6 +154,7 @@ class WorkflowWebsocketResource {
 
     val eventListener = ControllerEventListener(
       workflowCompletedListener = completed => {
+        completedResults = completed.result
         send(session, WorkflowCompletedEvent.apply(completed, texeraWorkflowCompiler))
         WorkflowWebsocketResource.sessionJobs.remove(session.getId)
       },
@@ -208,4 +213,8 @@ class WorkflowWebsocketResource {
 
   }
 
+  // get n-th page of completedResult (each page has 10 items)
+  def getCompletedResultPageN(n: Int): Map[String, List[ITuple]] = {
+    completedResults map { case (k, v) => (k, v.slice(10 * (n - 1), 10 * n - 1)) }
+  }
 }
