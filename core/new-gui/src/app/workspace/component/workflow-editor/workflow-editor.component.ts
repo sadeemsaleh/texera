@@ -574,9 +574,9 @@ export class WorkflowEditorComponent implements AfterViewInit {
       // disable jointjs default action that prevents normal right click menu showing up on jointjs paper
       preventContextMenu: false,
       // draw dots in the background of the paper
-      // drawGrid: {name: 'fixedDot', args: {color: 'black', scaleFactor: 8, thickness: 1.2 } },
+      drawGrid: {name: 'fixedDot', args: {color: 'black', scaleFactor: 8, thickness: 1.2 } },
       // set grid size
-      // gridSize: 2,
+      gridSize: 2,
     };
 
     return jointPaperOptions;
