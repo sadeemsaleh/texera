@@ -85,22 +85,15 @@ export class WorkflowActionService {
     });
   }
 
-  // TO-DO: incorporate group drag in undo-redo
   public handleJointOperatorDrag(): void {
     let oldPosition: Point = {x: 0, y: 0};
     let gotOldPosition = false;
     let dragRoot: string; // element that was clicked to start the drag
 
-    this.jointGraphWrapper.getElementPositionChangeEvent().subscribe(event => {
-      console.log('pchange', event);
-    });
-
     this.jointGraphWrapper.getElementPositionChangeEvent()
       .filter(() => !gotOldPosition)
       .filter(() => this.undoRedoService.listenJointCommand)
       .subscribe(event => {
-
-        console.log("dragsave",event);
         oldPosition = event.oldPosition;
         gotOldPosition = true;
         dragRoot = event.elementID;
@@ -111,7 +104,6 @@ export class WorkflowActionService {
       .filter(value => value.elementID === dragRoot)
       .debounceTime(100)
       .subscribe(event => {
-        console.log("drag",event);
         gotOldPosition = false;
         const offsetX = event.newPosition.x - oldPosition.x;
         const offsetY = event.newPosition.y - oldPosition.y;
@@ -360,7 +352,6 @@ export class WorkflowActionService {
         if (groups) {
           groupsCopy = cloneDeep(groups);
           groups.forEach(group => {
-            console.log("groups",group, group.operators);
             this.addGroupInternal(group);
             this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
           });
@@ -372,7 +363,6 @@ export class WorkflowActionService {
       undo: () => {
         if (groups) {
           groups.forEach(group => {
-            console.log("groups",group, group.operators);
             this.deleteGroupInternal(group.groupID);
           });
           groups = groupsCopy;
@@ -405,7 +395,7 @@ export class WorkflowActionService {
   public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[], groupIDs?: readonly string[] ): void {
 
     const operatorIDsCopy = operatorIDs.slice();
-    const groupIDsCopy = (groupIDs ?? []).slice();
+    let groupIDsCopy: string[];
 
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
@@ -443,7 +433,6 @@ export class WorkflowActionService {
     const command: Command = {
       execute: () => {
         linksToDelete.forEach((layer, link) => this.deleteLinkWithIDInternal(link.linkID));
-        console.log(operatorIDsCopy);
         operatorIDsCopy.forEach(operatorID => {
           this.deleteOperatorInternal(operatorID);
           // if the group has less than 2 operators left, delete the group
@@ -453,6 +442,9 @@ export class WorkflowActionService {
             this.deleteGroupInternal(groupInfo.group.groupID);
           }
         });
+
+        // check if groups still exist after deleting some operators (groups of 2 that lose one op un-group automatically)
+        groupIDsCopy = (groupIDs ?? []).filter(groupID => this.operatorGroup.hasGroup(groupID));
 
         operators = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
         links = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
