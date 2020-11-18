@@ -111,6 +111,9 @@ export class SaveWorkflowService {
     // operators, links, and groups shouldn't be highlighted during page reload
     this.workflowActionService.getJointGraphWrapper().unhighlightElements(
       this.workflowActionService.getJointGraphWrapper().getCurrentHighlights());
+
+    // restore the view point
+    this.workflowActionService.getJointGraphWrapper().restoreDefaultZoomAndOffset();
   }
 
   /**

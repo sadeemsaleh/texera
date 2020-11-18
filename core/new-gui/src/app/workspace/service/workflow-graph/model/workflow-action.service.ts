@@ -8,6 +8,7 @@ import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 import { OperatorGroup, Group, OperatorGroupReadonly, OperatorInfo, LinkInfo } from './operator-group';
 import { Injectable } from '@angular/core';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { Point, OperatorPredicate, OperatorLink, OperatorPort, Breakpoint } from '../../../types/workflow-common.interface';
 
 import * as joint from 'jointjs';
@@ -18,6 +19,7 @@ export interface Command {
   execute(): void;
   undo(): void;
   redo?(): void;
+  modifiesWorkflow: boolean;
 }
 
 type OperatorPosition = {
@@ -54,6 +56,8 @@ export class WorkflowActionService {
   private readonly operatorGroup: OperatorGroup;
   private readonly syncTexeraModel: SyncTexeraModel;
   private readonly syncOperatorGroup: SyncOperatorGroup;
+  private workflowModificationEnabled = true;
+  private enableModificationStream = new BehaviorSubject<boolean>(true);
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -74,12 +78,30 @@ export class WorkflowActionService {
     this.handleHighlightedElementPositionChange();
   }
 
+  public enableWorkflowModification() {
+    this.workflowModificationEnabled = true;
+    this.enableModificationStream.next(true);
+    this.undoRedoService.enableWorkFlowModification();
+  }
+  public disableWorkflowModification() {
+    this.workflowModificationEnabled = false;
+    this.enableModificationStream.next(false);
+    this.undoRedoService.disableWorkFlowModification();
+  }
+  public checkWorkflowModificationEnabled(): boolean {
+    return this.workflowModificationEnabled;
+  }
+  public getWorkflowModificationEnabledStream(): Observable<boolean> {
+    return this.enableModificationStream.asObservable();
+  }
+
   public handleJointLinkAdd(): void {
     this.texeraGraph.getLinkAddStream().filter(() => this.undoRedoService.listenJointCommand).subscribe(link => {
       const command: Command = {
+        modifiesWorkflow: true,
         execute: () => { },
         undo: () => this.deleteLinkWithIDInternal(link.linkID),
-        redo: () => this.addLinkInternal(link)
+        redo: () => this.addLinkInternal(link),
       };
       this.executeAndStoreCommand(command);
     });
@@ -118,6 +140,7 @@ export class WorkflowActionService {
         });
 
         const command: Command = {
+          modifiesWorkflow: false,
           execute: () => { },
           undo: () => {
             this.jointGraphWrapper.unhighlightOperators(...this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
@@ -236,7 +259,7 @@ export class WorkflowActionService {
   }
 
   /**
-   * Adds an opreator to the workflow graph at a point.
+   * Adds an operator to the workflow graph at a point.
    * Throws an Error if the operator ID already existed in the Workflow Graph.
    *
    * @param operator
@@ -247,6 +270,7 @@ export class WorkflowActionService {
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         // turn off multiselect since there's only one operator added
         this.jointGraphWrapper.setMultiSelectMode(false);
@@ -287,6 +311,7 @@ export class WorkflowActionService {
     const groupLayer = group ? this.getJointGraphWrapper().getCellLayer(group.groupID) : undefined;
 
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         linksToDelete.forEach((linkLayer, link) => this.deleteLinkWithIDInternal(link.linkID));
         this.deleteOperatorInternal(operatorID);
@@ -334,6 +359,7 @@ export class WorkflowActionService {
     let groupsCopy: readonly Group[];
 
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         // unhighlight previous highlights
         this.jointGraphWrapper.unhighlightElements(currentHighlights);
@@ -431,6 +457,7 @@ export class WorkflowActionService {
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         linksToDelete.forEach((layer, link) => this.deleteLinkWithIDInternal(link.linkID));
         operatorIDsCopy.forEach(operatorID => {
@@ -513,6 +540,7 @@ export class WorkflowActionService {
    */
   public addLink(link: OperatorLink): void {
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => this.addLinkInternal(link),
       undo: () => this.deleteLinkWithIDInternal(link.linkID)
     };
@@ -528,6 +556,7 @@ export class WorkflowActionService {
     const link = this.getTexeraGraph().getLinkWithID(linkID);
     const layer = this.getJointGraphWrapper().getCellLayer(linkID);
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => this.deleteLinkWithIDInternal(linkID),
       undo: () => {
         this.addLinkInternal(link);
@@ -556,6 +585,7 @@ export class WorkflowActionService {
     const operatorIDs = groups.map(group => Array.from(group.operators.keys()));
 
     const command: Command = {
+      modifiesWorkflow: false,
       execute: () => {
         groups.forEach(group => {
           this.addGroupInternal(group);
@@ -586,6 +616,7 @@ export class WorkflowActionService {
     const operatorIDs = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.keys()));
 
     const command: Command = {
+      modifiesWorkflow: false,
       execute: () => groupIDs.forEach(groupID => this.deleteGroupInternal(groupID)),
       undo: () => {
         operatorIDs.forEach( (operatorsInGroup, i) => {
@@ -605,6 +636,7 @@ export class WorkflowActionService {
    */
   public collapseGroups(...groupIDs: readonly string[]): void {
     const command: Command = {
+      modifiesWorkflow: false,
       execute: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
       undo: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
     };
@@ -617,6 +649,7 @@ export class WorkflowActionService {
    */
   public expandGroups(...groupIDs: string[]): void {
     const command: Command = {
+      modifiesWorkflow: false,
       execute: () => groupIDs.forEach(groupID => this.expandGroupInternal(groupID)),
       undo: () => groupIDs.forEach(groupID => this.collapseGroupInternal(groupID)),
     };
@@ -637,6 +670,7 @@ export class WorkflowActionService {
       groupID => this.operatorGroup.getGroup(groupID).outLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
 
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => groupIDs.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID)),
       undo: () => {
         for (let i = 0; i < operators.length; i++) {
@@ -659,6 +693,7 @@ export class WorkflowActionService {
     const prevProperty = this.getTexeraGraph().getOperator(operatorID).operatorProperties;
     const group = this.getOperatorGroup().getGroupByOperator(operatorID);
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
@@ -693,6 +728,7 @@ export class WorkflowActionService {
   public setLinkBreakpoint(linkID: string, newBreakpoint: Breakpoint | undefined): void {
     const prevBreakpoint = this.getTexeraGraph().getLinkBreakpoint(linkID);
     const command: Command = {
+      modifiesWorkflow: true,
       execute: () => {
         this.setLinkBreakpointInternal(linkID, newBreakpoint);
       },
@@ -855,6 +891,14 @@ export class WorkflowActionService {
   }
 
   private executeAndStoreCommand(command: Command): void {
+
+    // if command would modify workflow (adding link, operator, changing operator properties), throw an error
+    // non-modifying commands include dragging an operator.
+    if (command.modifiesWorkflow && !this.workflowModificationEnabled) {
+      console.error('attempted to execute workflow action when workflow service is disabled');
+      return;
+    }
+
     this.undoRedoService.setListenJointCommand(false);
     command.execute();
     this.undoRedoService.addCommand(command);
