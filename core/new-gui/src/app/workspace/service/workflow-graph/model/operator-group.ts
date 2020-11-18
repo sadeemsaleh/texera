@@ -6,6 +6,7 @@ import { WorkflowGraph } from './workflow-graph';
 import { JointGraphWrapper } from './joint-graph-wrapper';
 import { JointUIService } from '../../joint-ui/joint-ui.service';
 import { environment } from './../../../../../environments/environment';
+import { OperatorStatistics } from 'src/app/workspace/types/execute-workflow.interface';
 
 export interface Group extends Readonly<{
   groupID: string;
@@ -20,6 +21,7 @@ export type OperatorInfo = {
   operator: OperatorPredicate,
   position: Point,
   layer: number
+  status?: OperatorStatistics
 };
 
 export type LinkInfo = {

@@ -195,6 +195,9 @@ export class WorkflowEditorComponent implements AfterViewInit {
    *        - generate its corresponding tooltip's id
    *        - pass the tooltip id and Statistics to jointUIService
    *          the specific tooltip content will be updated
+   *          - if operator is in a group, save statistics in group's operatorInfo
+   *    3. Whenever a group is expanded
+   *        - for each operatorInfo, display statistics if there are some saved.
    */
   private handleOperatorStatisticsUpdate(): void {
     this.workflowStatusService.getStatusUpdateStream().subscribe(status => {
@@ -208,9 +211,28 @@ export class WorkflowEditorComponent implements AfterViewInit {
             operatorState: OperatorState.Recovering,
           };
         }
-        this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, status[operatorID]);
+        const parentGroup = this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID);
+
+        if (!parentGroup || !parentGroup.collapsed) {
+          this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, status[operatorID]);
+        }
+
+        if (parentGroup) {
+          const operatorInfo = parentGroup.operators.get(operatorID);
+          assertType<OperatorInfo>(operatorInfo);
+          operatorInfo.status = status[operatorID];
+        }
       });
     });
+
+    this.workflowActionService.getOperatorGroup().getGroupExpandStream().subscribe( group => {
+      group.operators.forEach((operatorInfo, operatorID) => {
+        if (operatorInfo.status) {
+          this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, operatorInfo.status);
+        }
+      });
+    });
+
     this.executeWorkflowService.getExecutionStateStream().subscribe(event => {
       if (event.previous.state === ExecutionState.Recovering) {
         let operatorState: OperatorState;
