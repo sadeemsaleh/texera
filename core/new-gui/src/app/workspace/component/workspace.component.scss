@@ -202,6 +202,9 @@
   overflow: auto;
 }
 
+.texera-workflow-container{
+  position: relative;
+}
 
 /**
 * this style specifies that the workflow editor in the middle
@@ -213,8 +216,9 @@
 }
 
 .texera-mini-map {
-  grid-column: 2/3;
-  grid-row: 2/4;
+  position: absolute;
+  height: 100%;
+  width: 100%;
 }
 
 /**
