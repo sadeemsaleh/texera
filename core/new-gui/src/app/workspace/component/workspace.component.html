@@ -1,12 +1,69 @@
-<div [ngClass] = "{'grid-container' : true,
-'texera-workspace' : true,
-'texera-original-workspace-grid-container' : !showResultPanel ,
-'texera-workspace-grid-container' : showResultPanel}">
-  <texera-navigation class="texera-navigation-grid-container grid-container" tourAnchor="texera-navigation-grid-container"></texera-navigation>
-  <texera-operator-panel class="texera-operator-panel-grid-container grid-container" tourAnchor="texera-operator-panel"></texera-operator-panel>
-  <texera-property-editor class="texera-property-editor-grid-container grid-container" tourAnchor="texera-property-editor-grid-container"></texera-property-editor>
-  <texera-workflow-editor class="texera-workflow-editor-grid-container grid-container" tourAnchor="texera-workflow-editor-grid-container"></texera-workflow-editor>
-  <texera-mini-map  class="texera-mini-map"></texera-mini-map>
-  <texera-result-panel-toggle class="texera-result-panel-toggle-grid-container grid-container"></texera-result-panel-toggle>
-  <texera-result-panel class="texera-result-panel-grid-container grid-container" tourAnchor="texera-result-view-grid-container"></texera-result-panel>
-</div>
+<nz-layout>
+  <nz-header>
+    <div class="container_column">
+    <div class="column1">
+    <i class="trigger" nz-icon [nzType]="isLeftCollapsed ? 'menu-unfold' : 'menu-fold'"
+    (click)="isLeftCollapsed = !isLeftCollapsed; onSideCollapse()"></i>
+    </div>
+    <div class="column2">
+    <texera-navigation></texera-navigation>
+    </div>
+    <div class="column3">
+    <i class="trigger" nz-icon [nzType]="isRightCollapsed ? 'menu-fold' : 'menu-unfold'"
+    (click)="isRightCollapsed = !isRightCollapsed; onSideCollapse()"></i>
+    </div>
+    </div>
+  </nz-header>
+  <nz-layout>
+    <nz-sider
+      nzCollapsible [nzCollapsedWidth]="0"
+      [(nzCollapsed)]="isLeftCollapsed" [nzTrigger]="null"
+      (nzCollapsedChange)="onSideCollapse()"
+      [nzWidth]="operator_panel_width"
+      nz-resizable
+      [nzMinWidth]="200" [nzMaxWidth]="300"
+      (nzResize)="onSideResize($event)">
+        <nz-resize-handle nzDirection="right">
+          <div class="sider-resize-line"></div>
+        </nz-resize-handle>
+        <texera-operator-panel class="texera-operator-panel-grid-container grid-container" tourAnchor="texera-operator-panel"></texera-operator-panel>
+    </nz-sider>
+    <nz-content>
+      <div>
+        <texera-workflow-editor class="texera-workflow-editor-grid-container grid-container"></texera-workflow-editor>
+      </div>
+      <div
+        nz-resizable
+        class="resizable-box"
+        [style.height.px]="contentHeight"
+        [nzMaxHeight]="500"
+        [nzMinHeight]="25"
+        (nzResize)="onContentResize($event)">
+        <div class="container_row">
+          <div class="layer1">
+            <nz-resize-handle nzDirection="top">
+              <div class="content-resize-line"></div>
+            </nz-resize-handle>
+            <texera-result-panel-toggle (click)="updateHeight()"></texera-result-panel-toggle>
+          </div>
+          <div class="layer2">
+            <texera-result-panel (resultPanelHeightUpdate) = "getUpdatedHeight($event)"></texera-result-panel>
+          </div>
+        </div>
+      </div>
+    </nz-content>
+    <nz-sider
+      nzCollapsible [nzCollapsedWidth]="0"
+      [(nzCollapsed)]="isRightCollapsed" [nzTrigger]="null"
+      (nzCollapsedChange)="onSideCollapse()"
+      [nzWidth]="property_panel_width"
+      nz-resizable
+      [nzMinWidth]="200" [nzMaxWidth]="300"
+      (nzResize)="onSideResize2($event)">
+      <nz-resize-handle nzDirection="left">
+        <div class="sider-resize-line"></div>
+      </nz-resize-handle>
+      <texera-property-editor></texera-property-editor>
+    </nz-sider>
+  </nz-layout>
+</nz-layout>

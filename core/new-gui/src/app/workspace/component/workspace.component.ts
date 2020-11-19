@@ -4,8 +4,9 @@ import { DragDropService } from './../service/drag-drop/drag-drop.service';
 import { WorkflowUtilService } from './../service/workflow-graph/util/workflow-util.service';
 import { WorkflowActionService } from './../service/workflow-graph/model/workflow-action.service';
 import { UndoRedoService } from './../service/undo-redo/undo-redo.service';
-import { Component, OnInit } from '@angular/core';
+import { Component, ViewChild, HostListener, } from '@angular/core';
 
+import { NzResizeEvent } from 'ng-zorro-antd/resizable';
 import { OperatorMetadataService } from '../service/operator-metadata/operator-metadata.service';
 import { JointUIService } from '../service/joint-ui/joint-ui.service';
 import { StubOperatorMetadataService } from '../service/operator-metadata/stub-operator-metadata.service';
@@ -16,6 +17,7 @@ import { ResultPanelToggleService } from '../service/result-panel-toggle/result-
 import { SaveWorkflowService } from '../service/save-workflow/save-workflow.service';
 import { WorkflowStatusService } from '../service/workflow-status/workflow-status.service';
 import { WorkflowWebsocketService } from '../service/workflow-websocket/workflow-websocket.service';
+import { WorkflowEditorComponent } from './workflow-editor/workflow-editor.component';
 
 @Component({
   selector: 'texera-workspace',
@@ -44,6 +46,15 @@ import { WorkflowWebsocketService } from '../service/workflow-websocket/workflow
 export class WorkspaceComponent {
 
   public showResultPanel: boolean = false;
+  operator_panel_width = 200;
+  property_panel_width = 200;
+  contentHeight = 25;
+  previousHeight: number = 25;
+  id = -1;
+  isLeftCollapsed = false;
+  isRightCollapsed = false;
+  @ViewChild(WorkflowEditorComponent)
+  workflowComponent!: WorkflowEditorComponent;
 
   constructor(
     private resultPanelToggleService: ResultPanelToggleService,
@@ -59,4 +70,58 @@ export class WorkspaceComponent {
     );
   }
 
+    onSideResize({ width }: NzResizeEvent): void {
+      cancelAnimationFrame(this.id);
+      this.id = requestAnimationFrame(() => {
+        this.operator_panel_width = width!;
+        this.workflowComponent.setJointPaperDimensions();
+      });
+    }
+
+    onSideResize2({ width }: NzResizeEvent): void {
+      cancelAnimationFrame(this.id);
+      this.id = requestAnimationFrame(() => {
+        this.property_panel_width = width!;
+        this.workflowComponent.setJointPaperDimensions();
+      });
+    }
+
+    onSideCollapse(): void {
+      // setTimeout, wait to get latest dimension
+      setTimeout( () => {
+        this.workflowComponent.setJointPaperDimensions();
+      }, 180);
+    }
+
+
+    onContentResize({ height }: NzResizeEvent): void {
+      cancelAnimationFrame(this.id);
+      this.id = requestAnimationFrame(() => {
+        this.contentHeight = height!;
+        this.previousHeight = this.contentHeight;
+        this.workflowComponent.setJointPaperDimensions();
+      });
+    }
+
+    updateHeight() {
+      if (!this.showResultPanel) {
+        this.contentHeight = 25;
+      } else {
+        if (this.previousHeight !== 25) {
+        // recover to previous height
+          this.contentHeight = this.previousHeight;
+        } else {
+          // default height
+          this.contentHeight = 300;
+        }
+      }
+    }
+
+    getUpdatedHeight(val: number) {
+      if (this.previousHeight !== 25) {
+        this.contentHeight = this.previousHeight;
+      } else {
+        this.contentHeight = val;
+      }
+    }
 }
