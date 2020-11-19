@@ -83,6 +83,8 @@ import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { NzToolTipModule } from 'ng-zorro-antd/tooltip';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzResizableModule } from 'ng-zorro-antd/resizable';
+import { NzLayoutModule } from 'ng-zorro-antd/layout';
 
 import { UserService } from './common/service/user/user.service';
 import { NgbdModalUserLoginComponent } from './dashboard/component/top-bar/user-icon/user-login/ngbdmodal-user-login.component';
@@ -187,6 +189,8 @@ registerLocaleData(en);
     NzToolTipModule,
     NzTableModule,
     NzModalModule,
+    NzResizableModule,
+    NzLayoutModule,
     NgxAceModule,
     MatDialogModule,
   ],
