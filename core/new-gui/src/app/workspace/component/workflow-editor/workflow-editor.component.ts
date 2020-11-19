@@ -12,6 +12,7 @@ import '../../../common/rxjs-operators';
 import * as jQuery from 'jquery';
 import * as joint from 'jointjs';
 
+import { NzResizeEvent } from 'ng-zorro-antd/resizable';
 import { ResultPanelToggleService } from '../../service/result-panel-toggle/result-panel-toggle.service';
 import { Point, OperatorPredicate, OperatorLink } from '../../types/workflow-common.interface';
 import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
@@ -591,7 +592,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
   /**
    * Sets the size of the JointJS paper to be the exact size of its wrapper element.
    */
-  private setJointPaperDimensions(): void {
+  // tslint:disable-next-line:member-ordering
+  public setJointPaperDimensions(): void {
     const elementSize = this.getWrapperElementSize();
     this.getJointPaper().setDimensions(elementSize.width, elementSize.height);
   }
