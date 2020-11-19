@@ -76,14 +76,17 @@
                         $resultbar-height
                         calc((100vh - #{$resultbar-height}));
     position: relative;
+    width: 100%;
   }
 
   .layer1{
-    position:fixed;
-    width: 75%;
+    position: fixed;
+    width: 100%;
+    left: -0.1%;
     grid-row: 1/2;
     z-index: 1;
   }
+
   .layer2{
     grid-row: 2/3;
     z-index: 0;

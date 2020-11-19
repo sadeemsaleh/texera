@@ -112,7 +112,7 @@ export class WorkspaceComponent {
           this.contentHeight = this.previousHeight;
         } else {
           // default height
-          this.contentHeight = 300;
+          this.contentHeight = 250;
         }
       }
     }

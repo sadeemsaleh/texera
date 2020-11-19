@@ -85,11 +85,11 @@ export class ResultPanelComponent {
           this.workflowActionService.getJointGraphWrapper().highlightOperator(breakpointOperator);
         }
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(300);
+        this.resultPanelHeightUpdate.emit(250);
       }
       if (event.current.state === ExecutionState.Failed) {
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(300);
+        this.resultPanelHeightUpdate.emit(250);
       }
       if (event.current.state === ExecutionState.Completed) {
         const sinkOperators = this.workflowActionService.getTexeraGraph().getAllOperators()
@@ -98,7 +98,7 @@ export class ResultPanelComponent {
           this.workflowActionService.getJointGraphWrapper().highlightOperator(sinkOperators[0].operatorID);
         }
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(300);
+        this.resultPanelHeightUpdate.emit(250);
       }
     });
   }
