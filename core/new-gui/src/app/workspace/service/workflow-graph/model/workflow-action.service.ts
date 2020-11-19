@@ -695,24 +695,24 @@ export class WorkflowActionService {
     const command: Command = {
       modifiesWorkflow: true,
       execute: () => {
-        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        const currentHighlightedOperators = <string[]> this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().slice();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
           this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.slice().splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
         this.setOperatorPropertyInternal(operatorID, newProperty);
       },
       undo: () => {
-        const currentHighlightedOperators = this.jointGraphWrapper.getCurrentHighlightedOperatorIDs();
+        const currentHighlightedOperators = <string[]> this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().slice();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
           this.jointGraphWrapper.highlightOperators(operatorID);
         } else if (!group || !group.collapsed) {
-          currentHighlightedOperators.slice().splice(currentHighlightedOperators.indexOf(operatorID), 1);
+          currentHighlightedOperators.splice(currentHighlightedOperators.indexOf(operatorID), 1);
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
