@@ -1,4 +1,4 @@
-    $header-height: 55px;
+    $header-height: 64px;
     $resultbar-height: 25px;
   nz-header {
     background: #fff;
@@ -10,6 +10,10 @@
     display: grid;
     grid-template-columns: 4% 92% 4%;
     position: relative;
+
+    &>div{
+      height: #{$header-height};
+    }
   }
   .column1{
     grid-column: 1/2;
