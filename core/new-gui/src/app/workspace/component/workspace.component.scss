@@ -36,7 +36,7 @@
     flex-direction: column;
     background: #fff;
     color: black;
-    height: calc(100vh - #{$header-height} - 1vh);
+    height: calc(99vh - #{$header-height});
   }
 
   nz-content > div {
@@ -47,9 +47,6 @@
 
   nz-content .resizable-box {
     flex: none;
-    z-index: 1;
-    overflow: scroll;
-    text-align: center;
   }
 
   nz-content,
@@ -72,9 +69,6 @@
 
   .container_row{
     display: grid;
-    grid-template-rows:
-                        $resultbar-height
-                        calc((100vh - #{$resultbar-height}));
     position: relative;
     width: 100%;
   }
@@ -82,14 +76,17 @@
   .layer1{
     position: fixed;
     width: 100%;
+    height: 25px;
     left: -0.1%;
     grid-row: 1/2;
     z-index: 1;
   }
 
   .layer2{
-    grid-row: 2/3;
+    grid-row: 1/2;
+    margin-top: 25px;
     z-index: 0;
+    overflow-y: scroll;
   }
 
   .trigger {

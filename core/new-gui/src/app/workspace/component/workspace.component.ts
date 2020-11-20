@@ -46,13 +46,15 @@ import { WorkflowEditorComponent } from './workflow-editor/workflow-editor.compo
 export class WorkspaceComponent {
 
   public showResultPanel: boolean = false;
-  operator_panel_width = 200;
-  property_panel_width = 200;
-  contentHeight = 25;
+  operator_panel_width: number = window.innerWidth * 0.14;
+  property_panel_width: number = window.innerWidth * 0.16;
+  contentHeight: number = 25;
+  workflowHeight: number = window.innerHeight - 90;
+  header: number = 64;
   previousHeight: number = 25;
   id = -1;
-  isLeftCollapsed = false;
-  isRightCollapsed = false;
+  isLeftCollapsed: boolean = false;
+  isRightCollapsed: boolean = false;
   @ViewChild(WorkflowEditorComponent)
   workflowComponent!: WorkflowEditorComponent;
 
@@ -99,7 +101,8 @@ export class WorkspaceComponent {
       this.id = requestAnimationFrame(() => {
         this.contentHeight = height!;
         this.previousHeight = this.contentHeight;
-        this.workflowComponent.setJointPaperDimensions();
+        this.workflowHeight = window.innerHeight - this.contentHeight - this.header;
+        this.workflowComponent.setJointPaperDimensions2(this.workflowHeight);
       });
     }
 
@@ -112,16 +115,20 @@ export class WorkspaceComponent {
           this.contentHeight = this.previousHeight;
         } else {
           // default height
-          this.contentHeight = 250;
+          this.contentHeight = (window.innerHeight - this.header) * 0.35;
         }
       }
+      this.workflowHeight = window.innerHeight - this.contentHeight - this.header;
+      this.workflowComponent.setJointPaperDimensions2(this.workflowHeight);
     }
 
-    getUpdatedHeight(val: number) {
+    getUpdatedHeight() {
       if (this.previousHeight !== 25) {
         this.contentHeight = this.previousHeight;
       } else {
-        this.contentHeight = val;
+        this.contentHeight = (window.innerHeight - this.header) * 0.35;
       }
+      this.workflowHeight = window.innerHeight - this.contentHeight - this.header;
+      this.workflowComponent.setJointPaperDimensions2(this.workflowHeight);
     }
 }

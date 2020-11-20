@@ -30,7 +30,7 @@
     </nz-sider>
     <nz-content>
       <div class = "texera-workflow-container">
-        <texera-workflow-editor class="texera-workflow-editor-grid-container grid-container"></texera-workflow-editor>
+        <texera-workflow-editor [style.height.px]="workflowHeight" class="texera-workflow-editor-grid-container grid-container"></texera-workflow-editor>
         <texera-mini-map class="texera-mini-map"></texera-mini-map>
       </div>
       <div
@@ -48,7 +48,7 @@
             <texera-result-panel-toggle (click)="updateHeight()"></texera-result-panel-toggle>
           </div>
           <div class="layer2">
-            <texera-result-panel (resultPanelHeightUpdate) = "getUpdatedHeight($event)"></texera-result-panel>
+            <texera-result-panel (resultPanelHeightUpdate) = "getUpdatedHeight()"></texera-result-panel>
           </div>
         </div>
       </div>
