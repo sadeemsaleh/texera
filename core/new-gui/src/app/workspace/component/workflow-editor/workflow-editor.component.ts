@@ -82,7 +82,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
   public readonly WORKFLOW_EDITOR_JOINTJS_WRAPPER_ID = 'texera-workflow-editor-jointjs-wrapper-id';
   public readonly WORKFLOW_EDITOR_JOINTJS_ID = 'texera-workflow-editor-jointjs-body-id';
 
-  public readonly COPY_OPERATOR_OFFSET = 20;
+  public readonly COPY_OFFSET = 20;
 
   private paper: joint.dia.Paper | undefined;
   private interactive: boolean = true;
@@ -211,12 +211,16 @@ export class WorkflowEditorComponent implements AfterViewInit {
             operatorState: OperatorState.Recovering,
           };
         }
+        // if operator is part of a group, find it
         const parentGroup = this.workflowActionService.getOperatorGroup().getGroupByOperator(operatorID);
 
+        // if operator is not in a group or in a group that isn't collapsed, it is okay to draw statistics on it
         if (!parentGroup || !parentGroup.collapsed) {
           this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, status[operatorID]);
         }
 
+        // if operator is in a group, write statistics to the group's operatorInfo
+        // so that it can be restored if the group is collapsed and expanded.
         if (parentGroup) {
           const operatorInfo = parentGroup.operators.get(operatorID);
           assertType<OperatorInfo>(operatorInfo);
@@ -225,6 +229,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       });
     });
 
+    // listen for group expanding, and redraw operator statistics if they exist
     this.workflowActionService.getOperatorGroup().getGroupExpandStream().subscribe( group => {
       group.operators.forEach((operatorInfo, operatorID) => {
         if (operatorInfo.status) {
@@ -538,18 +543,29 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .filter(event => this.workflowActionService.getTexeraGraph().hasOperator(event[0].model.id.toString()) ||
         this.workflowActionService.getOperatorGroup().hasGroup(event[0].model.id.toString()))
       .subscribe(event => {
+        // multiselect mode on if holding shift
         this.workflowActionService.getJointGraphWrapper().setMultiSelectMode(<boolean> event[1].shiftKey);
+
         const elementID = event[0].model.id.toString();
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-        if (event[1].shiftKey && highlightedOperatorIDs.includes(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().unhighlightOperators(elementID);
-        } else if (event[1].shiftKey && highlightedGroupIDs.includes(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().unhighlightGroups(elementID);
-        } else if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
-          this.workflowActionService.getJointGraphWrapper().highlightOperators(elementID);
-        } else {
-          this.workflowActionService.getJointGraphWrapper().highlightGroups(elementID);
+
+        if (event[1].shiftKey) { // if in multiselect toggle highlights on click
+          if (highlightedOperatorIDs.includes(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().unhighlightOperators(elementID);
+          } else if (highlightedGroupIDs.includes(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().unhighlightGroups(elementID);
+          } else if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().highlightOperators(elementID);
+          } else if (this.workflowActionService.getOperatorGroup().hasGroup(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().highlightGroups(elementID);
+          }
+        } else { // else only highlight a single operator or group
+          if (this.workflowActionService.getTexeraGraph().hasOperator(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().highlightOperators(elementID);
+          } else if (this.workflowActionService.getOperatorGroup().hasGroup(elementID)) {
+            this.workflowActionService.getJointGraphWrapper().highlightGroups(elementID);
+          }
         }
       });
 
@@ -558,10 +574,10 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .subscribe(() => {
         const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
         const highlightedGroupIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
-        const hilightedLinkIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
+        const highlightedLinkIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedLinkIDs();
         this.workflowActionService.getJointGraphWrapper().unhighlightOperators(...highlightedOperatorIDs);
         this.workflowActionService.getJointGraphWrapper().unhighlightGroups(...highlightedGroupIDs);
-        this.workflowActionService.getJointGraphWrapper().unhighlightLinks(...hilightedLinkIDs);
+        this.workflowActionService.getJointGraphWrapper().unhighlightLinks(...highlightedLinkIDs);
       });
   }
 
@@ -578,6 +594,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
       }
     };
 
+    // highlight on OperatorHighlightStream or GroupHighlightStream
     Observable.merge(
       this.workflowActionService.getJointGraphWrapper().getJointOperatorHighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointGroupHighlightStream()
@@ -586,6 +603,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
         'rect', { highlighter: highlightOptions }
     )));
 
+    // unhighlight on OperatorUnhighlightStream or GroupUnhighlightStream
     Observable.merge(
       this.workflowActionService.getJointGraphWrapper().getJointOperatorUnhighlightStream(),
       this.workflowActionService.getJointGraphWrapper().getJointGroupUnhighlightStream()
@@ -942,11 +960,17 @@ export class WorkflowEditorComponent implements AfterViewInit {
       });
   }
 
+  /**
+   * clears copiedOperators and copiedGroups
+   */
   private clearCopiedElements(): void {
     this.copiedOperators.clear();
     this.copiedGroups.clear();
   }
 
+  /**
+   * saves highlighted elements to copiedOperators and copiedGroups
+   */
   private saveHighlighedElements(): void {
 
     const highlightedOperatorIDs = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
@@ -958,8 +982,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
 
       const copiedGroup = this.workflowActionService.getOperatorGroup().getGroup(groupID);
       assertType<Group>(copiedGroup);
-      // do no copy operators that would be copied along with their groups
-     copiedGroup.operators.forEach( (operatorInfo, operatorID) => this.deleteOperatorInfo(operatorID) );
+      // do no copy operators that would be copied along with their groups (to avoid double counting)
+      copiedGroup.operators.forEach( (operatorInfo, operatorID) => this.deleteOperatorInfo(operatorID) );
     });
   }
 
@@ -978,10 +1002,16 @@ export class WorkflowEditorComponent implements AfterViewInit {
     }
   }
 
+  /**
+   * removes operator from copiedOperators
+   */
   private deleteOperatorInfo(operatorID: string) {
     this.copiedOperators.delete(operatorID);
   }
 
+  /**
+   * saves copy of group to copiedGroups
+   */
   private saveGroupInfo(groupID: string): void {
     this.copiedGroups.set( groupID,
       {
@@ -1002,14 +1032,18 @@ export class WorkflowEditorComponent implements AfterViewInit {
       .filter(event => this.interactive)
       .filter(event => (<HTMLElement> event.target).nodeName !== 'INPUT')
       .subscribe(() => {
+        // if there is something to paste
         if (this.copiedOperators.size > 0 || this.copiedGroups.size > 0) {
           const operatorsAndPositions: {op: OperatorPredicate, pos: Point}[] = [];
           const links: OperatorLink[] = [];
           const groups: Group[] = [];
           const positions: Point[] = [];
 
+          // sort operators by layer
           this.copiedOperators = new Map<string, CopiedOperator>(Array.from(this.copiedOperators)
             .sort((first, second) => first[1].layer - second[1].layer));
+
+          // make copies of each operator, and calculate their positions when pasted
           this.copiedOperators.forEach((copiedOperator, operatorID) => {
             const newOperator = this.copyOperator(copiedOperator.operator);
             const newOperatorPosition = this.calcOperatorPosition(newOperator.operatorID, operatorID, positions);
@@ -1017,6 +1051,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
             positions.push(newOperatorPosition);
           });
 
+          // make copies of each group, push each group's internal operators and calculated positions to operatorsAndPositions
           this.copiedGroups.forEach( (copiedGroup, groupID) => {
             const newGroup = this.copyGroup(copiedGroup.group);
 
@@ -1024,6 +1059,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
             const newPosition = this.calcGroupPosition(newGroup.groupID, groupID, positions);
             positions.push(newPosition);
 
+            // delta between old position and new to apply to the copied group's operators
             const delta = {
               x: newPosition.x - oldPosition.x,
               y: newPosition.y - oldPosition.y
@@ -1039,13 +1075,16 @@ export class WorkflowEditorComponent implements AfterViewInit {
               });
             });
 
+            // add links from group to list of all links to be added
             newGroup.links.forEach((linkInfo, operatorID) => {
               links.push(linkInfo.link);
             });
 
+            // add group to list of all groups to be added
             groups.push(newGroup);
           });
 
+          // actually add all operators, links, groups to the workflow
           this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, groups, new Map());
         }
       });
@@ -1067,6 +1106,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
   }
 
   private copyGroup(group: Group) {
+
+    // copying a group involves copying all the operators and links inside it (inlinks and outlinks not copied)
 
     const operatorMap = new Map<string, string>();
 
@@ -1108,6 +1149,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       return [newLinkInfo.link.linkID, newLinkInfo];
     }));
 
+    // this is a Group, but not casted as one to avoid readonly restrictions
+    // probably should refactor group to be a class with a proper constructor, since future refactors to the group template could break this
     return {
       groupID: this.workflowUtilService.getGroupRandomUUID(),
       operators: operators,
@@ -1134,10 +1177,9 @@ export class WorkflowEditorComponent implements AfterViewInit {
       throw Error(`Internal error: cannot find ${copiedOperatorID} in copied operators`);
     }
     const pastedOperators = copiedOperator.pastedOperatorIDs;
-    console.log("debug", pastedOperators);
     for (i = 0; i < pastedOperators.length; ++i) {
-      position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
-                  y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
+      position = {x: copiedOperator.position.x + i * this.COPY_OFFSET,
+                  y: copiedOperator.position.y + i * this.COPY_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getTexeraGraph().hasOperator(pastedOperators[i]) ||
           this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(pastedOperators[i]).x !== position.x ||
           this.workflowActionService.getOperatorGroup().getOperatorPositionByGroup(pastedOperators[i]).y !== position.y)) {
@@ -1146,11 +1188,20 @@ export class WorkflowEditorComponent implements AfterViewInit {
       }
     }
     pastedOperators.push(newOperatorID);
-    position = {x: copiedOperator.position.x + i * this.COPY_OPERATOR_OFFSET,
-                y: copiedOperator.position.y + i * this.COPY_OPERATOR_OFFSET};
+    position = {x: copiedOperator.position.x + i * this.COPY_OFFSET,
+                y: copiedOperator.position.y + i * this.COPY_OFFSET};
     return this.getNonOverlappingPosition(position, positions);
   }
 
+    /**
+   * Utility function to calculate the position to paste the group.
+   * If a previously pasted group is moved or deleted, the operator will be
+   * pasted to the emptied position. Otherwise, it will be pasted to a position
+   * that's non-overlapping and calculated according to the copy operator offset.
+   * @param newGroupID
+   * @param copiedGroupID
+   * @param positions
+   */
   private calcGroupPosition(newGroupID: string, copiedGroupID: string, positions: Point[]): Point {
     let i, position;
     const copiedGroup = this.copiedGroups.get(copiedGroupID);
@@ -1160,10 +1211,9 @@ export class WorkflowEditorComponent implements AfterViewInit {
     const copiedGroupPosition = copiedGroup.position;
     const pastedGroups = copiedGroup.pastedGroupIDs;
 
-    console.log("debug", pastedGroups);
     for (i = 0; i < pastedGroups.length; ++i) {
-      position = {x: copiedGroupPosition.x + i * this.COPY_OPERATOR_OFFSET,
-                  y: copiedGroupPosition.y + i * this.COPY_OPERATOR_OFFSET};
+      position = {x: copiedGroupPosition.x + i * this.COPY_OFFSET,
+                  y: copiedGroupPosition.y + i * this.COPY_OFFSET};
       if (!positions.includes(position) && (!this.workflowActionService.getOperatorGroup().hasGroup(pastedGroups[i]) ||
         this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedGroups[i]).x !== position.x ||
         this.workflowActionService.getJointGraphWrapper().getElementPosition(pastedGroups[i]).y !== position.y)) {
@@ -1172,8 +1222,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
       }
     }
     pastedGroups.push(newGroupID);
-    position = {x: copiedGroupPosition.x + i * this.COPY_OPERATOR_OFFSET,
-                y: copiedGroupPosition.y + i * this.COPY_OPERATOR_OFFSET};
+    position = {x: copiedGroupPosition.x + i * this.COPY_OFFSET,
+                y: copiedGroupPosition.y + i * this.COPY_OFFSET};
     return this.getNonOverlappingPosition(position, positions);
   }
 
@@ -1194,7 +1244,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
     do {
       for (const operatorPosition of operatorPositions) {
         if (operatorPosition.x === position.x && operatorPosition.y === position.y) {
-          position = {x: position.x + this.COPY_OPERATOR_OFFSET, y: position.y + this.COPY_OPERATOR_OFFSET};
+          position = {x: position.x + this.COPY_OFFSET, y: position.y + this.COPY_OFFSET};
           overlapped = true;
           break;
         }

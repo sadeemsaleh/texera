@@ -16,10 +16,10 @@ import { cloneDeep } from 'lodash';
 
 
 export interface Command {
+  modifiesWorkflow: boolean;
   execute(): void;
   undo(): void;
   redo?(): void;
-  modifiesWorkflow: boolean;
 }
 
 type OperatorPosition = {
@@ -78,6 +78,7 @@ export class WorkflowActionService {
     this.handleHighlightedElementPositionChange();
   }
 
+  // workflow modification lock interface (allows or prevents commands that would modify the workflow graph)
   public enableWorkflowModification() {
     this.workflowModificationEnabled = true;
     this.enableModificationStream.next(true);
@@ -108,10 +109,14 @@ export class WorkflowActionService {
   }
 
   public handleJointOperatorDrag(): void {
+    // save first event as starting position
+    // compare starting position to final position at last event
+    // command saves just the delta for undo/redo purposes
     let oldPosition: Point = {x: 0, y: 0};
     let gotOldPosition = false;
     let dragRoot: string; // element that was clicked to start the drag
 
+    // save starting position
     this.jointGraphWrapper.getElementPositionChangeEvent()
       .filter(() => !gotOldPosition)
       .filter(() => this.undoRedoService.listenJointCommand)
@@ -121,18 +126,20 @@ export class WorkflowActionService {
         dragRoot = event.elementID;
       });
 
+    // get final event and compare positions
     this.jointGraphWrapper.getElementPositionChangeEvent()
       .filter(() => this.undoRedoService.listenJointCommand)
       .filter(value => value.elementID === dragRoot)
-      .debounceTime(100)
+      .debounceTime(100) // emit only when no further events have occurred in 100ms
       .subscribe(event => {
         gotOldPosition = false;
         const offsetX = event.newPosition.x - oldPosition.x;
         const offsetY = event.newPosition.y - oldPosition.y;
-        // remember currently highlighted operators
-        let currentHighlightedOperators = new Set(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
-        const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs();
+        // remember currently highlighted operators and groups
+        const currentHighlightedOperators = new Set(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().slice());
+        const currentHighlightedGroups = this.jointGraphWrapper.getCurrentHighlightedGroupIDs().slice();
 
+        // un-remember child operators of groups (they will move with the group's movement, so we must avoid moving them twice)
         currentHighlightedGroups.forEach(groupID => {
           this.operatorGroup.getGroup(groupID).operators.forEach((operatorInfo, operatorID) => {
             currentHighlightedOperators.delete(operatorID);
@@ -191,14 +198,17 @@ export class WorkflowActionService {
       .filter(movedElement => this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().includes(movedElement.elementID) ||
         this.jointGraphWrapper.getCurrentHighlightedGroupIDs().includes(movedElement.elementID))
       .subscribe(movedElement => {
-        const selectedElements = this.jointGraphWrapper.getCurrentHighlightedGroupIDs().slice();
+        const selectedElements = this.jointGraphWrapper.getCurrentHighlightedGroupIDs().slice(); // operators added to this list later
         const movedGroup = this.operatorGroup.getGroupByOperator(movedElement.elementID);
+
         if (movedGroup && selectedElements.includes(movedGroup.groupID)) {
           movedGroup.operators.forEach((operatorInfo, operatorID) => selectedElements.push(operatorID));
           selectedElements.splice(selectedElements.indexOf(movedGroup.groupID), 1);
         }
         this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().forEach(operatorID => {
           const group = this.operatorGroup.getGroupByOperator(operatorID);
+          // operators move with their groups,
+          // do not add elements that are in a group that will also be moved
           if (!group || !this.jointGraphWrapper.getCurrentHighlightedGroupIDs().includes(group.groupID)) {
             selectedElements.push(operatorID);
           }
@@ -356,8 +366,6 @@ export class WorkflowActionService {
     // remember currently highlighted operators and groups
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
 
-    let groupsCopy: readonly Group[];
-
     const command: Command = {
       modifiesWorkflow: true,
       execute: () => {
@@ -376,12 +384,12 @@ export class WorkflowActionService {
         }
 
         if (groups) {
-          groupsCopy = cloneDeep(groups);
           groups.forEach(group => {
-            this.addGroupInternal(group);
-            this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+            // make a copy, because groups can be mutated after being given to operatorGroup (deletion for example)
+            const groupCopy = cloneDeep(group);
+            this.addGroupInternal(groupCopy);
+            this.operatorGroup.moveGroupToLayer(groupCopy, this.operatorGroup.getHighestLayer() + 1);
           });
-          groups = groupsCopy;
         }
 
 
@@ -391,7 +399,6 @@ export class WorkflowActionService {
           groups.forEach(group => {
             this.deleteGroupInternal(group.groupID);
           });
-          groups = groupsCopy;
         }
 
         // remove links
@@ -421,7 +428,6 @@ export class WorkflowActionService {
   public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[], groupIDs?: readonly string[] ): void {
 
     const operatorIDsCopy = operatorIDs.slice();
-    let groupIDsCopy: string[];
 
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
@@ -429,7 +435,7 @@ export class WorkflowActionService {
       {position: this.getOperatorGroup().getOperatorPositionByGroup(operatorID),
        layer: this.getOperatorGroup().getOperatorLayerByGroup(operatorID)}));
 
-    // save links to be deleted, including links needs to be deleted and links affected by deleted operators
+    // save links to be deleted, including links explicitly deleted and implicitly deleted with their operators
     const linksToDelete = new Map<OperatorLink, number>();
     // delete links required by this command
     linkIDs.map(linkID => this.getTexeraGraph().getLinkWithID(linkID))
@@ -448,10 +454,12 @@ export class WorkflowActionService {
       }
     });
 
-    let operators: OperatorInfo[][];
-    let links: LinkInfo[][];
-    let inLinks: OperatorLink[][];
-    let outLinks: OperatorLink[][];
+    // save groups that are explicitly deleted
+    let groupIDsCopy: string[];
+    let groupOperators: OperatorInfo[][];
+    let groupLinks: LinkInfo[][];
+    let groupInLinks: OperatorLink[][];
+    let groupOutLinks: OperatorLink[][];
 
     // remember currently highlighted operators and groups
     const currentHighlights = this.jointGraphWrapper.getCurrentHighlights();
@@ -470,26 +478,37 @@ export class WorkflowActionService {
           }
         });
 
-        // check if groups still exist after deleting some operators (groups of 2 that lose one op un-group automatically)
+        // check if all explicitly deleted groups still exist
+        // some could have been deleted implicitly first (groups of 2 that lose one op un-group automatically)
         groupIDsCopy = (groupIDs ?? []).filter(groupID => this.operatorGroup.hasGroup(groupID));
 
-        operators = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
-        links = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
-        inLinks = groupIDsCopy.map(
+        // save all explicitly deleted group operators and links
+        // this is necessary because deleteGroupAndOperatorsInternal deletes operators and links,
+        // trying to add back a group whose operators are gone will cause an error (referencing a deleted operator)
+        groupOperators = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
+        groupLinks = groupIDsCopy.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
+        groupInLinks = groupIDsCopy.map(
           groupID => this.operatorGroup.getGroup(groupID).inLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
-        outLinks = groupIDsCopy.map(
+        groupOutLinks = groupIDsCopy.map(
           groupID => this.operatorGroup.getGroup(groupID).outLinks.map(linkID => this.texeraGraph.getLinkWithID(linkID)));
 
         groupIDsCopy.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID));
       },
       undo: () => {
-        for (let i = 0; i < operators.length; i++) {
-          operators[i].forEach(operatorInfo => this.addOperatorInternal(operatorInfo.operator, operatorInfo.position));
-          links[i].forEach(linkInfo => this.addLinkInternal(linkInfo.link));
-          inLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
-          outLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+
+        // add back explicitly deleted groups
+        for (let i = 0; i < groupIDsCopy.length; i++) {
+          // add back operators and links of deleted groups
+          groupOperators[i].forEach(operatorInfo => this.addOperatorInternal(operatorInfo.operator, operatorInfo.position));
+          groupLinks[i].forEach(linkInfo => this.addLinkInternal(linkInfo.link));
+          groupInLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+          groupOutLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+
+          // re-create group with same operators and ID
           const recreatedGroup = this.operatorGroup.getNewGroup(
-            operators[i].map(operatorInfo => operatorInfo.operator.operatorID), groupIDsCopy[i]);
+            groupOperators[i].map(operatorInfo => operatorInfo.operator.operatorID), groupIDsCopy[i]);
+
+          // add back group as if normal
           this.addGroupInternal(recreatedGroup);
           this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
         }
@@ -582,26 +601,20 @@ export class WorkflowActionService {
    * @param groups
    */
   public addGroups(...groups: readonly Group[]): void {
-    const operatorIDs = groups.map(group => Array.from(group.operators.keys()));
 
     const command: Command = {
       modifiesWorkflow: false,
       execute: () => {
         groups.forEach(group => {
-          this.addGroupInternal(group);
-          this.operatorGroup.moveGroupToLayer(group, this.operatorGroup.getHighestLayer() + 1);
+          // make a copy, because groups can be mutated after being given to operatorGroup (deletion for example)
+          const groupCopy = cloneDeep(group);
+          this.addGroupInternal(groupCopy);
+          this.operatorGroup.moveGroupToLayer(groupCopy, this.operatorGroup.getHighestLayer() + 1);
         });
       },
       undo: () => {
         groups.forEach(group => {
           this.deleteGroupInternal(group.groupID);
-        });
-      }, redo: () => {
-        operatorIDs.forEach( (operatorsInGroup, i) => {
-          const recreatedGroup = this.operatorGroup.getNewGroup(
-            operatorsInGroup, groups[i].groupID);
-          this.addGroupInternal(recreatedGroup);
-          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
         });
       }
     };
@@ -613,17 +626,17 @@ export class WorkflowActionService {
    * @param groupIDs
    */
   public deleteGroups(...groupIDs: readonly string[]): void {
-    const operatorIDs = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.keys()));
+    const groups = groupIDs.map( groupID => cloneDeep(this.operatorGroup.getGroup(groupID)));
 
     const command: Command = {
       modifiesWorkflow: false,
       execute: () => groupIDs.forEach(groupID => this.deleteGroupInternal(groupID)),
       undo: () => {
-        operatorIDs.forEach( (operatorsInGroup, i) => {
-          const recreatedGroup = this.operatorGroup.getNewGroup(
-            operatorsInGroup, groupIDs[i]);
-          this.addGroupInternal(recreatedGroup);
-          this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
+        groups.forEach( group => {
+          // make a copy, because groups can be mutated after being given to operatorGroup (deletion for example)
+          const groupCopy = cloneDeep(group);
+          this.addGroupInternal(groupCopy);
+          this.operatorGroup.moveGroupToLayer(groupCopy, this.operatorGroup.getHighestLayer() + 1);
         });
       },
     };
@@ -662,6 +675,9 @@ export class WorkflowActionService {
    */
   public deleteGroupsAndOperators(...groupIDs: readonly string[]): void {
 
+    // save all explicitly deleted group operators and links
+    // this is necessary because deleteGroupAndOperatorsInternal deletes operators and links,
+    // trying to add back a group whose operators are gone will cause an error (referencing a deleted operator)
     const operators = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).operators.values()));
     const links = groupIDs.map(groupID => Array.from(this.operatorGroup.getGroup(groupID).links.values()));
     const inLinks = groupIDs.map(
@@ -673,13 +689,18 @@ export class WorkflowActionService {
       modifiesWorkflow: true,
       execute: () => groupIDs.forEach(groupID => this.deleteGroupAndOperatorsInternal(groupID)),
       undo: () => {
-        for (let i = 0; i < operators.length; i++) {
+        for (let i = 0; i < groupIDs.length; i++) {
+          // add back operators and links of deleted groups
           operators[i].forEach(operatorInfo => this.addOperatorInternal(operatorInfo.operator, operatorInfo.position));
           links[i].forEach(linkInfo => this.addLinkInternal(linkInfo.link));
           inLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
           outLinks[i].forEach(operatorLink => this.addLinkInternal(operatorLink));
+
+          // re-create group with same operators and ID
           const recreatedGroup = this.operatorGroup.getNewGroup(
             operators[i].map(operatorInfo => operatorInfo.operator.operatorID), groupIDs[i]);
+
+          // add back group as if normal
           this.addGroupInternal(recreatedGroup);
           this.operatorGroup.moveGroupToLayer(recreatedGroup, this.operatorGroup.getHighestLayer() + 1);
         }
@@ -695,6 +716,9 @@ export class WorkflowActionService {
     const command: Command = {
       modifiesWorkflow: true,
       execute: () => {
+        this.setOperatorPropertyInternal(operatorID, newProperty);
+
+        // unhighlight everything but the operator being modified
         const currentHighlightedOperators = <string[]> this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().slice();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
@@ -704,9 +728,11 @@ export class WorkflowActionService {
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
-        this.setOperatorPropertyInternal(operatorID, newProperty);
       },
       undo: () => {
+        this.setOperatorPropertyInternal(operatorID, prevProperty);
+
+        // unhighlight everything but the operator being modified
         const currentHighlightedOperators = <string[]> this.jointGraphWrapper.getCurrentHighlightedOperatorIDs().slice();
         if ((!group || !group.collapsed) && !currentHighlightedOperators.includes(operatorID)) {
           this.jointGraphWrapper.setMultiSelectMode(false);
@@ -716,7 +742,6 @@ export class WorkflowActionService {
           this.jointGraphWrapper.unhighlightOperators(...currentHighlightedOperators);
           this.jointGraphWrapper.unhighlightGroups(...this.jointGraphWrapper.getCurrentHighlightedGroupIDs());
         }
-        this.setOperatorPropertyInternal(operatorID, prevProperty);
       }
     };
     this.executeAndStoreCommand(command);
@@ -789,6 +814,7 @@ export class WorkflowActionService {
     if (sourceGroup && targetGroup && sourceGroup.groupID === targetGroup.groupID && sourceGroup.collapsed) {
       this.texeraGraph.addLink(link);
     } else {
+      // if a group is collapsed, jointjs target is the group not the operator
       const jointLinkCell = JointUIService.getJointLinkCell(link);
       if (sourceGroup && sourceGroup.collapsed) {
         jointLinkCell.set('source', {id: sourceGroup.groupID});
@@ -796,16 +822,20 @@ export class WorkflowActionService {
       if (targetGroup && targetGroup.collapsed) {
         jointLinkCell.set('target', {id: targetGroup.groupID});
       }
+
+      // manually add a link element (normally automatic when syncTexeraGraph = true)
       this.operatorGroup.setSyncTexeraGraph(false);
       this.jointGraph.addCell(jointLinkCell);
       this.jointGraphWrapper.setCellLayer(link.linkID, this.operatorGroup.getHighestLayer() + 1);
       this.operatorGroup.setSyncTexeraGraph(true);
+
       this.texeraGraph.addLink(link);
     }
   }
 
   private deleteLinkWithIDInternal(linkID: string): void {
     this.texeraGraph.assertLinkWithIDExists(linkID);
+
     const group = this.operatorGroup.getGroupByLink(linkID);
     if (group && group.collapsed) {
       this.texeraGraph.deleteLinkWithID(linkID);
