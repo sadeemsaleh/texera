@@ -262,19 +262,13 @@ export class ResultPanelComponent {
     this.isLoadingResult = true;
     this.workflowWebsocketService.send('ResultPaginationRequest', { pageSize: newPageSize, pageIndex: newPageIndex });
     this.workflowWebsocketService.websocketEvent().subscribe(websocketEvent => {
-
-      // I know this is bad but I just can't add my custom type into TexeraWebsocketEventTypeMap
-      const paginatedResult = websocketEvent as unknown as {
-        paginatedResults: Array<{
-          operatorID: string,
-          table: Array<object>,
-          totalRowCount: number
-        }>
-      };
+      if (websocketEvent.type !== 'PaginatedResultEvent') {
+        return;
+      }
 
       const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
 
-      for (const result of paginatedResult.paginatedResults) {
+      for (const result of websocketEvent.paginatedResults) {
         if (result.operatorID === highlightedOperators[0]) {
           this.total = result.totalRowCount;
           this.currentResult = result.table.slice();
@@ -282,8 +276,6 @@ export class ResultPanelComponent {
           return;
         }
       }
-
-      console.log('no match operator id');
     });
   }
 

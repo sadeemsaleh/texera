@@ -96,10 +96,7 @@ class WorkflowWebsocketResource {
   }
 
   def resultPagination(session: Session, request: ResultPaginationRequest): Unit = {
-    case class PaginatedOperatorResult(operatorID: String, table: List[ObjectNode], totalRowCount: Int)
-    case class PaginatedResult(paginatedResults: List[PaginatedOperatorResult])
-
-    val paginatedResult = PaginatedResult(completedResults.map{
+    val paginatedResultEvent = PaginatedResultEvent(completedResults.map{
       case (operatorID, table) => (
         operatorID,
         table
@@ -112,8 +109,8 @@ class WorkflowWebsocketResource {
     }.toList)
 
     println("======resultPagination======")
-    println(objectMapper.writeValueAsString(paginatedResult))
-    session.getAsyncRemote.sendText(objectMapper.writeValueAsString(paginatedResult))
+    println(paginatedResultEvent)
+    send(session, paginatedResultEvent)
   }
 
   def addBreakpoint(session: Session, addBreakpoint: AddBreakpointRequest): Unit = {
