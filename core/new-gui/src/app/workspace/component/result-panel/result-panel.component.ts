@@ -12,6 +12,7 @@ import { ResultObject } from '../../types/execute-workflow.interface';
 import { WorkflowActionService } from '../../service/workflow-graph/model/workflow-action.service';
 import { BreakpointTriggerInfo } from '../../types/workflow-common.interface';
 import { NzTableQueryParams } from 'ng-zorro-antd/table';
+import { WorkflowWebsocketService } from '../../service/workflow-websocket/workflow-websocket.service';
 
 /**
  * ResultPanelCompoent is the bottom level area that displays the
@@ -70,7 +71,8 @@ export class ResultPanelComponent {
     private executeWorkflowService: ExecuteWorkflowService,
     private modalService: NzModalService,
     private resultPanelToggleService: ResultPanelToggleService,
-    private workflowActionService: WorkflowActionService
+    private workflowActionService: WorkflowActionService,
+    private workflowWebsocketService: WorkflowWebsocketService
   ) {
     const activeStates: ExecutionState[] = [ExecutionState.Completed, ExecutionState.Failed, ExecutionState.BreakpointTriggered];
     Observable.merge(
@@ -249,7 +251,6 @@ export class ResultPanelComponent {
    * @param params new parameters
    */
   public onTableQueryParamsChange(params: NzTableQueryParams) {
-    console.log(params);
     const { pageSize: newPageSize, pageIndex: newPageIndex } = params;
     this.currentPageSize = newPageSize;
     this.currentPageIndex = newPageIndex;
@@ -258,7 +259,32 @@ export class ResultPanelComponent {
       return;
     }
 
-    console.log('asking server for new page...');
+    this.isLoadingResult = true;
+    this.workflowWebsocketService.send('ResultPaginationRequest', { pageSize: newPageSize, pageIndex: newPageIndex });
+    this.workflowWebsocketService.websocketEvent().subscribe(websocketEvent => {
+
+      // I know this is bad but I just can't add my custom type into TexeraWebsocketEventTypeMap
+      const paginatedResult = websocketEvent as unknown as {
+        paginatedResults: Array<{
+          operatorID: string,
+          table: Array<object>,
+          totalRowCount: number
+        }>
+      };
+
+      const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+
+      for (const result of paginatedResult.paginatedResults) {
+        if (result.operatorID === highlightedOperators[0]) {
+          this.total = result.totalRowCount;
+          this.currentResult = result.table.slice();
+          this.isLoadingResult = false;
+          return;
+        }
+      }
+
+      console.log('no match operator id');
+    });
   }
 
   /**

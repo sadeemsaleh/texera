@@ -3,6 +3,7 @@ package edu.uci.ics.texera.web.resource
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.{ActorRef, PoisonPill}
+import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.amber.engine.architecture.controller.{Controller, ControllerEventListener}
 import edu.uci.ics.amber.engine.architecture.principal.PrincipalStatistics
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
@@ -12,6 +13,7 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 import edu.uci.ics.texera.web.TexeraWebApplication
 import edu.uci.ics.texera.web.model.event._
 import edu.uci.ics.texera.web.model.request._
+import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.{WorkflowCompiler, WorkflowInfo}
 import edu.uci.ics.texera.workflow.common.{Utils, WorkflowContext}
 import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
@@ -67,6 +69,10 @@ class WorkflowWebsocketResource {
           skipTuple(session, skipTupleMsg)
         case breakpoint: AddBreakpointRequest =>
           addBreakpoint(session, breakpoint)
+        case paginationRequest: ResultPaginationRequest =>
+          println("======getResultPage======")
+          println(paginationRequest)
+          resultPagination(session, paginationRequest)
       }
     } catch {
       case e: Throwable => {
@@ -87,6 +93,27 @@ class WorkflowWebsocketResource {
 
   def send(session: Session, event: TexeraWebSocketEvent): Unit = {
     session.getAsyncRemote.sendText(objectMapper.writeValueAsString(event))
+  }
+
+  def resultPagination(session: Session, request: ResultPaginationRequest): Unit = {
+    case class PaginatedOperatorResult(operatorID: String, table: List[ObjectNode], totalRowCount: Int)
+    case class PaginatedResult(paginatedResults: List[PaginatedOperatorResult])
+
+    val paginatedResult = PaginatedResult(completedResults.map{
+      case (operatorID, table) => (
+        operatorID,
+        table
+          .slice(request.pageSize * (request.pageIndex - 1), request.pageSize * request.pageIndex)
+          .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+      )
+    }.map{
+      case (operatorID, objNodes) =>
+        PaginatedOperatorResult(operatorID, objNodes, completedResults(operatorID).size)
+    }.toList)
+
+    println("======resultPagination======")
+    println(objectMapper.writeValueAsString(paginatedResult))
+    session.getAsyncRemote.sendText(objectMapper.writeValueAsString(paginatedResult))
   }
 
   def addBreakpoint(session: Session, addBreakpoint: AddBreakpointRequest): Unit = {

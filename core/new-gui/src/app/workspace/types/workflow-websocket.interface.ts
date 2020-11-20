@@ -54,7 +54,8 @@ export type TexeraWebsocketRequestTypeMap = {
   'KillWorkflowRequest': {},
   'ModifyLogicRequest': ModifyOperatorLogic,
   'SkipTupleRequest': SkipTuple,
-  'AddBreakpointRequest': BreakpointInfo
+  'AddBreakpointRequest': BreakpointInfo,
+  'ResultPaginationRequest': {pageIndex: number, pageSize: number}
 };
 
 export type TexeraWebsocketEventTypeMap = {
