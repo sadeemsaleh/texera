@@ -39,7 +39,7 @@ export class ResultPanelComponent {
   private static readonly PRETTY_JSON_TEXT_LIMIT: number = 50000;
   private static readonly TABLE_COLUMN_TEXT_LIMIT: number = 1000;
 
-  @Output() public resultPanelHeightUpdate = new EventEmitter<number>();
+  @Output() public resultPanelHeightUpdate = new EventEmitter();
   public showResultPanel: boolean = false;
 
   // display error message:
@@ -85,11 +85,11 @@ export class ResultPanelComponent {
           this.workflowActionService.getJointGraphWrapper().highlightOperator(breakpointOperator);
         }
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(250);
+        this.resultPanelHeightUpdate.emit();
       }
       if (event.current.state === ExecutionState.Failed) {
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(250);
+        this.resultPanelHeightUpdate.emit();
       }
       if (event.current.state === ExecutionState.Completed) {
         const sinkOperators = this.workflowActionService.getTexeraGraph().getAllOperators()
@@ -98,7 +98,7 @@ export class ResultPanelComponent {
           this.workflowActionService.getJointGraphWrapper().highlightOperator(sinkOperators[0].operatorID);
         }
         this.resultPanelToggleService.openResultPanel();
-        this.resultPanelHeightUpdate.emit(250);
+        this.resultPanelHeightUpdate.emit();
       }
     });
   }

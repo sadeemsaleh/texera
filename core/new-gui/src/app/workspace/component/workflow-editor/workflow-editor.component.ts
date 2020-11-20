@@ -598,6 +598,12 @@ export class WorkflowEditorComponent implements AfterViewInit {
     this.getJointPaper().setDimensions(elementSize.width, elementSize.height);
   }
 
+  // tslint:disable-next-line:member-ordering
+  public setJointPaperDimensions2(height: number): void {
+    const elementSize = this.getWrapperElementSize();
+    this.getJointPaper().setDimensions(elementSize.width, height);
+    jQuery('#' + this.WORKFLOW_EDITOR_JOINTJS_WRAPPER_ID).height(height);
+  }
 
   /**
    * Handles the event where the Delete button is clicked for an Operator,
