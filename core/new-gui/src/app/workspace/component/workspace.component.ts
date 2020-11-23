@@ -16,6 +16,7 @@ import { ResultPanelToggleService } from '../service/result-panel-toggle/result-
 import { SaveWorkflowService } from '../service/save-workflow/save-workflow.service';
 import { WorkflowStatusService } from '../service/workflow-status/workflow-status.service';
 import { WorkflowWebsocketService } from '../service/workflow-websocket/workflow-websocket.service';
+import { ActionTraceService } from '../service/action-trace/action-trace.service';
 
 @Component({
   selector: 'texera-workspace',
@@ -39,6 +40,7 @@ import { WorkflowWebsocketService } from '../service/workflow-websocket/workflow
     ValidationWorkflowService,
     WorkflowStatusService,
     WorkflowWebsocketService,
+    ActionTraceService,
   ]
 })
 export class WorkspaceComponent {

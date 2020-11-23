@@ -113,26 +113,29 @@ export class SaveWorkflowService {
       this.workflowActionService.getTexeraGraph().getBreakpointChangeStream(),
       this.workflowActionService.getJointGraphWrapper().getOperatorPositionChangeEvent()
     ).debounceTime(100).subscribe(() => {
-      const workflow = this.workflowActionService.getTexeraGraph();
-
-      const operators = workflow.getAllOperators();
-      const links = workflow.getAllLinks();
-      const operatorPositions: {[key: string]: Point} = {};
-      const breakpointsMap = workflow.getAllLinkBreakpoints();
-      const breakpoints: Record<string, Breakpoint> = {};
-      breakpointsMap.forEach((value, key) => (breakpoints[key] = value));
-      workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
-        this.workflowActionService.getJointGraphWrapper().getOperatorPosition(op.operatorID));
-
-      const savedWorkflow: SavedWorkflow = {
-        operators, operatorPositions, links, breakpoints
-      };
-
+      const savedWorkflow = SaveWorkflowService.dumpSavedWorkflow(this.workflowActionService);
       localStorage.setItem(SaveWorkflowService.LOCAL_STORAGE_KEY, JSON.stringify(savedWorkflow));
     });
   }
 
+  public static dumpSavedWorkflow(workflowActionService: WorkflowActionService): SavedWorkflow {
+    const workflow = workflowActionService.getTexeraGraph();
 
+    const operators = workflow.getAllOperators();
+    const links = workflow.getAllLinks();
+    const operatorPositions: {[key: string]: Point} = {};
+    const breakpointsMap = workflow.getAllLinkBreakpoints();
+    const breakpoints: Record<string, Breakpoint> = {};
+    breakpointsMap.forEach((value, key) => (breakpoints[key] = value));
+    workflow.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
+      workflowActionService.getJointGraphWrapper().getOperatorPosition(op.operatorID));
+
+    const savedWorkflow: SavedWorkflow = {
+      operators, operatorPositions, links, breakpoints
+    };
+
+    return savedWorkflow;
+  }
 
 
 }

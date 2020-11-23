@@ -38,6 +38,20 @@
           </ul>
         </nz-dropdown-menu>
       </nz-button-group>
+      <nz-button-group nzSize = "large" style="margin-left: 20px">
+        <button *ngIf="! actionTraceService.isTraceStarted()" nz-button (click)="onClickStartActionTrace()" title="start trace">
+          <i nz-icon nzType="play-circle" nzTheme="outline"></i>
+        </button>
+        <button *ngIf="actionTraceService.isTraceStarted()" nz-button (click)="onClickStopActionTrace()" title="stop trace">
+          <i nz-icon nzType="pause-circle" nzTheme="outline"></i>
+        </button>
+        <button nz-button (click)="onClickClearAcionTrace()" [disabled]="actionTraceService.getActionTraceHistory().length === 0" title="clear trace">
+          <i nz-icon nzType="close-circle" nzTheme="outline"></i>
+        </button>
+        <button nz-button (click)="onClickDownloadActionTrace()" [disabled]="actionTraceService.getActionTraceHistory().length === 0" title="download trace">
+          <i nz-icon nzType="file-text" nzTheme="outline"></i>
+        </button>
+      </nz-button-group>
     </div>
 
     <div
