@@ -2,12 +2,11 @@ package edu.uci.ics.texera.workflow.operators.visualization.pieChart;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import edu.uci.ics.amber.engine.common.Constants;
-import edu.uci.ics.amber.engine.operators.OpExecConfig;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorGroupConstants;
 import edu.uci.ics.texera.workflow.common.metadata.OperatorInfo;
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
-import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator;
+import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOpDesc;
 
 /**
  * PieChart is a visualization operator that can be used to get tuples for pie chart.
@@ -17,7 +16,7 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
  * @author Mingji Han, Xiaozhen Liu
  *
  */
-public class PieChartOpDesc extends VisualizationOperator {
+public class PieChartOpDesc extends VisualizationOpDesc {
 
     @JsonProperty(value = "name column", required = true)
     public String nameColumn;

@@ -12,7 +12,8 @@ export enum ChartType {
   STACKED_BAR =  'stacked bar',
   WORD_CLOUD = 'word cloud',
   LINE = 'line',
-  SPLINE = 'spline'
+  SPLINE = 'spline',
+  XYLINE = 'xyline',
 }
 
 /**

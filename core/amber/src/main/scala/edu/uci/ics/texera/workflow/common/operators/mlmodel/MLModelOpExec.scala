@@ -30,12 +30,14 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
         allData += t
         Iterator()
       case Right(_) =>
-        getIterativeTrainingIterator()
+        getIterativeTrainingIterator() ++ getResultIterator()
     }
   }
 
+  def getResultIterator(): Iterator[Tuple] = Iterator()
+
   def getIterativeTrainingIterator(): Iterator[Tuple] = {
-    return new Iterator[Tuple] {
+    new Iterator[Tuple] {
       override def hasNext(): Boolean = {
         hasMoreIterations
       }
@@ -73,10 +75,12 @@ abstract class MLModelOpExec() extends OperatorExecutor with Serializable {
             hasMoreIterations = false
           }
         }
-        return null
+        null
       }
     }
   }
+
+//  def getOutputTuples(): List
 
   def predict(minibatch: Array[Tuple]): Unit
   def calculateLossGradient(minibatch: Array[Tuple]): Unit

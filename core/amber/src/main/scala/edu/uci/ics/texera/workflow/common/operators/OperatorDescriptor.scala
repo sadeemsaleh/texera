@@ -22,6 +22,7 @@ import edu.uci.ics.texera.workflow.operators.sink.SimpleSinkOpDesc
 import edu.uci.ics.texera.workflow.operators.mysqlsource.MysqlSourceOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.barChart.BarChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.lineChart.LineChartOpDesc
+import edu.uci.ics.texera.workflow.operators.visualization.linearRegressionChart.LinearRegressionChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.pieChart.PieChartOpDesc
 import edu.uci.ics.texera.workflow.operators.visualization.wordCloud.WordCloudOpDesc
 import org.apache.commons.lang3.builder.{EqualsBuilder, HashCodeBuilder, ToStringBuilder}

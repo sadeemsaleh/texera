@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import edu.uci.ics.amber.engine.architecture.controller.ControllerEvent.WorkflowCompleted
 import edu.uci.ics.texera.workflow.common.tuple.Tuple
 import edu.uci.ics.texera.workflow.common.workflow.WorkflowCompiler
-import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
+import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOpDesc
 
 import scala.collection.mutable
 
@@ -23,7 +23,7 @@ object WorkflowCompletedEvent {
       val precedentOpID = workflowCompiler.workflowInfo.links.find(link => link.destination == operatorID).get.origin
       val precedentOp = workflowCompiler.workflowInfo.operators.find(op => op.operatorID == precedentOpID).get
       val chartType = precedentOp match {
-        case operator : VisualizationOperator => operator.chartType()
+        case operator : VisualizationOpDesc => operator.chartType()
         case _ => null
       }
 

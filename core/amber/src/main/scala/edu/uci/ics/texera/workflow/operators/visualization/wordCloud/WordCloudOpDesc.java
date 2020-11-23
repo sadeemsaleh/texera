@@ -9,7 +9,7 @@ import edu.uci.ics.texera.workflow.common.tuple.schema.Attribute;
 import edu.uci.ics.texera.workflow.common.tuple.schema.AttributeType;
 import edu.uci.ics.texera.workflow.common.tuple.schema.Schema;
 import edu.uci.ics.texera.workflow.operators.visualization.VisualizationConstants;
-import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator;
+import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOpDesc;
 
 /**
  * WordCloud is a visualization operator that can be used by the caller to generate data for wordcloud.js in frontend.
@@ -18,12 +18,9 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
  *
  */
 
-public class WordCloudOpDesc extends VisualizationOperator {
-    @JsonProperty(value = "text column", required = true)
-    public String textColumn;
-
-    @JsonProperty(value = "lucene analyzer name", required = true, defaultValue = "standard")
-    public String luceneAnalyzerName;
+public class WordCloudOpDesc extends VisualizationOpDesc {
+    @JsonProperty(required = true)
+    public String attribute;
 
     @Override
     public String chartType() {
@@ -32,7 +29,7 @@ public class WordCloudOpDesc extends VisualizationOperator {
 
     @Override
     public OpExecConfig operatorExecutor() {
-        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.defaultNumWorkers(), textColumn, luceneAnalyzerName);
+        return new WordCloudOpExecConfig(this.operatorIdentifier(), Constants.defaultNumWorkers(), attribute, "standard");
     }
 
     @Override
