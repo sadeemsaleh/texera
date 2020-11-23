@@ -1,9 +1,12 @@
 package edu.uci.ics.texera.workflow.operators.keywordSearch
 
 import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpDesc
-import com.fasterxml.jackson.annotation.{JsonProperty, JsonPropertyDescription}
+import com.fasterxml.jackson.annotation.{JsonIgnore, JsonProperty, JsonPropertyDescription}
+import edu.uci.ics.amber.engine.common.Constants
 import edu.uci.ics.texera.workflow.common.metadata.{OperatorGroupConstants, OperatorInfo}
 import edu.uci.ics.texera.workflow.common.operators.OneToOneOpExecConfig
+
+import scala.util.Random
 
 class KeywordSearchOpDesc extends FilterOpDesc {
 
@@ -14,8 +17,6 @@ class KeywordSearchOpDesc extends FilterOpDesc {
   @JsonProperty(value = "keyword", required = true)
   @JsonPropertyDescription("keywords")
   var keyword: String = _
-
-  var runOnce: Boolean = false
 
   override def operatorExecutor: OneToOneOpExecConfig = {
     new OneToOneOpExecConfig(this.operatorIdentifier, () => new KeywordSearchOpExec(this))

@@ -46,7 +46,6 @@ class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec 
       val dataPath = "/Users/rohan/Downloads/subsetTweets.csv"
 
       System.out.println("Worker ID" + opDesc)
-      System.out.println(opDesc.runOnce)
 
       val path = Paths.get(dataPath)
       val file = path.toFile
@@ -70,14 +69,13 @@ class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec 
       indexWriter.addDocument(document)
       fileReader.close()
       indexWriter.close
-      opDesc.runOnce = true
     }
 
     val indexPath = "/Users/rohan/Downloads/tweetsIndex";
 
     val indexDirectory = new MMapDirectory(Paths.get(indexPath));
 
-    if (opDesc.runOnce == false) createIndex()
+    createIndex()
 
     val tupleValue = tuple.getField(opDesc.columnName).toString
     System.out.println(opDesc.columnName, tupleValue)
