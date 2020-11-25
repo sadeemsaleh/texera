@@ -86,7 +86,7 @@ export class SchemaPropagationService {
       }
 
       if (! isEqual(currentDynamicSchema, newDynamicSchema)) {
-        SchemaPropagationService.resetAttributeOfOperator(this.workflowActionService, operatorID);
+        // SchemaPropagationService.resetAttributeOfOperator(this.workflowActionService, operatorID);
         this.dynamicSchemaService.setDynamicSchema(operatorID, newDynamicSchema);
       }
 

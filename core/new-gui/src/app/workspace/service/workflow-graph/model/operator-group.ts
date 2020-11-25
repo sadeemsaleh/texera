@@ -21,7 +21,7 @@ export type OperatorInfo = {
   operator: OperatorPredicate,
   position: Point,
   layer: number
-  status?: OperatorStatistics
+  statistics?: OperatorStatistics
 };
 
 export type LinkInfo = {
@@ -86,7 +86,7 @@ export class OperatorGroup {
    *
    * @param groupID
    */
-  public deleteGroup(groupID: string): void {
+  public unGroup(groupID: string): void {
     const group = this.getGroup(groupID);
     this.groupIDMap.delete(groupID);
     this.groupDeleteStream.next(group);

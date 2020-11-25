@@ -267,7 +267,7 @@ export class NavigationComponent implements OnInit {
   public onClickUngroupOperators(): void {
     const highlightedGroups = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedGroupIDs();
     if (this.highlightedElementsUngroupable()) {
-      this.workflowActionService.deleteGroups(...highlightedGroups);
+      this.workflowActionService.unGroupGroups(...highlightedGroups);
     }
   }
 

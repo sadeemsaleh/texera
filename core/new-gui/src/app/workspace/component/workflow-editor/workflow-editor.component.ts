@@ -224,7 +224,7 @@ export class WorkflowEditorComponent implements AfterViewInit {
         if (parentGroup) {
           const operatorInfo = parentGroup.operators.get(operatorID);
           assertType<OperatorInfo>(operatorInfo);
-          operatorInfo.status = status[operatorID];
+          operatorInfo.statistics = status[operatorID];
         }
       });
     });
@@ -232,8 +232,8 @@ export class WorkflowEditorComponent implements AfterViewInit {
     // listen for group expanding, and redraw operator statistics if they exist
     this.workflowActionService.getOperatorGroup().getGroupExpandStream().subscribe( group => {
       group.operators.forEach((operatorInfo, operatorID) => {
-        if (operatorInfo.status) {
-          this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, operatorInfo.status);
+        if (operatorInfo.statistics) {
+          this.jointUIService.changeOperatorStatistics(this.getJointPaper(), operatorID, operatorInfo.statistics);
         }
       });
     });
