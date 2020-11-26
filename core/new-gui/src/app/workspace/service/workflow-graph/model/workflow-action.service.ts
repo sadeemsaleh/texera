@@ -427,14 +427,14 @@ export class WorkflowActionService {
    */
   public deleteOperatorsAndLinks(operatorIDs: readonly string[], linkIDs: readonly string[], groupIDs?: readonly string[] ): void {
 
-    const operatorIDsCopy = new Set(operatorIDs.concat( (groupIDs ?? []).flatMap(groupID =>
+    const operatorIDsCopy = Array.from(new Set(operatorIDs.concat( (groupIDs ?? []).flatMap(groupID =>
         Array.from(this.operatorGroup.getGroup(groupID).operators.values()).map(operatorInfo => operatorInfo.operator.operatorID)
-    )));
+    ))));
 
 
     // save operators to be deleted and their current positions
     const operatorsAndPositions = new Map<OperatorPredicate, OperatorPosition>();
-    operatorIDs.forEach(operatorID => operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
+    operatorIDsCopy.forEach(operatorID => operatorsAndPositions.set(this.getTexeraGraph().getOperator(operatorID),
       {position: this.getOperatorGroup().getOperatorPositionByGroup(operatorID),
        layer: this.getOperatorGroup().getOperatorLayerByGroup(operatorID)}));
 
@@ -445,12 +445,12 @@ export class WorkflowActionService {
       .forEach(link => linksToDelete.set(link, this.getOperatorGroup().getLinkLayerByGroup(link.linkID)));
     // delete links related to the deleted operator
     this.getTexeraGraph().getAllLinks()
-      .filter(link => operatorIDs.includes(link.source.operatorID) || operatorIDs.includes(link.target.operatorID))
+      .filter(link => operatorIDsCopy.includes(link.source.operatorID) || operatorIDsCopy.includes(link.target.operatorID))
       .forEach(link => linksToDelete.set(link, this.getOperatorGroup().getLinkLayerByGroup(link.linkID)));
 
     // save groups that deleted operators reside in
     const groups = new Map<string, GroupInfo>();
-    operatorIDs.forEach(operatorID => {
+    operatorIDsCopy.forEach(operatorID => {
       const group = cloneDeep(this.getOperatorGroup().getGroupByOperator(operatorID));
       if (group) {
         groups.set(operatorID, {group, layer: this.getJointGraphWrapper().getCellLayer(group.groupID)});
