@@ -19,7 +19,7 @@ import org.apache.lucene.search.IndexSearcher
 
 class KeywordSearchOpExec(val opDesc: KeywordSearchOpDesc) extends FilterOpExec {
   var kw: String = opDesc.keyword
-  this.setFilterFunc(this.findKeywordMMap)
+  this.setFilterFunc(this.findKeyword)
 
   val analyzer = new SimpleAnalyzer()
   //  val analyzer = new StandardAnalyzer
