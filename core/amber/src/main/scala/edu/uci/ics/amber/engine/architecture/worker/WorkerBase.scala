@@ -11,6 +11,7 @@ import edu.uci.ics.amber.engine.common.ElidableStatement
 import akka.actor.{Actor, ActorLogging, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
+import edu.uci.ics.amber.engine.architecture.worker.neo.PauseUtil
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -19,7 +20,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks
 import scala.concurrent.duration._
 
-abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTransferSupport {
+abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTransferSupport with PauseUtil {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   implicit val logAdapter: LoggingAdapter = log
@@ -28,8 +29,8 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTr
   val receivedRecoveryInformation: mutable.HashSet[(Long, Long)] =
     new mutable.HashSet[(Long, Long)]()
 
-  var pausedFlag = false
   var userFixedTuple: ITuple = _
+  var isCompleted = false
   @elidable(INFO) var startTime = 0L
 
   def onInitialization(recoveryInformation: Seq[(Long, Long)]): Unit = {
@@ -55,7 +56,6 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTr
   }
 
   def onPausing(): Unit = {
-    pausedFlag = true
     pauseDataTransfer()
   }
 
@@ -65,28 +65,19 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTr
 
   def onResuming(): Unit = {
     resumeDataTransfer()
-    pausedFlag = false
   }
 
   def onResumed(): Unit = {
     context.parent ! ReportState(WorkerState.Running)
   }
 
-  def onCompleting(): Unit = {
-    endDataTransfer()
-  }
-
   def onCompleted(): Unit = {
+    endDataTransfer()
+    isCompleted = true
+    resume(PauseUtil.Forced)
     context.parent ! ReportState(WorkerState.Completed)
   }
 
-  def onInterrupted(operations: => Unit): Unit = {
-    if (pausedFlag) {
-      //pauseDataTransfer()
-      operations
-      Breaks.break()
-    }
-  }
 
   def onBreakpointTriggered(): Unit = {
     breakpoints.foreach { brk =>
@@ -107,7 +98,6 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash with DataTr
     receivedRecoveryInformation ++= recoveryInformation
     userFixedTuple = null
     receivedFaultedTupleIds.clear()
-    pausedFlag = false
   }
 
   def getResultTuples(): mutable.MutableList[ITuple] = {

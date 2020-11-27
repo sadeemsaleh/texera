@@ -67,12 +67,8 @@ trait DataTransferSupport extends BreakpointSupport {
         needUserFix |= breakpoints(i).needUserFix
         i += 1
       }
-      i = 0
       if (!needUserFix) {
-        while (i < output.length) {
-          output(i).accept(tuple)
-          i += 1
-        }
+        passTupleToDownstream(tuple)
       }
       if (breakpointTriggered) {
         throw new BreakpointException()
@@ -105,6 +101,15 @@ trait DataTransferSupport extends BreakpointSupport {
   def resetOutput(): Unit = {
     output.foreach {
       _.reset()
+    }
+  }
+
+
+  def passTupleToDownstream(tuple:ITuple)(implicit sender: ActorRef): Unit ={
+    var i = 0
+    while (i < output.length) {
+      output(i).accept(tuple)
+      i += 1
     }
   }
 
