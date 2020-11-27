@@ -34,7 +34,7 @@ import { OperatorSchema, OperatorMetadata, GroupInfo } from '../../types/operato
   providers: [
     // uncomment this line for manual testing without opening backend server
     // { provide: OperatorMetadataService, useClass: StubOperatorMetadataService }
-  ]
+  ],
 })
 export class OperatorPanelComponent implements OnInit {
 
@@ -48,6 +48,7 @@ export class OperatorPanelComponent implements OnInit {
   public operatorSearchFormControl = new FormControl();
   // observable emitting the operator search results to MatAutocomplete
   public operatorSearchResults: Observable<OperatorSchema[]>;
+  public operatorSearchHasResults = false;
   // fuzzy search using fuse.js. See parameters in options at https://fusejs.io/
   public fuse = new Fuse([] as ReadonlyArray<OperatorSchema>, {
     shouldSort: true,
@@ -70,10 +71,12 @@ export class OperatorPanelComponent implements OnInit {
     this.operatorSearchResults = (this.operatorSearchFormControl.valueChanges as Observable<string>).pipe(
       map(v => {
         if (v === null || v.trim().length === 0) {
+          this.operatorSearchHasResults = false;
           return [];
         }
         // TODO: remove this cast after we upgrade to Typescript 3
         const results = this.fuse.search(v) as OperatorSchema[];
+        this.operatorSearchHasResults = true;
         return results;
       })
     );

@@ -82,3 +82,9 @@ libraryDependencies += "org.apache.lucene" % "lucene-analyzers-common" % "8.7.0"
 libraryDependencies += "org.apache.lucene" % "lucene-queryparser" % "8.7.0"
 libraryDependencies += "org.apache.lucene" % "lucene-queries" % "8.7.0"
 libraryDependencies += "org.apache.lucene" % "lucene-memory" % "8.7.0"
+
+// https://mvnrepository.com/artifact/mysql/mysql-connector-java
+libraryDependencies += "mysql" % "mysql-connector-java" % "8.0.19"
+
+libraryDependencies += "org.apache.lucene" % "lucene-analyzers-common" % "5.5.0"
+libraryDependencies += "org.apache.lucene" % "lucene-analyzers-smartcn" % "5.5.0"
