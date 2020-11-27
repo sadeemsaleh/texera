@@ -56,7 +56,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
   override def onCompleted(): Unit = {
     super.onCompleted()
     ElidableStatement.info {
-      val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+      val (_, outputCount) = dataProcessor.collectStatistics()
       log.info(
         "completed its job. total: {} ms, generating: {} ms, generated {} tuples",
         (System.nanoTime() - startTime) / 1000000,
@@ -67,9 +67,9 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
   }
 
   override def onPaused(): Unit = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (inputCount, outputCount) = dataProcessor.collectStatistics()
     log.info(s"paused at $outputCount , 0")
-    context.parent ! ReportCurrentProcessingTuple(self.path, tuple)
+    context.parent ! ReportCurrentProcessingTuple(self.path, dataProcessor.getCurrentInputTuple)
     context.parent ! RecoveryPacket(tag, outputCount, 0)
     context.parent ! ReportState(WorkerState.Paused)
   }
@@ -83,12 +83,12 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
   }
 
   override def getInputRowCount(): Long = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (inputCount, _) = dataProcessor.collectStatistics()
     inputCount
   }
 
   override def getOutputRowCount(): Long = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (_, outputCount) = dataProcessor.collectStatistics()
     outputCount
   }
 

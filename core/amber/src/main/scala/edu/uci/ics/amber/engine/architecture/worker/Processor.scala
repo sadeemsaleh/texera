@@ -174,9 +174,9 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   }
 
   override def onPaused(): Unit = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (inputCount, outputCount) = dataProcessor.collectStatistics()
     log.info(s"paused at $inputCount , $outputCount")
-    context.parent ! ReportCurrentProcessingTuple(self.path, tuple)
+    context.parent ! ReportCurrentProcessingTuple(self.path, dataProcessor.getCurrentInputTuple)
     context.parent ! RecoveryPacket(tag, inputCount, outputCount)
     context.parent ! ReportState(WorkerState.Paused)
   }
@@ -195,12 +195,12 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   }
 
   override def getInputRowCount(): Long = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (inputCount, _) = dataProcessor.collectStatistics()
     inputCount
   }
 
   override def getOutputRowCount(): Long = {
-    val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+    val (_, outputCount) = dataProcessor.collectStatistics()
     outputCount
   }
 
@@ -276,7 +276,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       sender ! Ack
       //val json: JsValue = Json.parse(newLogic)
       // val operatorType = json("operatorID").as[String]
-      val (tuple, inputCount, outputCount) = dataProcessor.collectStatistics()
+      val (inputCount, outputCount) = dataProcessor.collectStatistics()
       savedModifyLogic.enqueue((inputCount, outputCount, newMetadata))
       log.info("modify logic received by worker " + this.self.path.name + ", updating logic")
 //      newMetadata match {

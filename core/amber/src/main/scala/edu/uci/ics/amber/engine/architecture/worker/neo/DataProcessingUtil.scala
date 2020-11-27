@@ -39,7 +39,7 @@ trait DataProcessingUtil {
 
     // initialize dp thread upon construction
     // we can use dpThreadFuture to kill dp thread if needed
-    val dpThreadFuture: Future[_] = executorService.submit(funToRunnable(
+    private val dpThreadFuture: Future[_] = executorService.submit(funToRunnable(
       () => {
         try {
           this.dpThread()
@@ -49,6 +49,22 @@ trait DataProcessingUtil {
         }
       }))
 
+
+    /** provide API for actor to get stats of this operator
+      * @return (input tuple count, output tuple count)
+      */
+    def collectStatistics():(Long,Long) = (inputTupleCount, outputTupleCount)
+
+    /** provide API for actor to get current input tuple of this operator
+      * @return current input tuple if it exists
+      */
+    def getCurrentInputTuple: ITuple = {
+      if(currentInputTuple != null && currentInputTuple.isLeft){
+        currentInputTuple.left.get
+      }else{
+        null
+      }
+    }
 
     /** process currentInputTuple through operator logic.
       * @return an iterator of output tuples
@@ -134,12 +150,5 @@ trait DataProcessingUtil {
       self ! LocalBreakpointTriggered // TODO: apply FIFO & exactly-once protocol here
     }
 
-    /** provide API for actor to get stats of this operator
-      * @return (current input tuple, input tuple count, output tuple count)
-      */
-    def collectStatistics():(ITuple,Long,Long) = {
-      val tuple = if(currentInputTuple != null && currentInputTuple.isLeft) currentInputTuple.left.get else null
-      (tuple, inputTupleCount, outputTupleCount)
-    }
   }
 }
