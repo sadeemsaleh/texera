@@ -170,6 +170,11 @@ export class ExecuteWorkflowService {
     }, FORM_DEBOUNCE_TIME_MS);
     this.updateExecutionState({ state: ExecutionState.WaitingToRun });
     this.setExecutionTimeout('submit workflow timeout', ExecutionState.Running, ExecutionState.Failed);
+
+    // add flag for new execution of workflow
+    // so when next time the result panel is displayed, it will use new data
+    // instead of those stored in the session storage
+    sessionStorage.setItem('newWorkflowExecuted', 'true');
   }
 
   public pauseWorkflow(): void {

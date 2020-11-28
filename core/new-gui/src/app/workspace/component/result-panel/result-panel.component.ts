@@ -109,6 +109,14 @@ export class ResultPanelComponent {
         this.resultPanelToggleService.openResultPanel();
       }
     });
+
+    // clear session storage for refresh
+    sessionStorage.removeItem('newWorkflowExecuted');
+    sessionStorage.removeItem('currentResult');
+    sessionStorage.removeItem('currentPageIndex');
+    sessionStorage.removeItem('currentPageSize');
+    sessionStorage.removeItem('total');
+    sessionStorage.removeItem('columnKeys');
   }
 
   public displayResultPanel(): void {
@@ -170,6 +178,15 @@ export class ResultPanelComponent {
   }
 
   public clearResultPanel(): void {
+    // store result into session storage so that they could be restored
+    //   when user click the "view result" operator again
+    if (sessionStorage.getItem('newWorkflowExecuted') === 'false' && this.currentResult.length > 0) {
+      sessionStorage.setItem('currentResult', JSON.stringify(this.currentResult));
+      sessionStorage.setItem('currentPageIndex', JSON.stringify(this.currentPageIndex));
+      sessionStorage.setItem('currentPageSize', JSON.stringify(this.currentPageSize));
+      sessionStorage.setItem('total', JSON.stringify(this.total));
+    }
+
     this.errorMessages = undefined;
 
     this.currentColumns = undefined;
@@ -295,6 +312,23 @@ export class ResultPanelComponent {
       return;
     }
 
+    // if there is no new result
+    //   then restore the previous paginated result data from session storage
+    if (sessionStorage.getItem('newWorkflowExecuted') === 'false') {
+      this.isFrontPagination = false;
+      this.currentResult = JSON.parse(sessionStorage.getItem('currentResult') ?? '[]');
+      this.currentPageIndex = JSON.parse(sessionStorage.getItem('currentPageIndex') ?? '1');
+      this.currentPageSize = JSON.parse(sessionStorage.getItem('currentPageSize') ?? '10');
+      this.total = JSON.parse(sessionStorage.getItem('total') ?? '0');
+
+      const columnKeys1 = JSON.parse(sessionStorage.getItem('columnKeys') ?? '[]') as string[];
+      this.currentDisplayColumns = columnKeys1;
+      const columns1 = columnKeys1.map(v => ({columnKey: v, columnText: v}));
+      // generate columnDef from first row, column definition is in order
+      this.currentColumns = ResultPanelComponent.generateColumns(columns1);
+
+      return;
+    }
     // creates a shallow copy of the readonly response.result,
     //  this copy will be has type object[] because MatTableDataSource's input needs to be object[]
 
@@ -318,12 +352,19 @@ export class ResultPanelComponent {
 
     // generate columnDef from first row, column definition is in order
     this.currentColumns = ResultPanelComponent.generateColumns(columns);
-    
     this.total = totalRowCount ?? resultData.length;
 
     // get the current page size, if the result length is less than `this.currentPageSize`,
     //  then the maximum number of items each page will be the length of the result, otherwise `this.currentPageSize`.
     this.currentPageSize = Math.min(this.total, this.currentPageSize);
+
+    // save paginated result into session storage
+    sessionStorage.setItem('newWorkflowExecuted', 'false');
+    sessionStorage.setItem('currentResult', JSON.stringify(this.currentResult));
+    sessionStorage.setItem('currentPageIndex', JSON.stringify(this.currentPageIndex));
+    sessionStorage.setItem('currentPageSize', JSON.stringify(this.currentPageSize));
+    sessionStorage.setItem('total', JSON.stringify(this.total));
+    sessionStorage.setItem('columnKeys', JSON.stringify(columnKeys));
   }
 
   /**
