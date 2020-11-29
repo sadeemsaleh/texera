@@ -14,7 +14,7 @@ class RegexOpExec(val opDesc: RegexOpDesc) extends FilterOpExec {
   def matchRegex(tuple: Tuple): Boolean = {
     val tupleValue = Option[Any](tuple.getField(opDesc.attribute)).map(x => x.toString)
     if (tupleValue.isEmpty)
-      true
+      false
     else
       pattern.matcher(tupleValue.get).find
   }
