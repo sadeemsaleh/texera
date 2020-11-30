@@ -39,7 +39,11 @@ if (environment.userSystemEnabled) {
 
   routes.push(
     {
-      path: 'dashboard',
+      path: 'workflow/:id',
+    component: WorkspaceComponent
+  },
+  {
+    path: 'dashboard',
       component: DashboardComponent,
       children: [
         {

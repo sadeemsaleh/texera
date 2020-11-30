@@ -30,6 +30,10 @@ export class WorkflowPersistService {
       .pipe(map(WorkflowPersistService.parseWorkflowInfo));
   }
 
+  public getWorkflow(workflowID: string): Observable<Workflow> {
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`);
+  }
+
   public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
     return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
       .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));

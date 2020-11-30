@@ -67,19 +67,15 @@ export class WorkspaceComponent implements OnInit {
   ngOnInit(): void {
     // check if workflow id is present in the url
     if (this.route.snapshot.params.id) {
-      this.workflowPersistService.retrieveWorkflow(this.route.snapshot.params.id).subscribe(
+      this.workflowPersistService.getWorkflow(this.route.snapshot.params.id).subscribe(
         (workflow: Workflow) => {
-          this.cacheWorkflowService.cacheWorkflow(workflow);
-          this.currentWorkflowName = workflow.name;
+          this.cacheWorkflowService.setCachedWorkflowName(workflow.name);
+          this.cacheWorkflowService.setCachedWorkflowId(workflow.wid.toString());
+          this.cacheWorkflowService.setCachedWorkflow(workflow.content);
           this.cacheWorkflowService.loadWorkflow();
-        },
-        error => {
-          alert('You don\'t have access to this workflow, please log in with another account');
         }
       );
     }
-    this.currentWorkflowName = this.cacheWorkflowService.getCachedWorkflowName();
   }
-
 
 }
