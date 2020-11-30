@@ -15,7 +15,7 @@ export class WorkflowPersistService {
   constructor(public http: HttpClient) {
   }
 
-  public saveWorkflow(savedWorkflow: string, workflowName: string, workflowID: string | null): Observable<Workflow> {
+  public persistWorkflow(cachedWorkflow: string, workflowName: string, workflowID: string | null): Observable<Workflow> {
     const formData: FormData = new FormData();
     // TODO: change to use CacheWorkflowService.
 
@@ -23,8 +23,12 @@ export class WorkflowPersistService {
       formData.append('wfId', workflowID);
     }
     formData.append('name', workflowName);
-    formData.append('content', savedWorkflow);
+    formData.append('content', cachedWorkflow);
     return this.http.post<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/save-workflow`, formData);
+  }
+
+  public getWorkflow(workflowID: string): Observable<Workflow> {
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`);
   }
 
   public getSavedWorkflows(): Observable<Workflow[]> {

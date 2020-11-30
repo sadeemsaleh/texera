@@ -271,7 +271,7 @@ export class NavigationComponent implements OnInit {
       if (cachedWorkflow != null) {
         this.isSaving = true;
         const id = this.cachedWorkflowService.getCachedWorkflowID();
-        this.workflowPersistService.saveWorkflow(cachedWorkflow, this.currentWorkflowName, id).subscribe(
+        this.workflowPersistService.persistWorkflow(cachedWorkflow, this.currentWorkflowName, id).subscribe(
           (workflow: Workflow) => {
             this.cachedWorkflowService.setCachedWorkflowId(JSON.stringify(workflow?.wid));
           }).add(() => {
