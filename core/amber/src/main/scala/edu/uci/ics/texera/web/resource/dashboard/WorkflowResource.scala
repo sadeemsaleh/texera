@@ -3,10 +3,10 @@ package edu.uci.ics.texera.web.resource.dashboard
 import java.util
 
 import edu.uci.ics.texera.web.SqlServer
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{WORKFLOW, WORKFLOW_OF_USER}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao}
+import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Workflow, WorkflowOfUser}
 import edu.uci.ics.texera.web.resource.auth.UserResource
-import edu.uci.ics.texera.workflow.jooq.generated.Tables.{WORKFLOW, WORKFLOW_OF_USER}
-import edu.uci.ics.texera.workflow.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao}
-import edu.uci.ics.texera.workflow.jooq.generated.tables.pojos.{Workflow, WorkflowOfUser}
 import io.dropwizard.jersey.sessions.Session
 import javax.servlet.http.HttpSession
 import javax.ws.rs._
