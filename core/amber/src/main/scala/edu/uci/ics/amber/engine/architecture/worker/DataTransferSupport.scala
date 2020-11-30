@@ -13,7 +13,7 @@ import scala.collection.mutable
 import scala.concurrent.ExecutionContext
 import scala.util.control.Breaks
 
-trait DataTransferSupport extends BreakpointSupport {
+class DataTransferSupport(val sender: ActorRef) extends BreakpointSupport {
   var output = new Array[DataTransferPolicy](0)
   var skippedInputTuples = new mutable.HashSet[ITuple]
   var skippedOutputTuples = new mutable.HashSet[ITuple]
@@ -26,23 +26,23 @@ trait DataTransferSupport extends BreakpointSupport {
     }
   }
 
-  def resumeDataTransfer()(implicit sender: ActorRef): Unit = {
+  def resumeDataTransfer(): Unit = {
     var i = 0
     while (i < output.length) {
-      output(i).resume()
+      output(i).resume()(sender)
       i += 1
     }
   }
 
-  def endDataTransfer()(implicit sender: ActorRef): Unit = {
+  def endDataTransfer(): Unit = {
     var i = 0
     while (i < output.length) {
-      output(i).noMore()
+      output(i).noMore()(sender)
       i += 1
     }
   }
 
-  def cleanUpDataTransfer()(implicit sender: ActorRef): Unit = {
+  def cleanUpDataTransfer(): Unit = {
     var i = 0
     while (i < output.length) {
       output(i).dispose()
@@ -52,7 +52,7 @@ trait DataTransferSupport extends BreakpointSupport {
     output = Array()
   }
 
-  def transferTuple(tuple: ITuple, tupleId: Long)(implicit sender: ActorRef): Unit = {
+  def transferTuple(tuple: ITuple, tupleId: Long): Unit = {
     if (tuple != null && !skippedOutputTuples.contains(tuple)) {
       var i = 1
       var breakpointTriggered = false
@@ -105,10 +105,10 @@ trait DataTransferSupport extends BreakpointSupport {
   }
 
 
-  def passTupleToDownstream(tuple:ITuple)(implicit sender: ActorRef): Unit ={
+  def passTupleToDownstream(tuple:ITuple): Unit ={
     var i = 0
     while (i < output.length) {
-      output(i).accept(tuple)
+      output(i).accept(tuple)(sender)
       i += 1
     }
   }

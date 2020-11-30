@@ -20,7 +20,8 @@ import akka.event.LoggingAdapter
 import akka.pattern.ask
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
-import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInputUtil, TupleInputUtil, TupleOutputUtil, DataProcessingUtil, PauseUtil}
+import com.softwaremill.macwire.wire
+import edu.uci.ics.amber.engine.architecture.worker.neo.{DataProcessor, PauseUtil}
 import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.mutable
@@ -34,12 +35,7 @@ object Processor {
   def props(processor: IOperatorExecutor, tag: WorkerTag): Props = Props(new Processor(processor, tag))
 }
 
-class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends WorkerBase
-  with TupleInputUtil
-  with TupleOutputUtil
-  with DataProcessingUtil
-  with PauseUtil
-  with BatchInputUtil{
+class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends WorkerBase {
 
   val input = new FIFOAccessPort()
   val aliveUpstreams = new mutable.HashSet[LayerTag]
@@ -59,8 +55,8 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       savedModifyLogic.dequeue()
     }
     input.reset()
-    resetBreakpoints()
-    resetOutput()
+    dataProcessor.resetBreakpoints()
+    tupleOutput.resetOutput()
     context.become(ready)
     if (receivedRecoveryInformation.contains((0, 0))) {
       self ! Pause
@@ -69,7 +65,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
 
   override def onResuming(): Unit = {
     super.onResuming()
-    resume(PauseUtil.User)
+    pauseUtil.resume(PauseUtil.User)
   }
 
   override def onSkipTuple(faultedTuple: FaultedTuple): Unit = {
@@ -84,8 +80,8 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   override def onResumeTuple(faultedTuple: FaultedTuple): Unit = {
     if (!faultedTuple.isInput) {
       var i = 0
-      while (i < output.length) {
-        output(i).accept(faultedTuple.tuple)
+      while (i < tupleOutput.output.length) {
+        tupleOutput.output(i).accept(faultedTuple.tuple)
         i += 1
       }
     } else {
@@ -183,7 +179,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
 
   override def onPausing(): Unit = {
     super.onPausing()
-    pause(PauseUtil.User)
+    pauseUtil.pause(PauseUtil.User)
     context.become(paused)
     unstashAll()
     onPaused()

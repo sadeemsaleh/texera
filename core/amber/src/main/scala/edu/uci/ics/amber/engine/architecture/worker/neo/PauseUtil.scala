@@ -20,7 +20,7 @@ object PauseUtil{
   final val Forced = 9999
 }
 
-trait PauseUtil {
+class PauseUtil {
 
   // current pause privilege level
   var pausePrivilegeLevel: Int = PauseUtil.NoPause

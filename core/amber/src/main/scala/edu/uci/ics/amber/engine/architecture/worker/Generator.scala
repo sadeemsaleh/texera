@@ -15,13 +15,11 @@ import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
 import akka.actor.{ActorLogging, Props, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
-import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInputUtil, TupleInputUtil, TupleOutputUtil, DataProcessingUtil, PauseUtil}
+import com.softwaremill.macwire.wire
+import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInput, DataProcessor, PauseUtil, TupleInput, TupleOutput}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.util.control.Breaks
-import scala.concurrent.duration._
 
 object Generator {
   def props(producer: ISourceOperatorExecutor, tag: WorkerTag): Props = Props(new Generator(producer, tag))
@@ -30,7 +28,7 @@ object Generator {
 class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
     extends WorkerBase
     with ActorLogging
-    with Stash with TupleInputUtil with TupleOutputUtil with DataProcessingUtil with PauseUtil with BatchInputUtil {
+    with Stash{
 
   //insert a SPECIAL case for generator
   batchInput.inputMap(LayerTag("","","")) = 0
@@ -42,15 +40,15 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
     super.onReset(value, recoveryInformation)
     operator = value.asInstanceOf[ISourceOperatorExecutor]
     operator.open()
-    resetBreakpoints()
-    resetOutput()
+    dataProcessor.resetBreakpoints()
+    tupleOutput.resetOutput()
     context.become(ready)
     self ! Start
   }
 
   override def onResuming(): Unit = {
     super.onResuming()
-    resume(PauseUtil.User)
+    pauseUtil.resume(PauseUtil.User)
   }
 
   override def onCompleted(): Unit = {
@@ -76,8 +74,8 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onResumeTuple(faultedTuple: FaultedTuple): Unit = {
     var i = 0
-    while (i < output.length) {
-      output(i).accept(faultedTuple.tuple)
+    while (i < tupleOutput.output.length) {
+      tupleOutput.output(i).accept(faultedTuple.tuple)
       i += 1
     }
   }
@@ -98,7 +96,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onPausing(): Unit = {
     super.onPausing()
-    pause(PauseUtil.User)
+    pauseUtil.pause(PauseUtil.User)
     onPaused()
     context.become(paused)
     unstashAll()
