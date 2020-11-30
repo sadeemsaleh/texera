@@ -14,9 +14,14 @@ import { Workflow } from '../../../../../common/type/workflow';
   styleUrls: ['./ngbd-modal-delete-workflow.component.scss', '../../../dashboard.component.scss']
 })
 export class NgbdModalDeleteWorkflowComponent {
-
-  // TODO: rewrite this.
-  @Input() workflow: { name: string } = {name: 'name'};
+  defaultSavedWorkflow: Workflow = {
+    wid: 0,
+    name: '',
+    content: '',
+    creationTime: 0,
+    lastModifiedTime: 0
+  };
+  @Input() workflow: Workflow = this.defaultSavedWorkflow;
 
   constructor(public activeModal: NgbActiveModal) {
   }
