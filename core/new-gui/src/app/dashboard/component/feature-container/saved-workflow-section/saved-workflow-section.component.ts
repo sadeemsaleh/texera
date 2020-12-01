@@ -117,8 +117,6 @@ export class SavedWorkflowSectionComponent implements OnInit {
   }
 
   jumpToWorkflow(workflow: Workflow) {
-    // TODO: change this to pass by URL.
-    this.storageService.setItem('workflow', workflow);
-    this.router.navigate(['/']).then(null);
+    this.router.navigate([`/workflow/${workflow.wid}`]).then(null);
   }
 }
