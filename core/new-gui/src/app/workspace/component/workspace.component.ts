@@ -69,9 +69,8 @@ export class WorkspaceComponent implements OnInit {
     if (this.route.snapshot.params.id) {
       this.workflowPersistService.getWorkflow(this.route.snapshot.params.id).subscribe(
         (workflow: Workflow) => {
-          this.cacheWorkflowService.setCachedWorkflowName(workflow.name);
-          this.cacheWorkflowService.setCachedWorkflowId(workflow.wid);
           this.cacheWorkflowService.cacheWorkflow(workflow);
+          this.currentWorkflowName = workflow.name;
           this.cacheWorkflowService.loadWorkflow();
         },
         error => {
@@ -79,6 +78,8 @@ export class WorkspaceComponent implements OnInit {
         }
       );
     }
+    this.workflowFetched = true;
   }
+
 
 }
