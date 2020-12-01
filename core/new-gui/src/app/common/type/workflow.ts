@@ -21,15 +21,15 @@ export interface WorkflowInfo {
 export interface Workflow {
   name: string;
   wid: number;
-  content: WorkflowInfo;
+  content: WorkflowInfo | string;
   creationTime: number;
   lastModifiedTime: number;
 }
 
 export function parseWorkflowInfo(workflow: Workflow) {
-
-    // @ts-ignore
+  if (typeof workflow.content === 'string') {
     workflow.content = <WorkflowInfo>JSON.parse(workflow.content);
+  }
   return workflow;
 }
 
