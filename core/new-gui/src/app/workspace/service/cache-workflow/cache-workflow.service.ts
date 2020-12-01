@@ -7,8 +7,6 @@ import { WorkflowInfo, Workflow } from '../../../common/type/workflow';
 import { StorageService } from '../../../common/service/storage.service';
 
 
-
-
 /**
  *  CacheWorkflowService is responsible for saving the existing workflow and
  *  reloading back to the JointJS paper when the browser refreshes.
@@ -176,7 +174,7 @@ export class CacheWorkflowService {
 
   public setCachedWorkflowName(name: string) {
 
-    const workflow = this.storageService.getItem<Workflow>( CacheWorkflowService.LOCAL_STORAGE_KEY);
+    const workflow = this.storageService.getItem<Workflow>(CacheWorkflowService.LOCAL_STORAGE_KEY);
     if (workflow != null) {
       workflow.name = name;
       this.cacheWorkflow(workflow);

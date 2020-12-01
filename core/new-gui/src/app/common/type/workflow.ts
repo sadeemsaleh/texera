@@ -26,6 +26,13 @@ export interface Workflow {
   lastModifiedTime: number;
 }
 
+export function parseWorkflowInfo(workflow: Workflow) {
+
+    // @ts-ignore
+    workflow.content = <WorkflowInfo>JSON.parse(workflow.content);
+  return workflow;
+}
+
 export interface WorkflowWebResponse extends Readonly<{
   code: 0; // 0 represents success and 1 represents error
   message: string;
