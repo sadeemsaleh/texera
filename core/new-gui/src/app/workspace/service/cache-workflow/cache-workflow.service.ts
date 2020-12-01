@@ -7,8 +7,6 @@ import { WorkflowInfo, Workflow } from '../../../common/type/workflow';
 import { localGetObject, localSetObject } from '../../../common/util/storage';
 
 
-
-
 /**
  *  CacheWorkflowService is responsible for saving the existing workflow and
  *  reloading back to the JointJS paper when the browser refreshes.

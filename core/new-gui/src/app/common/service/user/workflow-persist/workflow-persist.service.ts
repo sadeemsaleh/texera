@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AppSettings } from '../../../app-setting';
-import { WorkflowInfo, Workflow } from '../../../type/workflow';
+import { WorkflowInfo, Workflow, parseWorkflowInfo } from '../../../type/workflow';
 import { Observable } from 'rxjs/Observable';;
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
@@ -31,7 +31,7 @@ export class WorkflowPersistService {
   }
 
   public getWorkflow(workflowID: string): Observable<Workflow> {
-    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`);
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`).pipe(map(parseWorkflowInfo));
   }
 
   public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {

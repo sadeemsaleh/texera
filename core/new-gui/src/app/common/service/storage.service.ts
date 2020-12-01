@@ -24,8 +24,6 @@ export class StorageService {
     } catch (error) {
       obj = null;
     }
-    console.log('obj:', obj);
-
     return obj;
   }
 }
