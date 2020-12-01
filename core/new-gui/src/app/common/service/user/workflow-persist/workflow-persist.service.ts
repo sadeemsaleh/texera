@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AppSettings } from '../../../app-setting';
 import { WorkflowInfo, Workflow } from '../../../type/workflow';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs/Observable';;
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
 

@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { Workflow } from '../../../../common/type/workflow';
 import { Router } from '@angular/router';
 import { WorkflowPersistService } from '../../../../common/service/user/workflow-persist/workflow-persist.service';
+import { StorageService } from '../../../../common/service/storage.service';
 
 /**
  * SavedProjectSectionComponent is the main interface for
@@ -30,7 +31,8 @@ export class SavedWorkflowSectionComponent implements OnInit {
   constructor(
     private workflowPersistService: WorkflowPersistService,
     private modalService: NgbModal,
-    private router: Router
+    private router: Router,
+    private storageService: StorageService
   ) {
   }
 
