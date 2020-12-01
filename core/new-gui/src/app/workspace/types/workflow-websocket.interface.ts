@@ -46,7 +46,7 @@ export type OperatorCurrentTuples = Readonly<{
   tuples: ReadonlyArray<WorkerTuples>
 }>;
 
-type PagtinatedResultEvent = Readonly<{
+type PaginatedResultEvent = Readonly<{
   paginatedResults: ReadonlyArray<{
     operatorID: string,
     table: ReadonlyArray<object>,
@@ -78,7 +78,7 @@ export type TexeraWebsocketEventTypeMap = {
   'BreakpointTriggeredEvent': BreakpointTriggerInfo,
   'ModifyLogicCompletedEvent': {},
   'OperatorCurrentTuplesUpdateEvent': OperatorCurrentTuples,
-  'PaginatedResultEvent': PagtinatedResultEvent
+  'PaginatedResultEvent': PaginatedResultEvent
 };
 
 // helper type definitions to generate the request and event types
