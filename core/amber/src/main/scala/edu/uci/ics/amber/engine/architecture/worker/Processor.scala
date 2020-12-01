@@ -21,7 +21,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.github.nscala_time.time.Imports._
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{DataProcessor, PauseUtil}
+import edu.uci.ics.amber.engine.architecture.worker.neo.{DataProcessor, PauseControl}
 import play.api.libs.json.{JsValue, Json}
 
 import scala.collection.mutable
@@ -65,7 +65,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
 
   override def onResuming(): Unit = {
     super.onResuming()
-    pauseUtil.resume(PauseUtil.User)
+    pauseControl.resume(PauseControl.User)
   }
 
   override def onSkipTuple(faultedTuple: FaultedTuple): Unit = {
@@ -143,7 +143,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
           for (i <- batches)
-            batchInput.consumeBatch((currentEdge, i))
+            batchInput.addBatch((currentEdge, i))
       case None =>
     }
   }
@@ -151,7 +151,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   def onSaveEndSending(seq: Long): Unit = {
     if (input.registerEnd(sender, seq)) {
         val currentEdge: LayerTag = input.actorToEdge(sender)
-        batchInput.consumeBatch((currentEdge, null))
+        batchInput.addBatch((currentEdge, null))
     }
   }
 
@@ -164,7 +164,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
           for (i <- batches)
-            batchInput.consumeBatch((currentEdge, i))
+            batchInput.addBatch((currentEdge, i))
       case None =>
     }
   }
@@ -179,7 +179,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
 
   override def onPausing(): Unit = {
     super.onPausing()
-    pauseUtil.pause(PauseUtil.User)
+    pauseControl.pause(PauseControl.User)
     context.become(paused)
     unstashAll()
     onPaused()

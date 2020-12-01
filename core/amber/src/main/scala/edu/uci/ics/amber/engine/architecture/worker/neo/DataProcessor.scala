@@ -11,19 +11,13 @@ import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage.ExecutionCompl
 import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 
-
-class DataProcessor(                             // dependencies:
-                     operator: IOperatorExecutor,// core logic
-                     tupleInput: TupleInput,     // to get input tuples
-                     tupleOutput: TupleOutput,   // to send output tuples
-                     pauseUtil: PauseUtil,       // to pause/resume
-                     self:ActorRef               // to notify main actor
-                   ) extends BreakpointSupport { // TODO: make breakpointSupport as a module
-
-  private[this] def funToRunnable(fun: () => Unit): Runnable = new Runnable() { def run(): Unit = fun() }
-
-  // dp thread
-  private val executorService: ExecutorService = Executors.newSingleThreadExecutor
+class DataProcessor( // dependencies:
+                     operator: IOperatorExecutor, // core logic
+                     tupleInput: TupleInput, // to get input tuples
+                     tupleOutput: TupleOutput, // to send output tuples
+                     pauseControl: PauseControl, // to pause/resume
+                     self: ActorRef // to notify main actor
+) extends BreakpointSupport { // TODO: make breakpointSupport as a module
 
   // dp thread stats:
   private var inputTupleCount = 0L
@@ -32,69 +26,72 @@ class DataProcessor(                             // dependencies:
 
   // initialize dp thread upon construction
   // we can use dpThreadFuture to kill dp thread if needed
-  private val dpThreadFuture: Future[_] = executorService.submit(funToRunnable(
-    () => {
-      try {
-        this.dpThread()
-      } catch {
-        case e: Exception =>
-          throw new RuntimeException(e)
+  private val dpThreadFuture: Future[_] = Executors.newSingleThreadExecutor.submit(new Runnable() {
+    def run(): Unit =
+      () => {
+        try {
+          dpThread()
+        } catch {
+          case e: Exception =>
+            throw new RuntimeException(e)
+        }
       }
-    }))
-
+  })
 
   /** provide API for actor to get stats of this operator
     * @return (input tuple count, output tuple count)
     */
-  def collectStatistics():(Long,Long) = (inputTupleCount, outputTupleCount)
+  def collectStatistics(): (Long, Long) = (inputTupleCount, outputTupleCount)
 
   /** provide API for actor to get current input tuple of this operator
     * @return current input tuple if it exists
     */
   def getCurrentInputTuple: ITuple = {
-    if(currentInputTuple != null && currentInputTuple.isLeft){
+    if (currentInputTuple != null && currentInputTuple.isLeft) {
       currentInputTuple.left.get
-    }else{
+    } else {
       null
     }
   }
 
   /** process currentInputTuple through operator logic.
+    * this function is only called by the DP thread
     * @return an iterator of output tuples
     */
-  private[this] def consumeOneTuple(): Iterator[ITuple] = {
-    var outputIterator:Iterator[ITuple] = null
-    try{
+  private[this] def processCurrentInputTuple(): Iterator[ITuple] = {
+    var outputIterator: Iterator[ITuple] = null
+    try {
       outputIterator = operator.processTuple(currentInputTuple, tupleInput.getCurrentInput)
-      if(currentInputTuple.isLeft) inputTupleCount += 1
-    }catch{
-      case e:Exception =>
+      if (currentInputTuple.isLeft) inputTupleCount += 1
+    } catch {
+      case e: Exception =>
         handleOperatorException(e, isInput = true)
     }
     outputIterator
   }
 
   /** transfer one tuple from iterator to downstream.
+    * this function is only called by the DP thread
     * @param outputIterator
     */
-  private[this] def outputOneTuple(outputIterator:Iterator[ITuple]): Unit = {
+  private[this] def outputOneTuple(outputIterator: Iterator[ITuple]): Unit = {
     var outputTuple: ITuple = null
-    try{
+    try {
       outputTuple = outputIterator.next
-    }catch{
-      case e:Exception =>
+    } catch {
+      case e: Exception =>
         handleOperatorException(e, isInput = true)
     }
-    if (outputTuple != null){
-      try{
+    if (outputTuple != null) {
+      try {
         outputTupleCount += 1
         tupleOutput.transferTuple(outputTuple, outputTupleCount)
-      }catch{
-        case bp:BreakpointException =>
-          pauseUtil.pause(PauseUtil.Breakpoint)
+      } catch {
+        case bp: BreakpointException =>
+          pauseControl.pause(PauseControl.Breakpoint)
           self ! LocalBreakpointTriggered // TODO: apply FIFO & exactly-once protocol here
         case e: Exception =>
-          handleOperatorException(e,isInput = false)
+          handleOperatorException(e, isInput = false)
       }
     }
   }
@@ -109,36 +106,38 @@ class DataProcessor(                             // dependencies:
       // take the next input tuple from tupleInput, blocks if no tuple available.
       currentInputTuple = tupleInput.nextInputTuple()
       // check pause before processing the input tuple.
-      pauseUtil.pauseCheck()
+      pauseControl.pauseCheck()
       // pass input tuple to operator logic.
-      val outputIterator = consumeOneTuple()
+      val outputIterator = processCurrentInputTuple()
       // check pause before outputting tuples.
-      pauseUtil.pauseCheck()
+      pauseControl.pauseCheck()
       // output loop: take one tuple from iterator at a time.
       while (outputIterator != null && outputIterator.hasNext) {
         // send tuple to downstream.
         outputOneTuple(outputIterator)
         // check pause after one tuple has been outputted.
-        pauseUtil.pauseCheck()
+        pauseControl.pauseCheck()
       }
     }
     // Send Completed signal to worker actor.
     self ! ExecutionCompleted // TODO: apply FIFO & exactly-once protocol here
   }
 
-
   // For compatibility, we use old breakpoint handling logic
   // TODO: remove this when we refactor breakpoints
-  private[this] def assignExceptionBreakpoint(faultedTuple:ITuple, e:Exception, isInput:Boolean): Unit ={
+  private[this] def assignExceptionBreakpoint(
+      faultedTuple: ITuple,
+      e: Exception,
+      isInput: Boolean
+  ): Unit = {
     breakpoints(0).triggeredTuple = faultedTuple
     breakpoints(0).asInstanceOf[ExceptionBreakpoint].error = e
     breakpoints(0).triggeredTupleId = outputTupleCount
     breakpoints(0).isInput = isInput
   }
 
-
-  private[this] def handleOperatorException(e:Exception, isInput:Boolean): Unit ={
-    pauseUtil.pause(PauseUtil.Breakpoint)
+  private[this] def handleOperatorException(e: Exception, isInput: Boolean): Unit = {
+    pauseControl.pause(PauseControl.Breakpoint)
     assignExceptionBreakpoint(currentInputTuple.left.getOrElse(null), e, isInput)
     self ! LocalBreakpointTriggered // TODO: apply FIFO & exactly-once protocol here
   }

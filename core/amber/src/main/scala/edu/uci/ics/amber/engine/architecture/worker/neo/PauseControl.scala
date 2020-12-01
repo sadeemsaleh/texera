@@ -2,7 +2,7 @@ package edu.uci.ics.amber.engine.architecture.worker.neo
 
 import java.util.concurrent.CompletableFuture
 
-object PauseUtil{
+object PauseControl{
   // TODO: check if this is necessary
   // I want to introduce pause privileges so that stronger pause can override weak pause
   // suppose:
@@ -20,10 +20,10 @@ object PauseUtil{
   final val Forced = 9999
 }
 
-class PauseUtil {
+class PauseControl {
 
   // current pause privilege level
-  var pausePrivilegeLevel: Int = PauseUtil.NoPause
+  var pausePrivilegeLevel: Int = PauseControl.NoPause
   // yielded control of the dp thread
   var currentFuture: CompletableFuture[Void] = _
 
@@ -40,7 +40,7 @@ class PauseUtil {
     }
   }
 
-  /** resume functionality (not synchronized)
+  /** resume functionality (synchronized)
     * only actor calls this function for now
     * @param level
     */
@@ -49,26 +49,35 @@ class PauseUtil {
       return
     }
     // only privilege level >= current pause privilege level can resume the worker
-    pausePrivilegeLevel = PauseUtil.NoPause
-    // If dp thread suspended, release it
-    if (this.currentFuture != null) {
-      this.currentFuture.complete(null)
-      this.currentFuture = null
-    }
+    pausePrivilegeLevel = PauseControl.NoPause
+    unblockDPThread()
   }
 
-  /** check for pause in dp thread
+  /** check for pause in dp thread (synchronized)
     * only dp thread and operator logic can call this function
     * @throws
     */
   @throws[Exception]
   def pauseCheck(): Unit = {
     // returns if not paused
-    if (this.pausePrivilegeLevel == PauseUtil.NoPause) return
+    if (this.pausePrivilegeLevel == PauseControl.NoPause) return
+    blockDPThread()
+  }
+
+
+  def blockDPThread():Unit = {
     // create a future and wait for its completion
     this.currentFuture = new CompletableFuture[Void]
     // thread blocks here
     this.currentFuture.get
+  }
+
+  def unblockDPThread():Unit = {
+    // If dp thread suspended, release it
+    if (this.currentFuture != null) {
+      this.currentFuture.complete(null)
+      this.currentFuture = null
+    }
   }
 
 }

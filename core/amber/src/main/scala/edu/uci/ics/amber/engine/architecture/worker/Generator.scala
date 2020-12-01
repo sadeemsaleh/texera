@@ -16,7 +16,7 @@ import akka.actor.{ActorLogging, Props, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInput, DataProcessor, PauseUtil, TupleInput, TupleOutput}
+import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInput, DataProcessor, PauseControl, TupleInput, TupleOutput}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -48,7 +48,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onResuming(): Unit = {
     super.onResuming()
-    pauseUtil.resume(PauseUtil.User)
+    pauseControl.resume(PauseControl.User)
   }
 
   override def onCompleted(): Unit = {
@@ -96,7 +96,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onPausing(): Unit = {
     super.onPausing()
-    pauseUtil.pause(PauseUtil.User)
+    pauseControl.pause(PauseControl.User)
     onPaused()
     context.become(paused)
     unstashAll()
@@ -109,7 +109,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onStart(): Unit = {
     super.onStart()
-    batchInput.consumeBatch((LayerTag("","",""),null))
+    batchInput.addBatch((LayerTag("","",""),null))
     context.become(running)
     unstashAll()
   }

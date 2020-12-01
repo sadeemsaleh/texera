@@ -23,7 +23,7 @@ class TupleInput(batchInput: BatchInput){
     // if batch is unavailable, take one from batchInput and reset cursor
     if(currentBatch == null || currentTupleIndex >= currentBatch._2.length){
       currentTupleIndex = 0
-      currentBatch = batchInput.inputBatches.take()
+      currentBatch = batchInput.WorkerInternalQueue.take()
     }
     // if current batch is a data batch, return tuple
     if(currentBatch._2 != null) {
