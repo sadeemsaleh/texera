@@ -1,4 +1,5 @@
 import { Breakpoint, OperatorLink, OperatorPredicate, Point } from '../../workspace/types/workflow-common.interface';
+import { jsonCast } from '../util/storage';
 
 /**
  * CachedWorkflow is used to store the information of the workflow
@@ -24,19 +25,4 @@ export interface Workflow {
   content: WorkflowInfo;
   creationTime: number;
   lastModifiedTime: number;
-}
-
-export function parseWorkflowInfo(workflow: Workflow) {
-  // when loading from backend, due to the jooq conversion and httpClient parse, this nested field would be type string. Manually cast it.
-  if (typeof workflow.content === 'string') {
-    workflow.content = <WorkflowInfo>JSON.parse(workflow.content);
-  }
-  return workflow;
-}
-
-export interface WorkflowWebResponse extends Readonly<{
-  code: 0; // 0 represents success and 1 represents error
-  message: string;
-  workflow: Workflow;
-}> {
 }

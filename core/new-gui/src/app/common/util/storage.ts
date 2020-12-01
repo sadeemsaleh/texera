@@ -19,17 +19,16 @@ export function localSetObject<T>(key: string, object: T): void {
  * @returns T - the converted object (in type<t>) from the JSON string, or null if the key is not found.
  */
 export function localGetObject<T>(key: string): T | null {
-  const data: any = localStorage.getItem(key);
+  const data: string | null = localStorage.getItem(key);
   if (!data) {
     return null;
   }
 
-  let obj: T | null;
+  return jsonCast<T>(data);
+}
 
-  try {
-    obj = <T>JSON.parse(data);
-  } catch (error) {
-    obj = null;
-  }
-  return obj;
+
+export function jsonCast<T>(data: string): T {
+  return <T>JSON.parse(data);
+
 }

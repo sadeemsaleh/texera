@@ -1,9 +1,10 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AppSettings } from '../../../app-setting';
-import { WorkflowInfo, Workflow, parseWorkflowInfo } from '../../../type/workflow';
+import { WorkflowInfo, Workflow } from '../../../type/workflow';
 import { Observable } from 'rxjs/Observable';
 import { map } from 'rxjs/operators';
+import { jsonCast } from '../../../util/storage';
 
 export const WORKFLOW_URL = 'user/dictionary/validate';
 
@@ -30,16 +31,23 @@ export class WorkflowPersistService {
   }
 
   public getWorkflow(workflowID: string): Observable<Workflow> {
-    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`).pipe(map(parseWorkflowInfo));
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`).pipe(map(this.parseWorkflowInfo));
   }
 
   public getSavedWorkflows(): Observable<Workflow[]> {
     return this.http.get<Workflow[]>(
-      `${AppSettings.getApiEndpoint()}/workflow/get`).pipe(map((workflows: Workflow[]) => workflows.map(parseWorkflowInfo)));
+      `${AppSettings.getApiEndpoint()}/workflow/get`).pipe(map((workflows: Workflow[]) => workflows.map(this.parseWorkflowInfo)));
   }
 
 
   public deleteSavedWorkflow(deleteProject: Workflow) {
     return null;
+  }
+
+  private parseWorkflowInfo(workflow: Workflow) {
+    if (typeof workflow.content === 'string') {
+      workflow.content = jsonCast<WorkflowInfo>(workflow.content);
+    }
+    return workflow;
   }
 }
