@@ -71,13 +71,11 @@ export class CacheWorkflowService {
       return;
     }
 
-    const cachedWorkflow: WorkflowInfo = workflow.content;
-    console.log(cachedWorkflow);
-    console.log(cachedWorkflow.operators);
+    const workflowInfo: WorkflowInfo = workflow.content;
 
     const operatorsAndPositions: { op: OperatorPredicate, pos: Point }[] = [];
-    cachedWorkflow.operators.forEach(op => {
-      const opPosition = cachedWorkflow.operatorPositions[op.operatorID];
+    workflowInfo.operators.forEach(op => {
+      const opPosition = workflowInfo.operatorPositions[op.operatorID];
       if (!opPosition) {
         throw new Error('position error');
       }
@@ -85,9 +83,9 @@ export class CacheWorkflowService {
     });
 
     const links: OperatorLink[] = [];
-    links.push(...cachedWorkflow.links);
+    links.push(...workflowInfo.links);
 
-    const breakpoints = new Map(Object.entries(cachedWorkflow.breakpoints));
+    const breakpoints = new Map(Object.entries(workflowInfo.breakpoints));
 
     this.workflowActionService.addOperatorsAndLinks(operatorsAndPositions, links, breakpoints);
 
