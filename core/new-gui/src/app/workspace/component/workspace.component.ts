@@ -46,7 +46,6 @@ import { Workflow } from '../../common/type/workflow';
 export class WorkspaceComponent implements OnInit {
 
   public showResultPanel: boolean = false;
-  public workflowFetched = false;
   public currentWorkflowName: string = '';
 
   constructor(
@@ -79,7 +78,7 @@ export class WorkspaceComponent implements OnInit {
         }
       );
     }
-    this.workflowFetched = true;
+    this.currentWorkflowName = this.cacheWorkflowService.getCachedWorkflowName();
   }
 
 

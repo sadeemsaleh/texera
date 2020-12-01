@@ -31,7 +31,7 @@ export class CacheWorkflowService {
   private static readonly DEFAULT_WORKFLOW_NAME: string = 'Untitled Workflow';
 
   private static readonly DEFAULT_WORKFLOW: Workflow = {
-    wid: 0,
+    wid: null,
     name: CacheWorkflowService.DEFAULT_WORKFLOW_NAME,
     content: {
       operators: [],
@@ -162,7 +162,7 @@ export class CacheWorkflowService {
     this.storageService.setItem(CacheWorkflowService.LOCAL_STORAGE_KEY, workflow);
   }
 
-  public setCachedWorkflowId(wid: number) {
+  public setCachedWorkflowId(wid: number | null) {
     const workflow = this.storageService.getItem<Workflow>(CacheWorkflowService.LOCAL_STORAGE_KEY);
     if (workflow != null) {
       workflow.wid = wid;

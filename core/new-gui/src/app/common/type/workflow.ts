@@ -20,7 +20,7 @@ export interface WorkflowInfo {
 
 export interface Workflow {
   name: string;
-  wid: number;
+  wid: number | null;
   content: WorkflowInfo;
   creationTime: number;
   lastModifiedTime: number;
