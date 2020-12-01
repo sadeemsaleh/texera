@@ -105,7 +105,7 @@ class WorkflowResource {
    * @param content    a String, workflow's content, can be updated
    * @return Workflow
    */
-  private def updateWorkflow(workflowId: UInteger, name: String, content: String) = {
+  private def updateWorkflow(workflowId: UInteger, name: String, content: String): Workflow = {
     SqlServer.createDSLContext
         .update(WORKFLOW)
         .set(WORKFLOW.NAME, name)
@@ -123,11 +123,27 @@ class WorkflowResource {
    * @param content a String, workflow's content
    * @return Workflow
    */
-  private def insertWorkflowToDataBase(name: String, content: String) = {
+  private def insertWorkflowToDataBase(name: String, content: String): Workflow = {
     val workflow = new Workflow
     workflow.setName(name)
     workflow.setContent(content)
     workflowDao.insert(workflow)
     workflow
+  }
+
+  /**
+    * select * from table workflow where workflowID is @param "workflowID"
+    *
+    * @param userId an UInteger to identify user
+    * @return Workflow
+    */
+  private def getWorkflowsByUser(userId: UInteger): util.List[Workflow] = {
+    SqlServer.createDSLContext
+      .select()
+      .from(WORKFLOW)
+      .join(WORKFLOW_OF_USER)
+      .on(WORKFLOW_OF_USER.WID.eq(WORKFLOW.WID))
+      .where(WORKFLOW_OF_USER.UID.eq(userId))
+      .fetchInto(classOf[Workflow])
   }
 }
