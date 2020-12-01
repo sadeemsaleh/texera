@@ -78,7 +78,7 @@ export class WorkspaceComponent implements OnInit {
         }
       );
     }
-    this.workflowFetched = true;
+    this.currentWorkflowName = this.cacheWorkflowService.getCachedWorkflowName();
   }
 
 
