@@ -3,7 +3,7 @@ package edu.uci.ics.texera.web.resource.dashboard
 import java.util
 
 import edu.uci.ics.texera.web.SqlServer
-import edu.uci.ics.texera.web.model.jooq.generated.Tables.{WORKFLOW, WORKFLOW_OF_USER}
+import edu.uci.ics.texera.web.model.jooq.generated.Tables.{USER, WORKFLOW, WORKFLOW_OF_USER}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.daos.{WorkflowDao, WorkflowOfUserDao}
 import edu.uci.ics.texera.web.model.jooq.generated.tables.pojos.{Workflow, WorkflowOfUser}
 import edu.uci.ics.texera.web.resource.auth.UserResource
@@ -12,6 +12,7 @@ import javax.servlet.http.HttpSession
 import javax.ws.rs._
 import javax.ws.rs.core.MediaType
 import org.glassfish.jersey.media.multipart.FormDataParam
+import org.jooq.Record2
 import org.jooq.types.UInteger
 
 /**
@@ -69,7 +70,21 @@ class WorkflowResource {
   @Path("/get/{workflowID}") def getWorkflow(
                                                 @PathParam("workflowID") workflowID: UInteger,
                                                 @Session session: HttpSession
-                                            ): Workflow = workflowDao.fetchOneByWid(workflowID)
+                                            ): Workflow = {
+    val user = UserResource.getUser(session)
+    if (user == null) return null
+    if (
+      workflowOfUserDao.existsById(
+        SqlServer.createDSLContext
+          .newRecord(WORKFLOW_OF_USER.UID, WORKFLOW_OF_USER.WID)
+          .values(user.getUserID, workflowID)
+      )
+    ) {
+      workflowDao.fetchOneByWid(workflowID)
+    } else {
+      null
+    }
+  }
 
   /**
    * This method persists the workflow into database
