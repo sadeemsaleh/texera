@@ -7,6 +7,7 @@ import { Observable } from 'rxjs';
 import { Workflow } from '../../../../common/type/workflow';
 import { Router } from '@angular/router';
 import { WorkflowPersistService } from '../../../../common/service/user/workflow-persist/workflow-persist.service';
+import { StorageService } from '../../../../common/service/storage.service';
 
 /**
  * SavedProjectSectionComponent is the main interface for
@@ -30,7 +31,8 @@ export class SavedWorkflowSectionComponent implements OnInit {
   constructor(
     private workflowPersistService: WorkflowPersistService,
     private modalService: NgbModal,
-    private router: Router
+    private router: Router,
+    private storageService: StorageService
   ) {
   }
 
@@ -116,9 +118,7 @@ export class SavedWorkflowSectionComponent implements OnInit {
 
   jumpToWorkflow(workflow: Workflow) {
     // TODO: change this to pass by URL.
-    localStorage.setItem('workflow', workflow.content);
-    localStorage.setItem('workflowID', workflow.wid.toString());
-    localStorage.setItem('workflowName', workflow.name);
+    this.storageService.setItem('workflow', workflow);
     this.router.navigate(['/']).then(null);
   }
 }
