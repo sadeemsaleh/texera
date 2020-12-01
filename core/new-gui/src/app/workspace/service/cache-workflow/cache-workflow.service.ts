@@ -45,8 +45,7 @@ export class CacheWorkflowService {
 
   constructor(
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService,
-    private storageService: StorageService
+    private operatorMetadataService: OperatorMetadataService
   ) {
     this.handleAutoCacheWorkFlow();
 
