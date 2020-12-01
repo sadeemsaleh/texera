@@ -68,11 +68,13 @@ export class WorkspaceComponent implements OnInit {
     if (this.route.snapshot.params.id) {
       this.workflowPersistService.getWorkflow(this.route.snapshot.params.id).subscribe(
         (workflow: Workflow) => {
-          console.log('the workflow loaded' + workflow);
           this.cacheWorkflowService.setCachedWorkflowName(workflow.name);
           this.cacheWorkflowService.setCachedWorkflowId(workflow.wid);
           this.cacheWorkflowService.cacheWorkflow(workflow);
           this.cacheWorkflowService.loadWorkflow();
+        },
+        error => {
+          alert('You don\'t have access to this workflow, please log in with another account');
         }
       );
     }
