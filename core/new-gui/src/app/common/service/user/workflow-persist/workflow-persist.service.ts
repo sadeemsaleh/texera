@@ -30,15 +30,15 @@ export class WorkflowPersistService {
       .pipe(map(WorkflowPersistService.parseWorkflowInfo));
   }
 
-  public getWorkflow(workflowID: string): Observable<Workflow> {
-    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`).pipe(map(this.parseWorkflowInfo));
+  public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
+    return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
+      .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
 
   public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
     return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
       .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
-
 
   public deleteWorkflow(workflow: Workflow) {
     return null;
