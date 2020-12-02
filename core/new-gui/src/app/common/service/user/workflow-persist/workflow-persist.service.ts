@@ -1,10 +1,12 @@
-import { Injectable } from '@angular/core';
+import { Injectable, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { AppSettings } from '../../../app-setting';
 import { WorkflowInfo, Workflow } from '../../../type/workflow';
 import { Observable } from 'rxjs/Observable';;
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
+import { WorkflowActionService } from 'src/app/workspace/service/workflow-graph/model/workflow-action.service';
+
 
 export const WORKFLOW_URL = 'user/dictionary/validate';
 
@@ -13,8 +15,8 @@ export const WORKFLOW_URL = 'user/dictionary/validate';
 })
 
 export class WorkflowPersistService {
-
-  constructor(public http: HttpClient) {
+  constructor(public http: HttpClient,
+    private workflowActionService : WorkflowActionService) {
   }
 
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
@@ -35,13 +37,12 @@ export class WorkflowPersistService {
       .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
 
-  public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
-    return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
-      .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
-  }
-
   public deleteWorkflow(workflow: Workflow) {
     return null;
+  }
+
+  public handleAutoPersist(){
+    this.workflowActionService.workflowChange;
   }
 
   private static parseWorkflowInfo(workflow: Workflow): Workflow {

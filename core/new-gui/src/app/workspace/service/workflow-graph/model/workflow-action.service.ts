@@ -4,8 +4,8 @@ import { SyncTexeraModel } from './sync-texera-model';
 import { JointGraphWrapper } from './joint-graph-wrapper';
 import { JointUIService } from './../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
-import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Injectable, Output } from '@angular/core';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import {
   Breakpoint,
   OperatorLink,
@@ -56,6 +56,15 @@ export class WorkflowActionService {
   private readonly syncTexeraModel: SyncTexeraModel;
   private workflowModificationEnabled = true;
   private enableModificationStream = new BehaviorSubject<boolean>(true);
+  @Output() workflowChange = Subject.merge(
+    this.getTexeraGraph().getOperatorAddStream(),
+    this.getTexeraGraph().getOperatorDeleteStream(),
+    this.getTexeraGraph().getLinkAddStream(),
+    this.getTexeraGraph().getLinkDeleteStream(),
+    this.getTexeraGraph().getOperatorPropertyChangeStream(),
+    this.getTexeraGraph().getBreakpointChangeStream(),
+    this.getJointGraphWrapper().getOperatorPositionChangeEvent()
+  ).debounceTime(100);
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
