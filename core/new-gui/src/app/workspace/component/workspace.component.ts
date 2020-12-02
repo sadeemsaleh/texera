@@ -56,7 +56,8 @@ export class WorkspaceComponent implements OnInit {
     private cacheWorkflowService: CacheWorkflowService,
     private workflowPersistService: WorkflowPersistService,
     private workflowWebsocketService: WorkflowWebsocketService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private workflowActionService: WorkflowActionService
   ) {
 
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
@@ -79,6 +80,18 @@ export class WorkspaceComponent implements OnInit {
       );
     }
     this.currentWorkflowName = this.cacheWorkflowService.getCachedWorkflowName();
+
+    //handle workflow auto persist
+    this.workflowActionService.workflowChange.subscribe(
+      ()=>{
+        const workflow = this.cacheWorkflowService.getCachedWorkflow();
+        if (workflow != null){
+          this.workflowPersistService.persistWorkflow(workflow).subscribe(this.cacheWorkflowService.cacheWorkflow)
+        }
+      }
+    )
+
+
   }
 
 
