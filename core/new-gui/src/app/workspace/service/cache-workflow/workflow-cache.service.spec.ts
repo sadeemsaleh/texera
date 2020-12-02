@@ -1,6 +1,6 @@
 import { inject, TestBed } from '@angular/core/testing';
 
-import { CacheWorkflowService } from './cache-workflow.service';
+import { WorkflowCacheService } from './workflow-cache.service';
 import {
   mockPoint,
   mockResultPredicate,
@@ -18,13 +18,13 @@ import { StubOperatorMetadataService } from '../operator-metadata/stub-operator-
 import { WorkflowUtilService } from '../workflow-graph/util/workflow-util.service';
 import { WorkflowInfo } from '../../../common/type/workflow';
 
-describe('SaveWorkflowService', () => {
-  let autoSaveWorkflowService: CacheWorkflowService;
+describe('WorkflowCacheService', () => {
+  let autoSaveWorkflowService: WorkflowCacheService;
   let workflowActionService: WorkflowActionService;
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
-        CacheWorkflowService,
+        WorkflowCacheService,
         WorkflowActionService,
         UndoRedoService,
         JointUIService,
@@ -36,11 +36,11 @@ describe('SaveWorkflowService', () => {
 
     // remove all items in local storage before each test
     localStorage.clear();
-    autoSaveWorkflowService = TestBed.get(CacheWorkflowService);
+    autoSaveWorkflowService = TestBed.get(WorkflowCacheService);
     workflowActionService = TestBed.get(WorkflowActionService);
   });
 
-  it('should be created', inject([CacheWorkflowService], (service: CacheWorkflowService) => {
+  it('should be created', inject([WorkflowCacheService], (service: WorkflowCacheService) => {
     expect(service).toBeTruthy();
   }));
 

@@ -15,8 +15,7 @@ export const WORKFLOW_URL = 'user/dictionary/validate';
 })
 
 export class WorkflowPersistService {
-  constructor(public http: HttpClient,
-    private workflowActionService : WorkflowActionService) {
+  constructor(public http: HttpClient) {
   }
 
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
@@ -39,10 +38,6 @@ export class WorkflowPersistService {
 
   public deleteWorkflow(workflow: Workflow) {
     return null;
-  }
-
-  public handleAutoPersist(){
-    this.workflowActionService.workflowChange;
   }
 
   private static parseWorkflowInfo(workflow: Workflow): Workflow {

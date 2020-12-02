@@ -9,7 +9,7 @@ import { ExecutionState } from '../../types/execute-workflow.interface';
 import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
 import { UserService } from '../../../common/service/user/user.service';
 import { WorkflowPersistService } from '../../../common/service/user/workflow-persist/workflow-persist.service';
-import { CacheWorkflowService } from '../../service/cache-workflow/cache-workflow.service';
+import { WorkflowCacheService } from '../../service/cache-workflow/workflow-cache.service';
 import { Workflow } from '../../../common/type/workflow';
 import { Version } from '../../../../environments/version';
 import { environment } from '../../../../environments/environment';
@@ -62,7 +62,7 @@ export class NavigationComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     private userService: UserService,
-    private cachedWorkflowService: CacheWorkflowService
+    private workflowCacheService: WorkflowCacheService
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -72,7 +72,7 @@ export class NavigationComponent implements OnInit {
     this.runIcon = initBehavior.icon;
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
-    this.currentWorkflowName = this.cachedWorkflowService.getCachedWorkflowName();
+    this.currentWorkflowName = this.workflowCacheService.getCachedWorkflowName();
 
     executeWorkflowService.getExecutionStateStream().subscribe(
       event => {
@@ -271,7 +271,7 @@ export class NavigationComponent implements OnInit {
     if (!this.userService.isLogin()) {
       alert('please login');
     } else {
-      const cachedWorkflow: Workflow | null = this.cachedWorkflowService.getCachedWorkflow();
+      const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
       if (cachedWorkflow != null) {
         this.isSaving = true;
         this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe(this.cachedWorkflowService.cacheWorkflow).add(() => {
@@ -284,12 +284,12 @@ export class NavigationComponent implements OnInit {
   }
 
   onWorkflowNameChange() {
-    this.cachedWorkflowService.setCachedWorkflowName(this.currentWorkflowName);
+    this.workflowCacheService.setCachedWorkflowName(this.currentWorkflowName);
   }
 
   onClickCreateNewWorkflow() {
-    this.cachedWorkflowService.clearCachedWorkflow();
-    this.currentWorkflowName = this.cachedWorkflowService.getCachedWorkflowName();
-    this.cachedWorkflowService.loadWorkflow();
+    this.workflowCacheService.clearCachedWorkflow();
+    this.currentWorkflowName = this.workflowCacheService.getCachedWorkflowName();
+    this.workflowCacheService.loadWorkflow();
   }
 }

@@ -50,27 +50,19 @@ type OperatorPosition = {
 @Injectable()
 export class WorkflowActionService {
 
+  @Output() public workflowChange: Observable<any>;
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
   private readonly syncTexeraModel: SyncTexeraModel;
   private workflowModificationEnabled = true;
   private enableModificationStream = new BehaviorSubject<boolean>(true);
-  @Output() workflowChange = Subject.merge(
-    this.getTexeraGraph().getOperatorAddStream(),
-    this.getTexeraGraph().getOperatorDeleteStream(),
-    this.getTexeraGraph().getLinkAddStream(),
-    this.getTexeraGraph().getLinkDeleteStream(),
-    this.getTexeraGraph().getOperatorPropertyChangeStream(),
-    this.getTexeraGraph().getBreakpointChangeStream(),
-    this.getJointGraphWrapper().getOperatorPositionChangeEvent()
-  ).debounceTime(100);
+
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
     private jointUIService: JointUIService,
     private undoRedoService: UndoRedoService,
-
   ) {
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
@@ -79,6 +71,16 @@ export class WorkflowActionService {
 
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
+
+    this.workflowChange = Subject.merge(
+      this.getTexeraGraph().getOperatorAddStream(),
+      this.getTexeraGraph().getOperatorDeleteStream(),
+      this.getTexeraGraph().getLinkAddStream(),
+      this.getTexeraGraph().getLinkDeleteStream(),
+      this.getTexeraGraph().getOperatorPropertyChangeStream(),
+      this.getTexeraGraph().getBreakpointChangeStream(),
+      this.getJointGraphWrapper().getOperatorPositionChangeEvent()
+    ).debounceTime(100);
   }
 
   public enableWorkflowModification() {
@@ -86,14 +88,17 @@ export class WorkflowActionService {
     this.enableModificationStream.next(true);
     this.undoRedoService.enableWorkFlowModification();
   }
+
   public disableWorkflowModification() {
     this.workflowModificationEnabled = false;
     this.enableModificationStream.next(false);
     this.undoRedoService.disableWorkFlowModification();
   }
+
   public checkWorkflowModificationEnabled(): boolean {
     return this.workflowModificationEnabled;
   }
+
   public getWorkflowModificationEnabledStream(): Observable<boolean> {
     return this.enableModificationStream.asObservable();
   }
@@ -112,7 +117,7 @@ export class WorkflowActionService {
   }
 
   public handleJointOperatorDrag(): void {
-    let oldPosition: Point = { x: 0, y: 0 };
+    let oldPosition: Point = {x: 0, y: 0};
     let gotOldPosition = false;
     this.jointGraphWrapper.getOperatorPositionChangeEvent()
       .filter(() => !gotOldPosition)
