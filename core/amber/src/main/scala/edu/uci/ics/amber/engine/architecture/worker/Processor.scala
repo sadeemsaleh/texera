@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 import java.util.concurrent.Executors
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{ExceptionBreakpoint, LocalBreakpoint}
+import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{
+  ExceptionBreakpoint,
+  LocalBreakpoint
+}
 import edu.uci.ics.amber.engine.architecture.receivesemantics.FIFOAccessPort
 import edu.uci.ics.amber.engine.common.amberexception.{AmberException, BreakpointException}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
@@ -11,7 +14,16 @@ import edu.uci.ics.amber.engine.common.ambermessage.StateMessage._
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage.{QueryState, _}
 import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, WorkerTag}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.{AdvancedMessageSending, Constants, ElidableStatement, IOperatorExecutor, ITupleSinkOperatorExecutor, InputExhausted, TableMetadata, ThreadState}
+import edu.uci.ics.amber.engine.common.{
+  AdvancedMessageSending,
+  Constants,
+  ElidableStatement,
+  InputExhausted,
+  IOperatorExecutor,
+  TableMetadata,
+  ThreadState,
+  ITupleSinkOperatorExecutor
+}
 import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
 import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
 import edu.uci.ics.amber.engine.operators.OpExecConfig
@@ -32,7 +44,8 @@ import scala.annotation.elidable._
 import scala.concurrent.duration._
 
 object Processor {
-  def props(processor: IOperatorExecutor, tag: WorkerTag): Props = Props(new Processor(processor, tag))
+  def props(processor: IOperatorExecutor, tag: WorkerTag): Props =
+    Props(new Processor(processor, tag))
 }
 
 class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends WorkerBase {
@@ -111,7 +124,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   override def getResultTuples(): mutable.MutableList[ITuple] = {
     this.operator match {
       case processor: ITupleSinkOperatorExecutor =>
-        mutable.MutableList(processor.getResultTuples():_*)
+        mutable.MutableList(processor.getResultTuples(): _*)
       case _ =>
         mutable.MutableList()
     }

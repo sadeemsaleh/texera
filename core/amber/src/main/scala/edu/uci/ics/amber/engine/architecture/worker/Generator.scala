@@ -3,7 +3,10 @@ package edu.uci.ics.amber.engine.architecture.worker
 import java.util.concurrent.Executors
 
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{ExceptionBreakpoint, LocalBreakpoint}
+import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{
+  ExceptionBreakpoint,
+  LocalBreakpoint
+}
 import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
 import edu.uci.ics.amber.engine.common.{AdvancedMessageSending, ElidableStatement, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted, ThreadState}
 import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
@@ -22,7 +25,8 @@ import scala.annotation.elidable
 import scala.annotation.elidable.INFO
 
 object Generator {
-  def props(producer: ISourceOperatorExecutor, tag: WorkerTag): Props = Props(new Generator(producer, tag))
+  def props(producer: ISourceOperatorExecutor, tag: WorkerTag): Props =
+    Props(new Generator(producer, tag))
 }
 
 class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
@@ -81,8 +85,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
   }
 
   override def getInputRowCount(): Long = {
-    val (inputCount, _) = dataProcessor.collectStatistics()
-    inputCount
+    0 // source operator should not have input rows
   }
 
   override def getOutputRowCount(): Long = {
