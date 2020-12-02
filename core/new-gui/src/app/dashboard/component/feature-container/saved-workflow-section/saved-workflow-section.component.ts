@@ -35,7 +35,7 @@ export class SavedWorkflowSectionComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.workflowPersistService.getSavedWorkflows().subscribe(
+    this.workflowPersistService.retrieveWorkflowsBySessionUser().subscribe(
       workflows => this.workflows = workflows,
     );
   }
@@ -107,7 +107,7 @@ export class SavedWorkflowSectionComponent implements OnInit {
       (value: boolean) => {
         if (value) {
           this.workflows = this.workflows.filter(workflow => workflow.wid !== savedWorkflow.wid);
-          this.workflowPersistService.deleteSavedWorkflow(savedWorkflow);
+          this.workflowPersistService.deleteWorkflow(savedWorkflow);
         }
       }
     );

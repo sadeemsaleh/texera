@@ -21,7 +21,7 @@ export interface WorkflowInfo {
 
 export interface Workflow {
   name: string;
-  wid: number | null;
+  wid: number | undefined;
   content: WorkflowInfo;
   creationTime: number;
   lastModifiedTime: number;

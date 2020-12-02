@@ -52,6 +52,7 @@ export class NavigationComponent implements OnInit {
 
   // whether user dashboard is enabled and accessible from the workspace
   public userSystemEnabled: boolean = environment.userSystemEnabled;
+
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
     public tourService: TourService,
@@ -94,7 +95,7 @@ export class NavigationComponent implements OnInit {
   }
 
   public onClickRunHandler = () => {
-  }
+  };
 
   ngOnInit() {
   }
@@ -274,12 +275,9 @@ export class NavigationComponent implements OnInit {
       if (cachedWorkflow != null) {
         this.isSaving = true;
         const id = this.cachedWorkflowService.getCachedWorkflowID();
-        this.workflowPersistService.persistWorkflow(cachedWorkflow, this.currentWorkflowName, id).subscribe(
-          (workflow: Workflow) => {
-            this.cachedWorkflowService.setCachedWorkflowId(workflow?.wid);
-          }).add(() => {
-            this.isSaving = false;
-          });
+        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe(this.cachedWorkflowService.cacheWorkflow).add(() => {
+          this.isSaving = false;
+        });
       } else {
         alert('No workflow found in cache.');
       }

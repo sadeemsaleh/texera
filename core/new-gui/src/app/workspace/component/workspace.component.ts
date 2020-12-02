@@ -67,7 +67,7 @@ export class WorkspaceComponent implements OnInit {
   ngOnInit(): void {
     // check if workflow id is present in the url
     if (this.route.snapshot.params.id) {
-      this.workflowPersistService.getWorkflow(this.route.snapshot.params.id).subscribe(
+      this.workflowPersistService.retrieveWorkflow(this.route.snapshot.params.id).subscribe(
         (workflow: Workflow) => {
           this.cacheWorkflowService.cacheWorkflow(workflow);
           this.currentWorkflowName = workflow.name;

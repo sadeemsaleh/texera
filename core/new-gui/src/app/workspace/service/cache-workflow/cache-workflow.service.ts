@@ -31,7 +31,7 @@ export class CacheWorkflowService {
   private static readonly DEFAULT_WORKFLOW_NAME: string = 'Untitled Workflow';
 
   private static readonly DEFAULT_WORKFLOW: Workflow = {
-    wid: null,
+    wid: undefined,
     name: CacheWorkflowService.DEFAULT_WORKFLOW_NAME,
     content: {
       operators: [],
@@ -145,12 +145,12 @@ export class CacheWorkflowService {
     return CacheWorkflowService.DEFAULT_WORKFLOW_NAME;
   }
 
-  getCachedWorkflowID(): number | null {
+  getCachedWorkflowID(): number | undefined {
     const workflow = localGetObject<Workflow>(CacheWorkflowService.LOCAL_STORAGE_KEY);
     if (workflow != null) {
       return workflow.wid;
     }
-    return null;
+    return undefined;
   }
 
   public clearCachedWorkflow() {
@@ -161,7 +161,7 @@ export class CacheWorkflowService {
     localSetObject(CacheWorkflowService.LOCAL_STORAGE_KEY, workflow);
   }
 
-  public setCachedWorkflowId(wid: number | null) {
+  public setCachedWorkflowId(wid: number | undefined) {
     const workflow = localGetObject<Workflow>(CacheWorkflowService.LOCAL_STORAGE_KEY);
     if (workflow != null) {
       workflow.wid = wid;

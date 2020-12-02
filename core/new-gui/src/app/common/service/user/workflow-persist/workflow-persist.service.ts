@@ -17,34 +17,30 @@ export class WorkflowPersistService {
   constructor(public http: HttpClient) {
   }
 
-  public persistWorkflow(cachedWorkflow: Workflow, workflowName: string, workflowID: number | null): Observable<Workflow> {
-    const formData: FormData = new FormData();
-    // TODO: change to use CacheWorkflowService.
-
-    if (workflowID != null) {
-      formData.append('wfId', workflowID.toString());
-    }
-    formData.append('name', workflowName);
-    formData.append('content', JSON.stringify(cachedWorkflow.content));
-
-    return this.http.post<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/save-workflow`, formData);
+  public persistWorkflow(workflow: Workflow): Observable<Workflow> {
+    return this.http.post<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/persist`, {
+      wid: workflow.wid,
+      name: workflow.name,
+      content: JSON.stringify(workflow.content)
+    }).pipe(map(WorkflowPersistService.parseWorkflowInfo));
   }
 
-  public getWorkflow(workflowID: string): Observable<Workflow> {
-    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`).pipe(map(this.parseWorkflowInfo));
+  public retrieveWorkflow(workflowID: string): Observable<Workflow> {
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${workflowID}`)
+      .pipe(map(WorkflowPersistService.parseWorkflowInfo));
   }
 
-  public getSavedWorkflows(): Observable<Workflow[]> {
-    return this.http.get<Workflow[]>(
-      `${AppSettings.getApiEndpoint()}/workflow/get`).pipe(map((workflows: Workflow[]) => workflows.map(this.parseWorkflowInfo)));
+  public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
+    return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
+      .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
 
 
-  public deleteSavedWorkflow(deleteProject: Workflow) {
+  public deleteWorkflow(workflow: Workflow) {
     return null;
   }
 
-  private parseWorkflowInfo(workflow: Workflow) {
+  private static parseWorkflowInfo(workflow: Workflow): Workflow {
     if (typeof workflow.content === 'string') {
       workflow.content = jsonCast<WorkflowInfo>(workflow.content);
     }
