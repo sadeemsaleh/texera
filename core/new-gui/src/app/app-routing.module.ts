@@ -24,36 +24,32 @@ const routes: Routes = [
   }
 ];
 
-
 if (environment.userSystemEnabled) {
 
   /*
    *  The user dashboard is under path '/dashboard'
-   *  The saved project is under path '/dashboard/workflow/list'
-   *  The user dictionary is under path '/dashboard/userdictionary'
-  */
-
+   */
   routes.push(
     {
       path: 'workflow/:id',
-    component: WorkspaceComponent
-  },
-  {
-    path: 'dashboard',
+      component: WorkspaceComponent
+    },
+    {
+      path: 'dashboard',
       component: DashboardComponent,
       children: [
         {
           path: 'workflow/list',
-          component: SavedWorkflowSectionComponent,
+          component: SavedWorkflowSectionComponent
         },
-        {
-          path: 'userdictionary',
-          component: UserDictionarySectionComponent
-        },
-        {
-          path: 'userfile',
-          component: UserFileSectionComponent
-        }
+        // {
+        //   path: 'userdictionary',
+        //   component: UserDictionarySectionComponent
+        // },
+        // {
+        //   path: 'userfile',
+        //   component: UserFileSectionComponent
+        // }
       ]
     });
 }
