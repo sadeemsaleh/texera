@@ -130,19 +130,6 @@ export class WorkflowCacheService {
     return workflow;
   }
 
-  public getCachedWorkflowName(): string {
-    const workflow: Workflow = this.getCachedWorkflow();
-    if (workflow.name.trim().length > 0) {
-      return workflow.name;
-    }
-    return WorkflowCacheService.DEFAULT_WORKFLOW_NAME;
-  }
-
-  getCachedWorkflowID(): number | undefined {
-    const workflow: Workflow = this.getCachedWorkflow();
-    return workflow.wid;
-  }
-
   public resetCachedWorkflow() {
     this.cacheWorkflow(WorkflowCacheService.DEFAULT_WORKFLOW);
   }
@@ -160,7 +147,7 @@ export class WorkflowCacheService {
 
   public setCachedWorkflowName(name: string) {
     const workflow: Workflow = this.getCachedWorkflow();
-    workflow.name = name;
+    workflow.name = name.trim().length > 0 ? name : WorkflowCacheService.DEFAULT_WORKFLOW_NAME;
     this.cacheWorkflow(workflow);
   }
 

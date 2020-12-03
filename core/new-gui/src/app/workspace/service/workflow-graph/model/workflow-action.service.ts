@@ -1,8 +1,8 @@
-import { UndoRedoService } from './../../undo-redo/undo-redo.service';
-import { OperatorMetadataService } from './../../operator-metadata/operator-metadata.service';
+import { UndoRedoService } from '../../undo-redo/undo-redo.service';
+import { OperatorMetadataService } from '../../operator-metadata/operator-metadata.service';
 import { SyncTexeraModel } from './sync-texera-model';
 import { JointGraphWrapper } from './joint-graph-wrapper';
-import { JointUIService } from './../../joint-ui/joint-ui.service';
+import { JointUIService } from '../../joint-ui/joint-ui.service';
 import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 import { Injectable, Output } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
@@ -15,14 +15,13 @@ import {
 } from '../../../types/workflow-common.interface';
 
 import * as joint from 'jointjs';
-import { environment } from './../../../../../environments/environment';
-import { WorkflowEditorComponent } from './../../../component/workflow-editor/workflow-editor.component';
 
 export interface Command {
+  modifiesWorkflow: boolean;
   execute(): void;
   undo(): void;
   redo?(): void;
-  modifiesWorkflow: boolean;
+
 }
 
 type OperatorPosition = {
@@ -35,7 +34,7 @@ type OperatorPosition = {
  * WorkflowActionService exposes functions (actions) to modify the workflow graph model of both JointJS and Texera,
  *  such as addOperator, deleteOperator, addLink, deleteLink, etc.
  * WorkflowActionService performs checks the validity of these actions,
- *  for example, throws an error if deleting an nonexist operator
+ *  for example, throws an error if deleting an nonexistent operator
  *
  * All changes(actions) to the workflow graph should be called through WorkflowActionService,
  *  then WorkflowActionService will propagate these actions to JointModel and Texera Model automatically.
@@ -77,7 +76,7 @@ export class WorkflowActionService {
       this.getTexeraGraph().getBreakpointChangeStream(),
       this.getJointGraphWrapper().getOperatorPositionChangeEvent()
     ).subscribe(_ => {
-      this.workflowChange.next(true);
+      this.workflowChange.next(true); // surpass the actual event, only indicate if there is a change
     });
   }
 
@@ -267,7 +266,7 @@ export class WorkflowActionService {
     const command: Command = {
       modifiesWorkflow: true,
       execute: () => {
-        // unhighlight previous highlights
+        // un-highlight previous highlights
         this.jointGraphWrapper.unhighlightOperators(this.jointGraphWrapper.getCurrentHighlightedOperatorIDs());
         this.jointGraphWrapper.setMultiSelectMode(operatorsAndPositions.length > 1);
         operatorsAndPositions.forEach(o => {
