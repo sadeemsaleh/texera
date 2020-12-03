@@ -47,8 +47,11 @@
             </li>
           </ul>
         </nz-dropdown-menu>
+
       </nz-button-group>
     </div>
+    <label class="texera-navigation-auto-save-status" nz-label *ngIf="userSystemEnabled"
+           [textContent]="autoSaveState"></label>
 
     <label *ngIf="userSystemEnabled">
       <input (change)="onWorkflowNameChange()" [(ngModel)]="currentWorkflowName" class="texera-navigation-workflow-name"

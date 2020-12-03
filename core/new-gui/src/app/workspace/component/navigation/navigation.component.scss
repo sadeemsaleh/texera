@@ -12,10 +12,10 @@
   width: 100%;
   overflow: hidden;
   display: grid;
-  grid-template-columns: calc(14% - 16px) 25% 35% calc(16% - 16px);
+  grid-template-columns: 14% 20% 5% auto auto;
   grid-template-rows: 100%;
   align-items: center;
-  margin: 0px 16px 0px 16px;
+  margin: 0px 0px 0px 0px 30px;
 
   i {
     display: inline-flex;
@@ -30,6 +30,7 @@
     .version-number {
       font-size: 10px;
     }
+
     .git-commit-hash {
       font-size: 7px;
     }
@@ -40,15 +41,25 @@
     grid-row: 1/1;
   }
 
-  .texera-navigation-workflow-name {
+  .texera-navigation-auto-save-status {
+    color: #6c747e;
+    font-size: 8px;
     grid-column: 3/3;
     grid-row: 1/1;
     z-index: 1;
 
   }
 
-  .texera-navigation-execute {
+  .texera-navigation-workflow-name {
+    border: 0;
     grid-column: 4/4;
+    grid-row: 1/1;
+    z-index: 1;
+
+  }
+
+  .texera-navigation-execute {
+    grid-column: 5/5;
     grid-row: 1/1;
     text-align: right;
 

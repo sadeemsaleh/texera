@@ -35,14 +35,14 @@ import { environment } from '../../../../environments/environment';
   styleUrls: ['./navigation.component.scss']
 })
 export class NavigationComponent implements OnInit {
-  public static autoSaveState = 'Saved';
+  @Input() public autoSaveState: string = '';
+  @Input() public currentWorkflowName: string = '';  // reset workflowName
 
   public gitCommitHash: string = Version.raw;
   public executionState: ExecutionState;  // set this to true when the workflow is started
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public isWorkflowValid: boolean = true; // this will check whether the workflow error or not
   public isSaving: boolean = false;
-  @Input() public currentWorkflowName: string;  // reset workflowName
 
   // variable bound with HTML to decide if the running spinner should show
   public runButtonText = 'Run';

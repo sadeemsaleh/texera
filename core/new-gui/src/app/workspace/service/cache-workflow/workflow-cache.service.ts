@@ -27,6 +27,7 @@ import { localGetObject, localSetObject } from '../../../common/util/storage';
 })
 export class WorkflowCacheService {
 
+
   private static readonly LOCAL_STORAGE_KEY: string = 'workflow';
   private static readonly DEFAULT_WORKFLOW_NAME: string = 'Untitled Workflow';
 

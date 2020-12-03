@@ -116,7 +116,7 @@ class WorkflowResource {
     if (workflow.getWid != null) {
       // when the wid is provided, update the existing workflow
       workflowDao.update(workflow)
-      workflow
+      workflowDao.fetchOneByWid(workflow.getWid)
    } else {
         // when the wid is not provided, treat it as a new workflow
       workflowDao.insert(workflow)

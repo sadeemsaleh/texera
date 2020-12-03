@@ -3,7 +3,9 @@
 'texera-original-workspace-grid-container' : !showResultPanel ,
 'texera-workspace-grid-container' : showResultPanel}">
   <texera-navigation  class="texera-navigation-grid-container grid-container"
-                     tourAnchor="texera-navigation-grid-container" [currentWorkflowName]="currentWorkflowName">
+                     tourAnchor="texera-navigation-grid-container"
+                      [currentWorkflowName]="currentWorkflowName"
+                      [autoSaveState] = "persistingWorkflow">
   </texera-navigation>
 
   <texera-operator-panel class="texera-operator-panel-grid-container grid-container" tourAnchor="texera-operator-panel">
