@@ -104,9 +104,11 @@ export class SavedWorkflowSectionComponent implements OnInit {
     modalRef.componentInstance.workflow = cloneDeep(workflowToDelete);
 
     Observable.from(modalRef.result).subscribe((confirmToDelete: boolean) => {
-        if (confirmToDelete) {
+        if (confirmToDelete && workflowToDelete.wid !== undefined) {
           this.workflows = this.workflows.filter(workflow => workflow.wid !== workflowToDelete.wid);
-          this.workflowPersistService.deleteWorkflow(workflowToDelete);
+          this.workflowPersistService.deleteWorkflow(workflowToDelete.wid).subscribe( // TODO: handle error messages.
+          );
+
         }
       }
     );

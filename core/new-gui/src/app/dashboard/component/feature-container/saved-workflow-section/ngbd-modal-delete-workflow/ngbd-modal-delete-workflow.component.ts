@@ -3,8 +3,8 @@ import { NgbActiveModal } from '@ng-bootstrap/ng-bootstrap';
 import { Workflow } from '../../../../../common/type/workflow';
 
 /**
- * NgbdModalDeleteProjectComponent is the pop-up component
- * for undoing the delete. User may cancel a project deletion.
+ * NgbdModalDeleteWorkflowComponent is the pop-up component
+ * for undoing the delete. User may cancel a workflow deletion.
  *
  * @author Zhaomin Li
  */
@@ -15,14 +15,13 @@ import { Workflow } from '../../../../../common/type/workflow';
 })
 export class NgbdModalDeleteWorkflowComponent {
 
-  // TODO: rewrite this.
   @Input() workflow: Workflow | undefined;
 
   constructor(public activeModal: NgbActiveModal) {
   }
 
   /**
-   * deleteSavedProject sends the user
+   * deleteWorkflow sends the user
    * confirm to the main component. It does not call any method in service.
    */
   public confirmDelete(): void {

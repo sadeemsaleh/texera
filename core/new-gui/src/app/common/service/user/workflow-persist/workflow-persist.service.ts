@@ -44,8 +44,11 @@ export class WorkflowPersistService {
       .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
 
-  public deleteWorkflow(workflow: Workflow) {
-    return null;
+  /**
+   * deletes the given workflow, the user in the session must own the workflow.
+   */
+  public deleteWorkflow(wid: number): Observable<Response> {
+    return this.http.delete<Response>(`${AppSettings.getApiEndpoint()}/workflow/${wid}`);
   }
 
   /**
