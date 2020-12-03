@@ -29,7 +29,7 @@ if (environment.userSystemEnabled) {
 
   /*
    *  The user dashboard is under path '/dashboard'
-   *  The saved project is under path '/dashboard/savedworkflow'
+   *  The saved project is under path '/dashboard/workflow/list'
    *  The user dictionary is under path '/dashboard/userdictionary'
   */
 
@@ -43,7 +43,7 @@ if (environment.userSystemEnabled) {
       component: DashboardComponent,
       children: [
         {
-          path: 'savedworkflow',
+          path: 'workflow/list',
           component: SavedWorkflowSectionComponent,
         },
         {
