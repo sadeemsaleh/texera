@@ -1,11 +1,10 @@
-import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Injectable, Output } from '@angular/core';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { Breakpoint, OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
 import { WorkflowInfo, Workflow } from '../../../common/type/workflow';
 import { localGetObject, localSetObject } from '../../../common/util/storage';
-
 
 /**
  *  CacheWorkflowService is responsible for saving the existing workflow and
@@ -27,7 +26,6 @@ import { localGetObject, localSetObject } from '../../../common/util/storage';
 })
 export class WorkflowCacheService {
 
-
   private static readonly LOCAL_STORAGE_KEY: string = 'workflow';
   private static readonly DEFAULT_WORKFLOW_NAME: string = 'Untitled Workflow';
 
@@ -38,11 +36,13 @@ export class WorkflowCacheService {
       operators: [],
       operatorPositions: {},
       links: [],
-      breakpoints: {},
+      breakpoints: {}
     },
     creationTime: 0,
     lastModifiedTime: 0
   };
+
+  @Output() public cachedWorkflowChanged: Subject<Workflow>;
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -53,6 +53,10 @@ export class WorkflowCacheService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => this.loadWorkflow());
+    this.cachedWorkflowChanged = new BehaviorSubject<Workflow>(WorkflowCacheService.DEFAULT_WORKFLOW);
+    if (this.getCachedWorkflow() == null) {
+      this.resetCachedWorkflow();
+    }
   }
 
   /**
@@ -66,7 +70,7 @@ export class WorkflowCacheService {
       this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
 
     // get items in the storage
-    const workflow = localGetObject<Workflow>(WorkflowCacheService.LOCAL_STORAGE_KEY);
+    const workflow = this.getCachedWorkflow();
     if (workflow == null) {
       return;
     }
@@ -154,12 +158,13 @@ export class WorkflowCacheService {
     return undefined;
   }
 
-  public clearCachedWorkflow() {
-    localSetObject(WorkflowCacheService.LOCAL_STORAGE_KEY, WorkflowCacheService.DEFAULT_WORKFLOW);
+  public resetCachedWorkflow() {
+    this.cacheWorkflow(WorkflowCacheService.DEFAULT_WORKFLOW);
   }
 
-  public cacheWorkflow(workflow: Workflow) {
+  public cacheWorkflow(workflow: Workflow): void {
     localSetObject(WorkflowCacheService.LOCAL_STORAGE_KEY, workflow);
+    this.cachedWorkflowChanged.next(workflow);
   }
 
   public setCachedWorkflowId(wid: number | undefined) {
@@ -178,6 +183,5 @@ export class WorkflowCacheService {
       this.cacheWorkflow(workflow);
     }
   }
-
 
 }

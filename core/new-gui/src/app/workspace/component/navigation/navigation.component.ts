@@ -13,6 +13,7 @@ import { WorkflowCacheService } from '../../service/cache-workflow/workflow-cach
 import { Workflow } from '../../../common/type/workflow';
 import { Version } from '../../../../environments/version';
 import { environment } from '../../../../environments/environment';
+import { DatePipe } from '@angular/common';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -62,7 +63,8 @@ export class NavigationComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     private userService: UserService,
-    private workflowCacheService: WorkflowCacheService
+    private workflowCacheService: WorkflowCacheService,
+    private datePipe: DatePipe
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -92,12 +94,18 @@ export class NavigationComponent implements OnInit {
         this.isWorkflowValid = Object.keys(value.errors).length === 0;
         this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
       });
+
+    this.workflowCacheService.cachedWorkflowChanged.subscribe((workflow: Workflow) => {
+      this.currentWorkflowName = workflow.name;
+      this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss', 'UTC');
+    });
   }
 
   public onClickRunHandler() {
   }
 
   ngOnInit() {
+
   }
 
   // apply a behavior to the run button via bound variables
@@ -285,11 +293,11 @@ export class NavigationComponent implements OnInit {
 
   onWorkflowNameChange() {
     this.workflowCacheService.setCachedWorkflowName(this.currentWorkflowName);
+
   }
 
   onClickCreateNewWorkflow() {
-    this.workflowCacheService.clearCachedWorkflow();
-    this.currentWorkflowName = this.workflowCacheService.getCachedWorkflowName();
+    this.workflowCacheService.resetCachedWorkflow();
     this.workflowCacheService.loadWorkflow();
   }
 }

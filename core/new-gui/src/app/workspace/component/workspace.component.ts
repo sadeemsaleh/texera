@@ -18,7 +18,6 @@ import { ActivatedRoute } from '@angular/router';
 import { WorkflowPersistService } from '../../common/service/user/workflow-persist/workflow-persist.service';
 import { Workflow } from '../../common/type/workflow';
 import { environment } from '../../../environments/environment';
-import { DatePipe } from '@angular/common';
 
 @Component({
   selector: 'texera-workspace',
@@ -41,14 +40,12 @@ import { DatePipe } from '@angular/common';
     WorkflowCacheService,
     ValidationWorkflowService,
     WorkflowStatusService,
-    WorkflowWebsocketService,
+    WorkflowWebsocketService
   ]
 })
 export class WorkspaceComponent implements OnInit {
 
   public showResultPanel: boolean = false;
-  public currentWorkflowName: string = '';
-  public persistingWorkflow: string = 'Saved';
 
   constructor(
     private resultPanelToggleService: ResultPanelToggleService,
@@ -59,11 +56,10 @@ export class WorkspaceComponent implements OnInit {
     private workflowPersistService: WorkflowPersistService,
     private workflowWebsocketService: WorkflowWebsocketService,
     private workflowActionService: WorkflowActionService,
-    private route: ActivatedRoute,
-    private datePipe: DatePipe
+    private route: ActivatedRoute
   ) {
     this.resultPanelToggleService.getToggleChangeStream().subscribe(
-      value => this.showResultPanel = value,
+      value => this.showResultPanel = value
     );
   }
 
@@ -81,26 +77,26 @@ export class WorkspaceComponent implements OnInit {
       this.workflowPersistService.retrieveWorkflow(this.route.snapshot.params.id).subscribe(
         (workflow: Workflow) => {
           this.workflowCacheService.cacheWorkflow(workflow);
-          this.currentWorkflowName = workflow.name;
           this.workflowCacheService.loadWorkflow();
         },
         () => {
           alert('You don\'t have access to this workflow, please log in with another account');
+          this.workflowCacheService.resetCachedWorkflow();
+          this.workflowCacheService.loadWorkflow();
         }
       );
     }
-    this.currentWorkflowName = this.workflowCacheService.getCachedWorkflowName();
   }
 
   private registerWorkflowAutoPersist(): void {
     this.workflowActionService.workflowChange.subscribe(
       () => {
-        this.persistingWorkflow = 'Saving';
         const workflow = this.workflowCacheService.getCachedWorkflow();
         if (workflow != null) {
           this.workflowPersistService.persistWorkflow(workflow)
-            .subscribe(this.workflowCacheService.cacheWorkflow) // to sync up the updated information, such as workflow.wid
-            .add(() => this.persistingWorkflow = 'Last saved at ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss'));
+            .subscribe((updatedWorkflow: Workflow) => {
+              this.workflowCacheService.cacheWorkflow(updatedWorkflow);
+            }); // to sync up the updated information, such as workflow.wid
         }
       }
     );
