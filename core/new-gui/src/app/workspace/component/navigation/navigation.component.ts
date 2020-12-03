@@ -100,7 +100,11 @@ export class NavigationComponent implements OnInit {
 
     this.workflowCacheService.cachedWorkflowChanged.subscribe((workflow: Workflow) => {
       this.currentWorkflowName = workflow.name;
-      this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss', 'UTC');
+      if (workflow.lastModifiedTime == null) {
+        this.autoSaveState = 'Not Saved';
+      } else {
+        this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss', 'UTC');
+      }
     });
   }
 

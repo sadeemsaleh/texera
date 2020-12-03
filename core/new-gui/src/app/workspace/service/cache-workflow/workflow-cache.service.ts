@@ -42,7 +42,7 @@ export class WorkflowCacheService {
     lastModifiedTime: 0
   };
 
-  @Output() public cachedWorkflowChanged: Subject<Workflow>;
+  @Output() public cachedWorkflowChanged: Subject<Workflow> = new Subject<Workflow>();
 
   constructor(
     private workflowActionService: WorkflowActionService,
@@ -53,7 +53,6 @@ export class WorkflowCacheService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => this.loadWorkflow());
-    this.cachedWorkflowChanged = new BehaviorSubject<Workflow>(WorkflowCacheService.DEFAULT_WORKFLOW);
     if (this.getCachedWorkflow() == null) {
       this.resetCachedWorkflow();
     }
