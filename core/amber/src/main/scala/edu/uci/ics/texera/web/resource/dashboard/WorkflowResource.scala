@@ -100,7 +100,7 @@ class WorkflowResource {
     * This method deletes the workflow from database
     *
     * @param session HttpSession
-    * @return Response, deleted - 200, not deleted -
+    * @return Response, deleted - 200, not deleted - 304 // TODO: change the error code
     */
   @DELETE
   @Path("/{wid}")
