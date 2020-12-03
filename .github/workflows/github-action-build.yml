@@ -2,18 +2,15 @@ name: build
 
 on:
   push:
-    branches: [ master ]
-    paths-ignore:
-      - 'core/scripts/**'
-      - '**/.gitignore'
-      - '**.md'
+    branches: 
+      - 'ci-enable/**'
   pull_request:
-    branches: [ master ]
     paths-ignore:
       - 'core/scripts/**'
       - '**/.gitignore'
       - '**.md'
-
+      - '**.csv'
+      - '**.txt'
 jobs:
   new-gui:
     runs-on: ubuntu-latest
