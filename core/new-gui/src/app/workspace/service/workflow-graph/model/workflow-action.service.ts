@@ -14,11 +14,9 @@ import {
   Point
 } from '../../../types/workflow-common.interface';
 
-
 import * as joint from 'jointjs';
 import { environment } from './../../../../../environments/environment';
 import { WorkflowEditorComponent } from './../../../component/workflow-editor/workflow-editor.component';
-
 
 export interface Command {
   execute(): void;
@@ -46,11 +44,10 @@ type OperatorPosition = {
  *
  */
 
-
 @Injectable()
 export class WorkflowActionService {
 
-  @Output() public workflowChange: Observable<any>;
+  @Output() public workflowChange: Subject<any> = new Subject<any>();
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
@@ -58,11 +55,10 @@ export class WorkflowActionService {
   private workflowModificationEnabled = true;
   private enableModificationStream = new BehaviorSubject<boolean>(true);
 
-
   constructor(
     private operatorMetadataService: OperatorMetadataService,
     private jointUIService: JointUIService,
-    private undoRedoService: UndoRedoService,
+    private undoRedoService: UndoRedoService
   ) {
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
@@ -72,7 +68,7 @@ export class WorkflowActionService {
     this.handleJointLinkAdd();
     this.handleJointOperatorDrag();
 
-    this.workflowChange = Subject.merge(
+    Observable.merge(
       this.getTexeraGraph().getOperatorAddStream(),
       this.getTexeraGraph().getOperatorDeleteStream(),
       this.getTexeraGraph().getLinkAddStream(),
@@ -80,7 +76,9 @@ export class WorkflowActionService {
       this.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.getTexeraGraph().getBreakpointChangeStream(),
       this.getJointGraphWrapper().getOperatorPositionChangeEvent()
-    ).debounceTime(100);
+    ).debounceTime(100).subscribe(_ => {
+      this.workflowChange.next(_);
+    });
   }
 
   public enableWorkflowModification() {
@@ -110,7 +108,7 @@ export class WorkflowActionService {
         execute: () => {
         },
         undo: () => this.deleteLinkWithIDInternal(link.linkID),
-        redo: () => this.addLinkInternal(link),
+        redo: () => this.addLinkInternal(link)
       };
       this.executeAndStoreCommand(command);
     });
