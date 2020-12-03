@@ -25,10 +25,8 @@ class DataProcessor( // dependencies:
   private var currentInputTuple: Either[ITuple, InputExhausted] = _
 
   // initialize dp thread upon construction
-  // we can use dpThreadFuture to kill dp thread if needed
-  private val dpThreadFuture: Future[_] = Executors.newSingleThreadExecutor.submit(new Runnable() {
-    def run(): Unit =
-      () => {
+  Executors.newSingleThreadExecutor.submit(new Runnable() {
+    def run(): Unit = {
         try {
           dpThread()
         } catch {

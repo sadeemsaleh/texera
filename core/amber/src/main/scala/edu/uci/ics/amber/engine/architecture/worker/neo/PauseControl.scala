@@ -51,7 +51,7 @@ class PauseControl {
     * @param level
     */
   def resume(level:Int): Unit ={
-    if(level < pausePrivilegeLevel) {
+    if(level < pausePrivilegeLevel.get()) {
       return
     }
     // only privilege level >= current pause privilege level can resume the worker
