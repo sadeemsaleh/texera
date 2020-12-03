@@ -1,5 +1,5 @@
 import { Injectable, Output } from '@angular/core';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { Breakpoint, OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
@@ -105,15 +105,7 @@ export class WorkflowCacheService {
    *  on the property panel and the workflow editor paper.
    */
   public handleAutoCacheWorkFlow(): void {
-    Observable.merge(
-      this.workflowActionService.getTexeraGraph().getOperatorAddStream(),
-      this.workflowActionService.getTexeraGraph().getOperatorDeleteStream(),
-      this.workflowActionService.getTexeraGraph().getLinkAddStream(),
-      this.workflowActionService.getTexeraGraph().getLinkDeleteStream(),
-      this.workflowActionService.getTexeraGraph().getOperatorPropertyChangeStream(),
-      this.workflowActionService.getTexeraGraph().getBreakpointChangeStream(),
-      this.workflowActionService.getJointGraphWrapper().getOperatorPositionChangeEvent()
-    ).debounceTime(100).subscribe(() => {
+    this.workflowActionService.workflowChange.subscribe(() => {
       const workflow1 = this.workflowActionService.getTexeraGraph();
 
       const operators = workflow1.getAllOperators();
