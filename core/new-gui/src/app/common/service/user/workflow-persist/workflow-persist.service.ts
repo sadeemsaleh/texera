@@ -52,7 +52,8 @@ export class WorkflowPersistService {
   }
 
   /**
-   * helper function to parse WorkflowInfo from a JSON string.
+   * helper function to parse WorkflowInfo from a JSON string. In some case, for example reading from backend, the content would returned
+   * as a JSON string.
    * @param workflow
    * @private
    */
