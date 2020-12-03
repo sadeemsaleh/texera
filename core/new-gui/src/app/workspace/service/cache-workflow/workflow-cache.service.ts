@@ -107,7 +107,7 @@ export class WorkflowCacheService {
    *  on the property panel and the workflow editor paper.
    */
   public handleAutoCacheWorkFlow(): void {
-    this.workflowActionService.workflowChange.subscribe(() => {
+    this.workflowActionService.workflowChange.debounceTime(100).subscribe(() => {
 
       // collect workflow info
       const texeraGraph = this.workflowActionService.getTexeraGraph();

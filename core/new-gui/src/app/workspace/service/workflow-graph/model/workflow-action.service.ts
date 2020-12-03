@@ -47,7 +47,7 @@ type OperatorPosition = {
 @Injectable()
 export class WorkflowActionService {
 
-  @Output() public workflowChange: Subject<any> = new Subject<any>();
+  @Output() public workflowChange: Subject<boolean> = new Subject<boolean>();
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
@@ -76,8 +76,8 @@ export class WorkflowActionService {
       this.getTexeraGraph().getOperatorPropertyChangeStream(),
       this.getTexeraGraph().getBreakpointChangeStream(),
       this.getJointGraphWrapper().getOperatorPositionChangeEvent()
-    ).debounceTime(100).subscribe(_ => {
-      this.workflowChange.next(_);
+    ).subscribe(_ => {
+      this.workflowChange.next(true);
     });
   }
 

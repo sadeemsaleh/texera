@@ -107,7 +107,7 @@ export class NavigationComponent implements OnInit {
       if (workflow.lastModifiedTime == null) {
         this.autoSaveState = 'Not Saved';
       } else {
-        this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss', 'UTC');
+        this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM/dd/yyyy HH:mm:ss', 'UTC');
       }
     });
   }
