@@ -52,6 +52,7 @@ export class WorkspaceComponent implements OnInit {
     // list additional services in constructor so they are initialized even if no one use them directly
     private sourceTablesService: SourceTablesService,
     private schemaPropagationService: SchemaPropagationService,
+    private undoRedoService: UndoRedoService,
     private workflowCacheService: WorkflowCacheService,
     private workflowPersistService: WorkflowPersistService,
     private workflowWebsocketService: WorkflowWebsocketService,
@@ -78,6 +79,8 @@ export class WorkspaceComponent implements OnInit {
         (workflow: Workflow) => {
           this.workflowCacheService.cacheWorkflow(workflow);
           this.workflowCacheService.loadWorkflow();
+          this.undoRedoService.clearUndoStack();
+          this.undoRedoService.clearRedoStack();
         },
         () => {
           alert('You don\'t have access to this workflow, please log in with another account');

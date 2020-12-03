@@ -23,12 +23,13 @@ export class UndoRedoService {
   private canUndoStream = new Subject<boolean>();
   private canRedoStream = new Subject<boolean>();
 
-
-  constructor() { }
+  constructor() {
+  }
 
   public enableWorkFlowModification() {
     this.workFlowModificationEnabled = true;
   }
+
   public disableWorkFlowModification() {
     this.workFlowModificationEnabled = false;
   }
@@ -75,7 +76,7 @@ export class UndoRedoService {
       this.undoStack.push(command);
       this.setListenJointCommand(true);
       this.canRedoStream.next(this.canRedo());
-      console.log("service can redo", this.canRedo());
+      console.log('service can redo', this.canRedo());
     }
   }
 
@@ -112,5 +113,12 @@ export class UndoRedoService {
     return this.canRedoStream.asObservable();
   }
 
+  public clearUndoStack(): void {
+    this.undoStack = [];
+  }
+
+  public clearRedoStack(): void {
+    this.redoStack = [];
+  }
 
 }

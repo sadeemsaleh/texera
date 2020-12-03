@@ -63,8 +63,9 @@ export class NavigationComponent implements OnInit {
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
     public userService: UserService,
-    private workflowCacheService: WorkflowCacheService,
-    private datePipe: DatePipe
+    private datePipe: DatePipe,
+    private undoRedoService: UndoRedoService,
+    private workflowCacheService: WorkflowCacheService
   ) {
     this.executionState = executeWorkflowService.getExecutionState().state;
     // return the run button after the execution is finished, either
@@ -294,5 +295,7 @@ export class NavigationComponent implements OnInit {
   onClickCreateNewWorkflow() {
     this.workflowCacheService.resetCachedWorkflow();
     this.workflowCacheService.loadWorkflow();
+    this.undoRedoService.clearUndoStack();
+    this.undoRedoService.clearRedoStack();
   }
 }
