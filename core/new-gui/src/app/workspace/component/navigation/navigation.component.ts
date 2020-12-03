@@ -14,6 +14,7 @@ import { Workflow } from '../../../common/type/workflow';
 import { Version } from '../../../../environments/version';
 import { environment } from '../../../../environments/environment';
 import { DatePipe } from '@angular/common';
+import { Location } from '@angular/common';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -64,6 +65,7 @@ export class NavigationComponent implements OnInit {
     public workflowPersistService: WorkflowPersistService,
     public userService: UserService,
     private datePipe: DatePipe,
+    private location: Location,
     private undoRedoService: UndoRedoService,
     private workflowCacheService: WorkflowCacheService
   ) {
@@ -297,5 +299,7 @@ export class NavigationComponent implements OnInit {
     this.workflowCacheService.loadWorkflow();
     this.undoRedoService.clearUndoStack();
     this.undoRedoService.clearRedoStack();
+    this.location.go('/');
+
   }
 }
