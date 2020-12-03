@@ -277,17 +277,15 @@ export class NavigationComponent implements OnInit {
    * and updates it in the cache if this is a new workflow.
    */
   public persistCachedWorkflow(): void {
-    const cachedWorkflow: Workflow | undefined = this.workflowCacheService.getCachedWorkflow();
-    if (cachedWorkflow !== undefined) {
-      this.isSaving = true;
-      this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
-        this.workflowCacheService.cacheWorkflow(updatedWorkflow);
-        this.isSaving = false;
-      }, error => {
-        alert(error);
-        this.isSaving = false;
-      });
-    }
+    const cachedWorkflow: Workflow = this.workflowCacheService.getCachedWorkflow();
+    this.isSaving = true;
+    this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
+      this.workflowCacheService.cacheWorkflow(updatedWorkflow);
+      this.isSaving = false;
+    }, error => {
+      alert(error);
+      this.isSaving = false;
+    });
   }
 
   /**

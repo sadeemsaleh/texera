@@ -110,13 +110,11 @@ export class WorkspaceComponent implements OnInit {
 
   private registerWorkflowAutoPersist(): void {
     this.workflowActionService.workflowChange.debounceTime(100).subscribe(() => {
-        const cachedWorkflow: Workflow | undefined = this.workflowCacheService.getCachedWorkflow();
-        if (cachedWorkflow !== undefined) {
-          this.workflowPersistService.persistWorkflow(cachedWorkflow)
-            .subscribe((updatedWorkflow: Workflow) => {
-              this.workflowCacheService.cacheWorkflow(updatedWorkflow);
-            }); // to sync up the updated information, such as workflow.wid
-        }
+        const cachedWorkflow: Workflow = this.workflowCacheService.getCachedWorkflow();
+        this.workflowPersistService.persistWorkflow(cachedWorkflow)
+          .subscribe((updatedWorkflow: Workflow) => {
+            this.workflowCacheService.cacheWorkflow(updatedWorkflow);
+          }); // to sync up the updated information, such as workflow.wid
       }
     );
   }
