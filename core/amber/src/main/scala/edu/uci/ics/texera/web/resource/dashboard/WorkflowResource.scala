@@ -62,7 +62,7 @@ class WorkflowResource {
   def retrieveWorkflow(@PathParam("wid") wid: UInteger, @Session session: HttpSession): Workflow = {
     val user = UserResource.getUser(session)
     if (user == null) return null
-    if (workflowOfUserFetchOneByID(wid, user.getUid)) {
+    if (workflowOfUserExists(wid, user.getUid)) {
       workflowDao.fetchOneByWid(wid)
     } else {
       null
@@ -83,7 +83,7 @@ class WorkflowResource {
   def persistWorkflow(@Session session: HttpSession, workflow: Workflow): Workflow = {
     val user = UserResource.getUser(session)
     if (user == null) return null
-    if (workflowOfUserFetchOneByID(workflow.getWid, user.getUid)) {
+    if (workflowOfUserExists(workflow.getWid, user.getUid)) {
       // when the wid is provided, update the existing workflow
       workflowDao.update(workflow)
       workflowDao.fetchOneByWid(workflow.getWid)
@@ -107,7 +107,7 @@ class WorkflowResource {
   def deleteWorkflow(@PathParam("wid") wid: UInteger, @Session session: HttpSession): Response = {
     val user = UserResource.getUser(session)
     if (user == null) return null
-    if (workflowOfUserFetchOneByID(wid, user.getUid)) {
+    if (workflowOfUserExists(wid, user.getUid)) {
       workflowDao.deleteById(wid)
       Response.ok().build()
     } else {
@@ -116,7 +116,7 @@ class WorkflowResource {
 
   }
 
-  private def workflowOfUserFetchOneByID(wid: UInteger, uid: UInteger): Boolean = {
+  private def workflowOfUserExists(wid: UInteger, uid: UInteger): Boolean = {
     workflowOfUserDao.existsById(
       SqlServer.createDSLContext
         .newRecord(WORKFLOW_OF_USER.UID, WORKFLOW_OF_USER.WID)

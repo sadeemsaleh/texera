@@ -21,10 +21,6 @@ const routes: Routes = [
   {
     path: '',
     component: WorkspaceComponent
-  },
-  {
-    path: 'workflow/:id',
-    component: WorkspaceComponent
   }
 ];
 
