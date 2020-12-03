@@ -62,7 +62,7 @@ export class NavigationComponent implements OnInit {
     public undoRedo: UndoRedoService,
     public validationWorkflowService: ValidationWorkflowService,
     public workflowPersistService: WorkflowPersistService,
-    private userService: UserService,
+    public userService: UserService,
     private workflowCacheService: WorkflowCacheService,
     private datePipe: DatePipe
   ) {
@@ -276,17 +276,13 @@ export class NavigationComponent implements OnInit {
   }
 
   public onClickSaveWorkflow(): void {
-    if (!this.userService.isLogin()) {
-      alert('please login');
-    } else {
-      const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
-      if (cachedWorkflow != null) {
-        this.isSaving = true;
-        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
-          this.workflowCacheService.cacheWorkflow(updatedWorkflow);
-          this.isSaving = false;
-        });
-      }
+    const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
+    if (cachedWorkflow != null) {
+      this.isSaving = true;
+      this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
+        this.workflowCacheService.cacheWorkflow(updatedWorkflow);
+        this.isSaving = false;
+      });
     }
   }
 

@@ -23,7 +23,8 @@
         <button *ngIf="userSystemEnabled" (click)="onClickCreateNewWorkflow()" nz-button title="create new">
           <i nz-icon nzTheme="outline" nzType="form"></i>
         </button>
-        <button *ngIf="userSystemEnabled" (click)="onClickSaveWorkflow()" [disabled]="isSaving" nz-button title="save">
+        <button *ngIf="userSystemEnabled" (click)="onClickSaveWorkflow()"
+                [disabled]=" !userService.isLogin()|| isSaving" nz-button title="save">
           <i *ngIf="!isSaving" nz-icon nzTheme="outline" nzType="save"></i>
           <i *ngIf="isSaving" [nzSpin]="true" [nzType]="'sync'" nz-icon nzTheme="outline"></i>
         </button>

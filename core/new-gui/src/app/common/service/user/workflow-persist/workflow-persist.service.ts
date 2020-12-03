@@ -5,8 +5,6 @@ import { WorkflowInfo, Workflow } from '../../../type/workflow';
 import { Observable } from 'rxjs/Observable';;
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
-import { WorkflowActionService } from 'src/app/workspace/service/workflow-graph/model/workflow-action.service';
-
 
 export const WORKFLOW_URL = 'user/dictionary/validate';
 
@@ -15,7 +13,7 @@ export const WORKFLOW_URL = 'user/dictionary/validate';
 })
 
 export class WorkflowPersistService {
-  constructor(public http: HttpClient) {
+  constructor(private http: HttpClient) {
   }
 
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
