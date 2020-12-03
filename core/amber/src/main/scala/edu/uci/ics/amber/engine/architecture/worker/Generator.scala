@@ -6,7 +6,11 @@ import edu.uci.ics.amber.engine.architecture.worker.neo.PauseControl
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
 import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
 import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, WorkerTag}
-import edu.uci.ics.amber.engine.common.{ElidableStatement, IOperatorExecutor, ISourceOperatorExecutor}
+import edu.uci.ics.amber.engine.common.{
+  ElidableStatement,
+  IOperatorExecutor,
+  ISourceOperatorExecutor
+}
 import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
 
 import scala.annotation.elidable
