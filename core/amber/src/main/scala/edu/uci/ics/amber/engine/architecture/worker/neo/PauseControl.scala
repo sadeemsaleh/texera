@@ -1,6 +1,7 @@
 package edu.uci.ics.amber.engine.architecture.worker.neo
 
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.atomic.AtomicInteger
 
 object PauseControl{
   // TODO: check if this is necessary
@@ -11,36 +12,41 @@ object PauseControl{
   // 3. the internal control resumes the workflow (with privilege 1)
   // step 3 will not be done since the user pauses the workflow.
   final val NoPause = 0
-  final val BackPressure = 1
-  final val Breakpoint = 2
-  final val CoreException = 3
   final val Internal = 4
   final val User = 1024
-  final val Recovery = 2048
-  final val Forced = 9999
 }
 
 class PauseControl {
 
   // current pause privilege level
-  var pausePrivilegeLevel: Int = PauseControl.NoPause
+  private val pausePrivilegeLevel = new AtomicInteger(PauseControl.NoPause)
   // yielded control of the dp thread
-  var currentFuture: CompletableFuture[Void] = _
+  private var currentFuture: CompletableFuture[Void] = _
 
 
-  /** pause functionality (synchronized)
+  /** pause functionality
     * both dp thread and actor can call this function
     * @param level
     */
   def pause(level:Int): Unit = {
-    synchronized{
-      if(level >= pausePrivilegeLevel){
-        this.pausePrivilegeLevel = level
-      }
+
+    /*this line atomically applies the following logic:
+      if(level >= pausePrivilegeLevel.get())
+        pausePrivilegeLevel.set(level)
+     */
+    pausePrivilegeLevel.getAndUpdate( i => if(level >= i) level else i)
+  }
+
+  /** blocking wait for dp thread to pause
+    * MUST be called in worker actor thread
+    */
+  def waitForDPThread(): Unit ={
+    while(currentFuture == null){
+      //wait
     }
   }
 
-  /** resume functionality (synchronized)
+  /** resume functionality
     * only actor calls this function for now
     * @param level
     */
@@ -49,35 +55,39 @@ class PauseControl {
       return
     }
     // only privilege level >= current pause privilege level can resume the worker
-    pausePrivilegeLevel = PauseControl.NoPause
+    pausePrivilegeLevel.set(PauseControl.NoPause)
     unblockDPThread()
   }
 
-  /** check for pause in dp thread (synchronized)
+  /** check for pause in dp thread
     * only dp thread and operator logic can call this function
     * @throws
     */
   @throws[Exception]
   def pauseCheck(): Unit = {
     // returns if not paused
-    if (this.pausePrivilegeLevel == PauseControl.NoPause) return
+    if (this.pausePrivilegeLevel.get() == PauseControl.NoPause) return
     blockDPThread()
   }
 
-
-  def blockDPThread():Unit = {
+  /** block the thread by creating CompletableFuture and wait for completion
+    */
+  private[this] def blockDPThread():Unit = {
     // create a future and wait for its completion
     this.currentFuture = new CompletableFuture[Void]
     // thread blocks here
     this.currentFuture.get
   }
 
-  def unblockDPThread():Unit = {
+  /** unblock DP thread by resolving the CompletableFuture
+    */
+  private[this] def unblockDPThread():Unit = {
     // If dp thread suspended, release it
     if (this.currentFuture != null) {
       this.currentFuture.complete(null)
       this.currentFuture = null
     }
   }
+
 
 }

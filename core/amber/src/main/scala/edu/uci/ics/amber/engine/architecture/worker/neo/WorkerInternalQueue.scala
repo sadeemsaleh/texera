@@ -7,11 +7,11 @@ import edu.uci.ics.amber.engine.common.tuple.ITuple
 
 import scala.collection.mutable
 
-class BatchInput{
+class WorkerInternalQueue{
   // blocking deque for batches:
   // main thread put batches into this queue
   // tuple input (dp thread) take batches from this queue
-  var WorkerInternalQueue = new LinkedBlockingDeque[(Int, Array[ITuple])]
+  var blockingDeque = new LinkedBlockingDeque[(Int, Array[ITuple])]
 
   // map from layerTag to input number
   // TODO: we also need to refactor all identifiers
@@ -21,7 +21,7 @@ class BatchInput{
     * @param batch
     */
   def addBatch(batch:(LayerTag, Array[ITuple])): Unit ={
-    WorkerInternalQueue.add((inputMap(batch._1),batch._2))
+    blockingDeque.add((inputMap(batch._1),batch._2))
   }
 }
 

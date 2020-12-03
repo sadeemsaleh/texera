@@ -88,7 +88,7 @@ class DataProcessor( // dependencies:
         tupleOutput.transferTuple(outputTuple, outputTupleCount)
       } catch {
         case bp: BreakpointException =>
-          pauseControl.pause(PauseControl.Breakpoint)
+          pauseControl.pause(PauseControl.Internal)
           self ! LocalBreakpointTriggered // TODO: apply FIFO & exactly-once protocol here
         case e: Exception =>
           handleOperatorException(e, isInput = false)
@@ -107,16 +107,20 @@ class DataProcessor( // dependencies:
       currentInputTuple = tupleInput.nextInputTuple()
       // check pause before processing the input tuple.
       pauseControl.pauseCheck()
-      // pass input tuple to operator logic.
-      val outputIterator = processCurrentInputTuple()
-      // check pause before outputting tuples.
-      pauseControl.pauseCheck()
-      // output loop: take one tuple from iterator at a time.
-      while (outputIterator != null && outputIterator.hasNext) {
-        // send tuple to downstream.
-        outputOneTuple(outputIterator)
-        // check pause after one tuple has been outputted.
+      // if the input tuple is not a dummy tuple, process it
+      // TODO: make sure this dummy batch feature works with fault tolerance
+      if(currentInputTuple != null){
+        // pass input tuple to operator logic.
+        val outputIterator = processCurrentInputTuple()
+        // check pause before outputting tuples.
         pauseControl.pauseCheck()
+        // output loop: take one tuple from iterator at a time.
+        while (outputIterator != null && outputIterator.hasNext) {
+          // send tuple to downstream.
+          outputOneTuple(outputIterator)
+          // check pause after one tuple has been outputted.
+          pauseControl.pauseCheck()
+        }
       }
     }
     // Send Completed signal to worker actor.
@@ -137,7 +141,7 @@ class DataProcessor( // dependencies:
   }
 
   private[this] def handleOperatorException(e: Exception, isInput: Boolean): Unit = {
-    pauseControl.pause(PauseControl.Breakpoint)
+    pauseControl.pause(PauseControl.Internal)
     assignExceptionBreakpoint(currentInputTuple.left.getOrElse(null), e, isInput)
     self ! LocalBreakpointTriggered // TODO: apply FIFO & exactly-once protocol here
   }

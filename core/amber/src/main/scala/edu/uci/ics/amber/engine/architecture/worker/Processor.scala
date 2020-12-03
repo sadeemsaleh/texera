@@ -156,7 +156,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
           for (i <- batches)
-            batchInput.addBatch((currentEdge, i))
+            workerInternalQueue.addBatch((currentEdge, i))
       case None =>
     }
   }
@@ -164,7 +164,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   def onSaveEndSending(seq: Long): Unit = {
     if (input.registerEnd(sender, seq)) {
         val currentEdge: LayerTag = input.actorToEdge(sender)
-        batchInput.addBatch((currentEdge, null))
+        workerInternalQueue.addBatch((currentEdge, null))
     }
   }
 
@@ -177,7 +177,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
           for (i <- batches)
-            batchInput.addBatch((currentEdge, i))
+            workerInternalQueue.addBatch((currentEdge, i))
       case None =>
     }
   }
@@ -193,9 +193,15 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   override def onPausing(): Unit = {
     super.onPausing()
     pauseControl.pause(PauseControl.User)
+    // if dp thread is blocking on waiting for input tuples:
+    if(workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted){
+      // insert dummy batch to unblock dp thread
+      workerInternalQueue.addBatch(null)
+    }
+    pauseControl.waitForDPThread()
+    onPaused()
     context.become(paused)
     unstashAll()
-    onPaused()
   }
 
   override def onInitialization(recoveryInformation: Seq[(Long, Long)]): Unit = {
@@ -259,7 +265,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
   final def allowUpdateInputLinking: Receive = {
     case UpdateInputLinking(inputActor, edgeID, inputNum) =>
       sender ! Ack
-      batchInput.inputMap(edgeID) = inputNum
+      workerInternalQueue.inputMap(edgeID) = inputNum
       aliveUpstreams.add(edgeID)
       input.addSender(inputActor, edgeID)
   }

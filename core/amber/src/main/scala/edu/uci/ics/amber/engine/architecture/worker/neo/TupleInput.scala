@@ -3,7 +3,7 @@ package edu.uci.ics.amber.engine.architecture.worker.neo
 import edu.uci.ics.amber.engine.common.InputExhausted
 import edu.uci.ics.amber.engine.common.tuple.ITuple
 
-class TupleInput(batchInput: BatchInput){
+class TupleInput(internalQueue: WorkerInternalQueue){
 
   // save current batch related information
   private var currentBatch:(Int, Array[ITuple]) = _
@@ -21,9 +21,13 @@ class TupleInput(batchInput: BatchInput){
     // increment cursor
     currentTupleIndex += 1
     // if batch is unavailable, take one from batchInput and reset cursor
-    if(currentBatch == null || currentTupleIndex >= currentBatch._2.length){
+    if(isCurrentBatchExhausted){
+      currentBatch = internalQueue.blockingDeque.take()
       currentTupleIndex = 0
-      currentBatch = batchInput.WorkerInternalQueue.take()
+    }
+    // if the batch is dummy batch inserted by worker, return null to unblock dp thread
+    if(currentBatch == null){
+      return null
     }
     // if current batch is a data batch, return tuple
     if(currentBatch._2 != null) {
@@ -32,7 +36,7 @@ class TupleInput(batchInput: BatchInput){
       // current batch is an End of Data sign.
       inputExhaustedCount += 1
       // check if End of Data sign from every upstream has been received
-      allExhausted = batchInput.inputMap.size == inputExhaustedCount
+      allExhausted = internalQueue.inputMap.size == inputExhaustedCount
       // return InputExhausted
       Right(InputExhausted())
     }
@@ -41,5 +45,7 @@ class TupleInput(batchInput: BatchInput){
   def getCurrentInput:Int = currentTupleIndex
 
   def isAllUpstreamsExhausted:Boolean = allExhausted
+
+  def isCurrentBatchExhausted:Boolean = currentBatch == null || currentTupleIndex >= currentBatch._2.length
 }
 

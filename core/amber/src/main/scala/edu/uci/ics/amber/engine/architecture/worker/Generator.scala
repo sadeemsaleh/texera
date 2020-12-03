@@ -19,7 +19,7 @@ import akka.actor.{ActorLogging, Props, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInput, DataProcessor, PauseControl, TupleInput, TupleOutput}
+import edu.uci.ics.amber.engine.architecture.worker.neo.{WorkerInternalQueue, DataProcessor, PauseControl, TupleInput, TupleOutput}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -35,7 +35,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
     with Stash{
 
   //insert a SPECIAL case for generator
-  batchInput.inputMap(LayerTag("","","")) = 0
+  workerInternalQueue.inputMap(LayerTag("","","")) = 0
 
   @elidable(INFO) var generateTime = 0L
   @elidable(INFO) var generateStart = 0L
@@ -100,6 +100,12 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
   override def onPausing(): Unit = {
     super.onPausing()
     pauseControl.pause(PauseControl.User)
+    // if dp thread is blocking on waiting for input tuples:
+    if(workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted){
+      // insert dummy batch to unblock dp thread
+      workerInternalQueue.addBatch(null)
+    }
+    pauseControl.waitForDPThread()
     onPaused()
     context.become(paused)
     unstashAll()
@@ -112,7 +118,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onStart(): Unit = {
     super.onStart()
-    batchInput.addBatch((LayerTag("","",""),null))
+    workerInternalQueue.addBatch((LayerTag("","",""),null))
     context.become(running)
     unstashAll()
   }

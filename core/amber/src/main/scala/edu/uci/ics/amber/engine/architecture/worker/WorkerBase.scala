@@ -12,7 +12,7 @@ import akka.actor.{Actor, ActorLogging, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{BatchInput, DataProcessor, PauseControl, TupleInput, TupleOutput}
+import edu.uci.ics.amber.engine.architecture.worker.neo.{WorkerInternalQueue, DataProcessor, PauseControl, TupleInput, TupleOutput}
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -28,7 +28,7 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash{
 
   var operator: IOperatorExecutor
 
-  lazy val batchInput: BatchInput = wire[BatchInput]
+  lazy val workerInternalQueue: WorkerInternalQueue = wire[WorkerInternalQueue]
   lazy val tupleInput: TupleInput = wire[TupleInput]
   lazy val pauseControl: PauseControl = wire[PauseControl]
   lazy val tupleOutput: TupleOutput = wire[TupleOutput]
@@ -83,7 +83,6 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash{
   def onCompleted(): Unit = {
     tupleOutput.endDataTransfer()
     isCompleted = true
-    pauseControl.resume(PauseControl.Forced)
     context.parent ! ReportState(WorkerState.Completed)
   }
 
