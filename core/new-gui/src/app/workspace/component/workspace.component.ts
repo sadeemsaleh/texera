@@ -66,6 +66,23 @@ export class WorkspaceComponent implements OnInit {
 
   ngOnInit(): void {
 
+    /**
+     * On initialization of the workspace, there could be three cases:
+     * 1. Accessed by URL `/`, no workflow is cached or in the URL (Cold Start):
+     *    - This won't be able to find a workflow on the backend to link with. It starts with the WorkflowCacheService.DEFAULT_WORKFLOW,
+     *    which is an empty workflow with undefined id. This workflow will be cached in localStorage upon initialization.
+     *    - After an Auto-persist being triggered by a workspace event, it will create a new workflow in the database
+     *    and update the cached workflow with its new ID from database.
+     * 2. Accessed by URL `/`, with a workflow cached (refresh manually, or create new workflow button):
+     *    - This will trigger the WorkflowCacheService to load the workflow from cache. It can be linked to the database if the cached
+     *    workflow has ID.
+     *    - After an Auto-persist being triggered by a workspace event, if not having an ID, it will create a new workflow in the database
+     *    and update the cached workflow with its new ID from database.
+     * 3. Accessed by URL `/workflow/:id` (refresh manually, or jump from dashboard workflow list):
+     *    - No matter if there exists a cached workflow, it will retrieves the workflow from database with the given ID. the cached workflow
+     *    will be overwritten. Because it has an ID, it will be linked to the database
+     *    - Auto-persist will be triggered upon all workspace events.
+     */
     if (environment.userSystemEnabled) {
       this.loadWorkflowFromID();
       this.registerWorkflowAutoPersist();
