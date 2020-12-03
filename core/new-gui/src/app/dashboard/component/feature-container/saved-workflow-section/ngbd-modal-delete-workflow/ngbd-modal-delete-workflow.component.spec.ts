@@ -55,7 +55,7 @@ describe('NgbdModalDeleteProjectComponent', () => {
     getBool = false;
 
     deletecomponent.workflow = sampleProject;
-    deletecomponent.deleteSavedWorkflow();
+    deletecomponent.confirmDelete();
 
     expect(getBool).toEqual(false);
   });

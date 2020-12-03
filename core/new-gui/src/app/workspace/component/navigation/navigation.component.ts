@@ -54,6 +54,7 @@ export class NavigationComponent implements OnInit {
 
   // whether user dashboard is enabled and accessible from the workspace
   public userSystemEnabled: boolean = environment.userSystemEnabled;
+  public onClickRunHandler: () => void;
 
   constructor(
     public executeWorkflowService: ExecuteWorkflowService,
@@ -77,9 +78,11 @@ export class NavigationComponent implements OnInit {
     this.runIcon = initBehavior.icon;
     this.runDisable = initBehavior.disable;
     this.onClickRunHandler = initBehavior.onClick;
-    this.currentWorkflowName = this.workflowCacheService.getCachedWorkflowName();
 
-    executeWorkflowService.getExecutionStateStream().subscribe(
+  }
+
+  ngOnInit(): void {
+    this.executeWorkflowService.getExecutionStateStream().subscribe(
       event => {
         this.executionState = event.current.state;
         switch (event.current.state) {
@@ -92,12 +95,13 @@ export class NavigationComponent implements OnInit {
     );
 
     // set the map of operatorStatusMap
-    validationWorkflowService.getWorkflowValidationErrorStream()
+    this.validationWorkflowService.getWorkflowValidationErrorStream()
       .subscribe(value => {
         this.isWorkflowValid = Object.keys(value.errors).length === 0;
         this.applyRunButtonBehavior(this.getRunButtonBehavior(this.executionState, this.isWorkflowValid));
       });
 
+    // handle cached workflow change
     this.workflowCacheService.cachedWorkflowChanged.subscribe((workflow: Workflow) => {
       this.currentWorkflowName = workflow.name;
       if (workflow.lastModifiedTime == null) {
@@ -106,13 +110,6 @@ export class NavigationComponent implements OnInit {
         this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM-dd HH:mm:ss', 'UTC');
       }
     });
-  }
-
-  public onClickRunHandler() {
-  }
-
-  ngOnInit() {
-
   }
 
   // apply a behavior to the run button via bound variables
@@ -276,15 +273,12 @@ export class NavigationComponent implements OnInit {
   }
 
   /**
-   * Returns true if there's any operator on the graph; false otherwise
+   * Persist the cachedWorkflow in the localStorage, save it to the backend database. It also fetches the new workflow.wid
+   * and updates it in the cache if this is a new workflow.
    */
-  public hasOperators(): boolean {
-    return this.workflowActionService.getTexeraGraph().getAllOperators().length > 0;
-  }
-
-  public onClickSaveWorkflow(): void {
-    const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
-    if (cachedWorkflow != null) {
+  public persistCachedWorkflow(): void {
+    const cachedWorkflow: Workflow | undefined = this.workflowCacheService.getCachedWorkflow();
+    if (cachedWorkflow !== undefined) {
       this.isSaving = true;
       this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
         this.workflowCacheService.cacheWorkflow(updatedWorkflow);
@@ -293,11 +287,18 @@ export class NavigationComponent implements OnInit {
     }
   }
 
+  /**
+   * Handler for changing workflow name input box, updates the cachedWorkflow and persist to database.
+   */
   onWorkflowNameChange() {
     this.workflowCacheService.setCachedWorkflowName(this.currentWorkflowName);
-    this.onClickSaveWorkflow();
+    this.persistCachedWorkflow();
   }
 
+  /**
+   * Handler for create new workflow button. It resets the cachedWorkflow and undo redo stack. It removes the workflow id from the URL
+   * since at this moment, the new workflow is not persisted to database.
+   */
   onClickCreateNewWorkflow() {
     this.workflowCacheService.resetCachedWorkflow();
     this.workflowCacheService.loadWorkflow();

@@ -36,7 +36,7 @@ export class SavedWorkflowSectionComponent implements OnInit {
 
   ngOnInit() {
     this.workflowPersistService.retrieveWorkflowsBySessionUser().subscribe(
-      workflows => this.workflows = workflows,
+      workflows => this.workflows = workflows
     );
   }
 
@@ -99,15 +99,14 @@ export class SavedWorkflowSectionComponent implements OnInit {
    * message to frontend and delete the workflow on frontend. It
    * calls the deleteProject method in service which implements backend API.
    */
-  public openNgbdModalDeleteWorkflowComponent(savedWorkflow: Workflow): void {
+  public openNgbdModalDeleteWorkflowComponent(workflowToDelete: Workflow): void {
     const modalRef = this.modalService.open(NgbdModalDeleteWorkflowComponent);
-    modalRef.componentInstance.project = cloneDeep(savedWorkflow);
+    modalRef.componentInstance.workflow = cloneDeep(workflowToDelete);
 
-    Observable.from(modalRef.result).subscribe(
-      (value: boolean) => {
-        if (value) {
-          this.workflows = this.workflows.filter(workflow => workflow.wid !== savedWorkflow.wid);
-          this.workflowPersistService.deleteWorkflow(savedWorkflow);
+    Observable.from(modalRef.result).subscribe((confirmToDelete: boolean) => {
+        if (confirmToDelete) {
+          this.workflows = this.workflows.filter(workflow => workflow.wid !== workflowToDelete.wid);
+          this.workflowPersistService.deleteWorkflow(workflowToDelete);
         }
       }
     );

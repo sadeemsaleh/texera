@@ -48,14 +48,16 @@ export class WorkflowCacheService {
     private workflowActionService: WorkflowActionService,
     private operatorMetadataService: OperatorMetadataService
   ) {
+    if (this.getCachedWorkflow() === undefined) {
+      this.resetCachedWorkflow();
+    }
+
     this.handleAutoCacheWorkFlow();
 
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => this.loadWorkflow());
-    if (this.getCachedWorkflow() == null) {
-      this.resetCachedWorkflow();
-    }
+
   }
 
   /**
@@ -69,8 +71,8 @@ export class WorkflowCacheService {
       this.workflowActionService.getTexeraGraph().getAllOperators().map(op => op.operatorID), []);
 
     // get items in the storage
-    const workflow = this.getCachedWorkflow();
-    if (workflow == null) {
+    const workflow: Workflow | undefined = this.getCachedWorkflow();
+    if (workflow === undefined) {
       return;
     }
 
@@ -106,30 +108,31 @@ export class WorkflowCacheService {
    */
   public handleAutoCacheWorkFlow(): void {
     this.workflowActionService.workflowChange.subscribe(() => {
-      const workflow1 = this.workflowActionService.getTexeraGraph();
 
-      const operators = workflow1.getAllOperators();
-      const links = workflow1.getAllLinks();
+      // collect workflow info
+      const texeraGraph = this.workflowActionService.getTexeraGraph();
+      const operators = texeraGraph.getAllOperators();
+      const links = texeraGraph.getAllLinks();
       const operatorPositions: { [key: string]: Point } = {};
-      const breakpointsMap = workflow1.getAllLinkBreakpoints();
+      const breakpointsMap = texeraGraph.getAllLinkBreakpoints();
       const breakpoints: Record<string, Breakpoint> = {};
       breakpointsMap.forEach((value, key) => (breakpoints[key] = value));
-      workflow1.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
+      texeraGraph.getAllOperators().forEach(op => operatorPositions[op.operatorID] =
         this.workflowActionService.getJointGraphWrapper().getOperatorPosition(op.operatorID));
 
-      const cachedWorkflow: WorkflowInfo = {
+      // update the cached workflow
+      let cachedWorkflow: Workflow | undefined = this.getCachedWorkflow();
+      if (cachedWorkflow === undefined) {
+        cachedWorkflow = WorkflowCacheService.DEFAULT_WORKFLOW;
+      }
+      cachedWorkflow.content = {
         operators, operatorPositions, links, breakpoints
       };
-      let workflow: Workflow | null = this.getCachedWorkflow();
-      if (workflow == null) {
-        workflow = WorkflowCacheService.DEFAULT_WORKFLOW;
-      }
-      workflow.content = cachedWorkflow;
-      this.cacheWorkflow(workflow);
+      this.cacheWorkflow(cachedWorkflow);
     });
   }
 
-  public getCachedWorkflow(): Workflow | null {
+  public getCachedWorkflow(): Workflow | undefined {
     return localGetObject<Workflow>(WorkflowCacheService.LOCAL_STORAGE_KEY);
   }
 
