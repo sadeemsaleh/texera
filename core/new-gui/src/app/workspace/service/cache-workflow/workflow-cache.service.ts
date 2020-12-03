@@ -146,8 +146,9 @@ export class WorkflowCacheService {
   }
 
   public setCachedWorkflowName(name: string) {
+    name = name.trim();
     const workflow: Workflow = this.getCachedWorkflow();
-    workflow.name = name.trim().length > 0 ? name : WorkflowCacheService.DEFAULT_WORKFLOW_NAME;
+    workflow.name = name.length > 0 ? name : WorkflowCacheService.DEFAULT_WORKFLOW_NAME;
     this.cacheWorkflow(workflow);
   }
 
