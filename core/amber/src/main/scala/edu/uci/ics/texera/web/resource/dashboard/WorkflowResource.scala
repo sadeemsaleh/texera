@@ -33,7 +33,7 @@ class WorkflowResource {
     * @return Workflow[]
     */
   @GET
-  @Path("/get")
+  @Path("/list")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def retrieveWorkflowsBySessionUser(@Session session: HttpSession): util.List[Workflow] = {
     val user = UserResource.getUser(session)
@@ -57,7 +57,7 @@ class WorkflowResource {
     * @return a json string representing an savedWorkflow
     */
   @GET
-  @Path("/get/{wid}")
+  @Path("/{wid}")
   @Produces(Array(MediaType.APPLICATION_JSON))
   def retrieveWorkflow(@PathParam("wid") wid: UInteger, @Session session: HttpSession): Workflow = {
     val user = UserResource.getUser(session)

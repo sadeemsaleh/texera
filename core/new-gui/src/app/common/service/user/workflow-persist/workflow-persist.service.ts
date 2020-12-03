@@ -6,7 +6,7 @@ import { Observable } from 'rxjs/Observable';
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
 
-export const WORKFLOW_URL = 'user/dictionary/validate';
+export const WORKFLOW_URL = 'workflow';
 
 @Injectable({
   providedIn: 'root'
@@ -20,7 +20,7 @@ export class WorkflowPersistService {
    * @param workflow
    */
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
-    return this.http.post<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/persist`, {
+    return this.http.post<Workflow>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_URL}/persist`, {
       wid: workflow.wid,
       name: workflow.name,
       content: JSON.stringify(workflow.content)
@@ -32,7 +32,7 @@ export class WorkflowPersistService {
    * @param wid, the workflow id.
    */
   public retrieveWorkflow(wid: number): Observable<Workflow> {
-    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/workflow/get/${wid}`)
+    return this.http.get<Workflow>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_URL}/${wid}`)
       .pipe(map(WorkflowPersistService.parseWorkflowInfo));
   }
 
@@ -40,7 +40,7 @@ export class WorkflowPersistService {
    * retrieves a list of workflows from backend database that belongs to the user in the session.
    */
   public retrieveWorkflowsBySessionUser(): Observable<Workflow[]> {
-    return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/workflow/get`)
+    return this.http.get<Workflow[]>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_URL}/list`)
       .pipe(map((workflows: Workflow[]) => workflows.map(WorkflowPersistService.parseWorkflowInfo)));
   }
 
@@ -48,7 +48,7 @@ export class WorkflowPersistService {
    * deletes the given workflow, the user in the session must own the workflow.
    */
   public deleteWorkflow(wid: number): Observable<Response> {
-    return this.http.delete<Response>(`${AppSettings.getApiEndpoint()}/workflow/${wid}`);
+    return this.http.delete<Response>(`${AppSettings.getApiEndpoint()}/${WORKFLOW_URL}/${wid}`);
   }
 
   /**
