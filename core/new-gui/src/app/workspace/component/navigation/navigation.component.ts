@@ -282,18 +282,17 @@ export class NavigationComponent implements OnInit {
       const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
       if (cachedWorkflow != null) {
         this.isSaving = true;
-        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe(this.workflowCacheService.cacheWorkflow).add(() => {
+        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe((updatedWorkflow: Workflow) => {
+          this.workflowCacheService.cacheWorkflow(updatedWorkflow);
           this.isSaving = false;
         });
-      } else {
-        alert('No workflow found in cache.');
       }
     }
   }
 
   onWorkflowNameChange() {
     this.workflowCacheService.setCachedWorkflowName(this.currentWorkflowName);
-
+    this.onClickSaveWorkflow();
   }
 
   onClickCreateNewWorkflow() {

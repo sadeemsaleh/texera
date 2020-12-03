@@ -91,9 +91,9 @@ export class WorkspaceComponent implements OnInit {
   private registerWorkflowAutoPersist(): void {
     this.workflowActionService.workflowChange.subscribe(
       () => {
-        const workflow = this.workflowCacheService.getCachedWorkflow();
-        if (workflow != null) {
-          this.workflowPersistService.persistWorkflow(workflow)
+        const cachedWorkflow = this.workflowCacheService.getCachedWorkflow();
+        if (cachedWorkflow != null) {
+          this.workflowPersistService.persistWorkflow(cachedWorkflow)
             .subscribe((updatedWorkflow: Workflow) => {
               this.workflowCacheService.cacheWorkflow(updatedWorkflow);
             }); // to sync up the updated information, such as workflow.wid
