@@ -1,27 +1,25 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage
-import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.LocalBreakpoint
-import edu.uci.ics.amber.engine.common.amberexception.AmberException
-import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
-import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.{ElidableStatement, IOperatorExecutor}
 import akka.actor.{Actor, ActorLogging, Stash}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
 import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{WorkerInternalQueue, DataProcessor, PauseControl, TupleInput, TupleOutput}
+import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
+import edu.uci.ics.amber.engine.architecture.worker.neo._
+import edu.uci.ics.amber.engine.common.IOperatorExecutor
+import edu.uci.ics.amber.engine.common.amberexception.AmberException
+import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
+import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage
+import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
-import scala.util.control.Breaks
 import scala.concurrent.duration._
 
-abstract class WorkerBase extends Actor with ActorLogging with Stash{
+abstract class WorkerBase extends Actor with ActorLogging with Stash {
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val timeout: Timeout = 5.seconds
   implicit val logAdapter: LoggingAdapter = log
@@ -85,7 +83,6 @@ abstract class WorkerBase extends Actor with ActorLogging with Stash{
     isCompleted = true
     context.parent ! ReportState(WorkerState.Completed)
   }
-
 
   def onBreakpointTriggered(): Unit = {
     dataProcessor.breakpoints.foreach { brk =>

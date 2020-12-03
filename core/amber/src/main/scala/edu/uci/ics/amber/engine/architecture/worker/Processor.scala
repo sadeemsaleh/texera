@@ -1,47 +1,21 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import java.util.concurrent.Executors
-
+import akka.actor.Props
 import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{
-  ExceptionBreakpoint,
-  LocalBreakpoint
-}
 import edu.uci.ics.amber.engine.architecture.receivesemantics.FIFOAccessPort
-import edu.uci.ics.amber.engine.common.amberexception.{AmberException, BreakpointException}
-import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
-import edu.uci.ics.amber.engine.common.ambermessage.StateMessage._
+import edu.uci.ics.amber.engine.architecture.worker.neo.PauseControl
+import edu.uci.ics.amber.engine.common.amberexception.AmberException
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage.{QueryState, _}
+import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
 import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, WorkerTag}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.common.{
-  AdvancedMessageSending,
-  Constants,
-  ElidableStatement,
-  InputExhausted,
-  IOperatorExecutor,
-  TableMetadata,
-  ThreadState,
-  ITupleSinkOperatorExecutor
-}
+import edu.uci.ics.amber.engine.common.{AdvancedMessageSending, ElidableStatement, IOperatorExecutor, ITupleSinkOperatorExecutor}
 import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
-import edu.uci.ics.texera.workflow.common.operators.filter.FilterOpExec
 import edu.uci.ics.amber.engine.operators.OpExecConfig
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash}
-import akka.event.LoggingAdapter
-import akka.pattern.ask
-import akka.util.Timeout
-import com.github.nscala_time.time.Imports._
-import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{DataProcessor, PauseControl}
-import play.api.libs.json.{JsValue, Json}
 
-import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
-import scala.util.control.Breaks
 import scala.annotation.elidable
 import scala.annotation.elidable._
-import scala.concurrent.duration._
+import scala.collection.mutable
 
 object Processor {
   def props(processor: IOperatorExecutor, tag: WorkerTag): Props =
@@ -155,16 +129,16 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
     input.preCheck(seq, payload, sender) match {
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
-          for (i <- batches)
-            workerInternalQueue.addBatch((currentEdge, i))
+        for (i <- batches)
+          workerInternalQueue.addBatch((currentEdge, i))
       case None =>
     }
   }
 
   def onSaveEndSending(seq: Long): Unit = {
     if (input.registerEnd(sender, seq)) {
-        val currentEdge: LayerTag = input.actorToEdge(sender)
-        workerInternalQueue.addBatch((currentEdge, null))
+      val currentEdge: LayerTag = input.actorToEdge(sender)
+      workerInternalQueue.addBatch((currentEdge, null))
     }
   }
 
@@ -176,8 +150,8 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
     input.preCheck(seq, payload, sender) match {
       case Some(batches) =>
         val currentEdge = input.actorToEdge(sender)
-          for (i <- batches)
-            workerInternalQueue.addBatch((currentEdge, i))
+        for (i <- batches)
+          workerInternalQueue.addBatch((currentEdge, i))
       case None =>
     }
   }
@@ -194,7 +168,7 @@ class Processor(var operator: IOperatorExecutor, val tag: WorkerTag) extends Wor
     super.onPausing()
     pauseControl.pause(PauseControl.User)
     // if dp thread is blocking on waiting for input tuples:
-    if(workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted){
+    if (workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted) {
       // insert dummy batch to unblock dp thread
       workerInternalQueue.addBatch(null)
     }

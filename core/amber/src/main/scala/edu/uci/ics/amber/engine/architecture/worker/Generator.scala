@@ -1,25 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import java.util.concurrent.Executors
-
-import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
-import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.{
-  ExceptionBreakpoint,
-  LocalBreakpoint
-}
-import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
-import edu.uci.ics.amber.engine.common.{AdvancedMessageSending, ElidableStatement, IOperatorExecutor, ISourceOperatorExecutor, InputExhausted, ThreadState}
-import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
-import edu.uci.ics.amber.engine.common.ambermessage.StateMessage._
-import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
-import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, WorkerTag}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
-import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
 import akka.actor.{ActorLogging, Props, Stash}
-import akka.event.LoggingAdapter
-import akka.util.Timeout
-import com.softwaremill.macwire.wire
-import edu.uci.ics.amber.engine.architecture.worker.neo.{WorkerInternalQueue, DataProcessor, PauseControl, TupleInput, TupleOutput}
+import edu.uci.ics.amber.engine.architecture.breakpoint.FaultedTuple
+import edu.uci.ics.amber.engine.architecture.worker.neo.PauseControl
+import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage._
+import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage._
+import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, WorkerTag}
+import edu.uci.ics.amber.engine.common.{ElidableStatement, IOperatorExecutor, ISourceOperatorExecutor}
+import edu.uci.ics.amber.engine.faulttolerance.recovery.RecoveryPacket
 
 import scala.annotation.elidable
 import scala.annotation.elidable.INFO
@@ -32,10 +20,10 @@ object Generator {
 class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
     extends WorkerBase
     with ActorLogging
-    with Stash{
+    with Stash {
 
   //insert a SPECIAL case for generator
-  workerInternalQueue.inputMap(LayerTag("","","")) = 0
+  workerInternalQueue.inputMap(LayerTag("", "", "")) = 0
 
   @elidable(INFO) var generateTime = 0L
   @elidable(INFO) var generateStart = 0L
@@ -101,7 +89,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
     super.onPausing()
     pauseControl.pause(PauseControl.User)
     // if dp thread is blocking on waiting for input tuples:
-    if(workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted){
+    if (workerInternalQueue.blockingDeque.isEmpty && tupleInput.isCurrentBatchExhausted) {
       // insert dummy batch to unblock dp thread
       workerInternalQueue.addBatch(null)
     }
@@ -118,7 +106,7 @@ class Generator(var operator: IOperatorExecutor, val tag: WorkerTag)
 
   override def onStart(): Unit = {
     super.onStart()
-    workerInternalQueue.addBatch((LayerTag("","",""),null))
+    workerInternalQueue.addBatch((LayerTag("", "", ""), null))
     context.become(running)
     unstashAll()
   }

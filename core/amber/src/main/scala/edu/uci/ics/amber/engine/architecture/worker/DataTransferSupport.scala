@@ -1,13 +1,13 @@
 package edu.uci.ics.amber.engine.architecture.worker
 
-import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.DataTransferPolicy
-import edu.uci.ics.amber.engine.architecture.sendsemantics.routees.BaseRoutee
-import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
-import edu.uci.ics.amber.engine.common.ambertag.{LayerTag, LinkTag}
-import edu.uci.ics.amber.engine.common.tuple.ITuple
 import akka.actor.{ActorContext, ActorRef}
 import akka.event.LoggingAdapter
 import akka.util.Timeout
+import edu.uci.ics.amber.engine.architecture.sendsemantics.datatransferpolicy.DataTransferPolicy
+import edu.uci.ics.amber.engine.architecture.sendsemantics.routees.BaseRoutee
+import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
+import edu.uci.ics.amber.engine.common.ambertag.LinkTag
+import edu.uci.ics.amber.engine.common.tuple.ITuple
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext
@@ -104,8 +104,7 @@ class DataTransferSupport(val sender: ActorRef) extends BreakpointSupport {
     }
   }
 
-
-  def passTupleToDownstream(tuple:ITuple): Unit ={
+  def passTupleToDownstream(tuple: ITuple): Unit = {
     var i = 0
     while (i < output.length) {
       output(i).accept(tuple)(sender)

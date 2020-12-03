@@ -1,22 +1,22 @@
 package edu.uci.ics.amber.engine.architecture.worker.neo
 
-import java.util.concurrent.{ExecutorService, Executors, Future}
+import java.util.concurrent.Executors
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.ActorRef
 import edu.uci.ics.amber.engine.architecture.breakpoint.localbreakpoint.ExceptionBreakpoint
 import edu.uci.ics.amber.engine.architecture.worker.BreakpointSupport
 import edu.uci.ics.amber.engine.common.amberexception.BreakpointException
 import edu.uci.ics.amber.engine.common.ambermessage.ControlMessage.LocalBreakpointTriggered
 import edu.uci.ics.amber.engine.common.ambermessage.WorkerMessage.ExecutionCompleted
-import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 import edu.uci.ics.amber.engine.common.tuple.ITuple
+import edu.uci.ics.amber.engine.common.{IOperatorExecutor, InputExhausted}
 
 class DataProcessor( // dependencies:
-                     operator: IOperatorExecutor, // core logic
-                     tupleInput: TupleInput, // to get input tuples
-                     tupleOutput: TupleOutput, // to send output tuples
-                     pauseControl: PauseControl, // to pause/resume
-                     self: ActorRef // to notify main actor
+    operator: IOperatorExecutor, // core logic
+    tupleInput: TupleInput, // to get input tuples
+    tupleOutput: TupleOutput, // to send output tuples
+    pauseControl: PauseControl, // to pause/resume
+    self: ActorRef // to notify main actor
 ) extends BreakpointSupport { // TODO: make breakpointSupport as a module
 
   // dp thread stats:
@@ -27,13 +27,13 @@ class DataProcessor( // dependencies:
   // initialize dp thread upon construction
   Executors.newSingleThreadExecutor.submit(new Runnable() {
     def run(): Unit = {
-        try {
-          dpThread()
-        } catch {
-          case e: Exception =>
-            throw new RuntimeException(e)
-        }
+      try {
+        dpThread()
+      } catch {
+        case e: Exception =>
+          throw new RuntimeException(e)
       }
+    }
   })
 
   /** provide API for actor to get stats of this operator
@@ -107,7 +107,7 @@ class DataProcessor( // dependencies:
       pauseControl.pauseCheck()
       // if the input tuple is not a dummy tuple, process it
       // TODO: make sure this dummy batch feature works with fault tolerance
-      if(currentInputTuple != null){
+      if (currentInputTuple != null) {
         // pass input tuple to operator logic.
         val outputIterator = processCurrentInputTuple()
         // check pause before outputting tuples.
