@@ -94,8 +94,8 @@ export class NavigationComponent implements OnInit {
       });
   }
 
-  public onClickRunHandler = () => {
-  };
+  public onClickRunHandler() {
+  }
 
   ngOnInit() {
   }
@@ -274,7 +274,7 @@ export class NavigationComponent implements OnInit {
       const cachedWorkflow: Workflow | null = this.workflowCacheService.getCachedWorkflow();
       if (cachedWorkflow != null) {
         this.isSaving = true;
-        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe(this.cachedWorkflowService.cacheWorkflow).add(() => {
+        this.workflowPersistService.persistWorkflow(cachedWorkflow).subscribe(this.workflowCacheService.cacheWorkflow).add(() => {
           this.isSaving = false;
         });
       } else {
