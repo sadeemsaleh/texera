@@ -94,17 +94,23 @@ class WorkflowWebsocketResource {
   }
 
   def resultPagination(session: Session, request: ResultPaginationRequest): Unit = {
-    val paginatedResultEvent = PaginatedResultEvent(completedResults.map{
-      case (operatorID, table) => (
-        operatorID,
-        table
-          .slice(request.pageSize * (request.pageIndex - 1), request.pageSize * request.pageIndex)
-          .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
-      )
-    }.map{
-      case (operatorID, objNodes) =>
-        PaginatedOperatorResult(operatorID, objNodes, completedResults(operatorID).size)
-    }.toList)
+    val paginatedResultEvent = PaginatedResultEvent(
+      completedResults
+        .map {
+          case (operatorID, table) =>
+            (
+              operatorID,
+              table
+                .slice(request.pageSize * (request.pageIndex - 1),
+                       request.pageSize * request.pageIndex)
+                .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+            )
+        }
+        .map {
+          case (operatorID, objNodes) =>
+            PaginatedOperatorResult(operatorID, objNodes, completedResults(operatorID).size)
+        }
+        .toList)
 
     send(session, paginatedResultEvent)
   }
