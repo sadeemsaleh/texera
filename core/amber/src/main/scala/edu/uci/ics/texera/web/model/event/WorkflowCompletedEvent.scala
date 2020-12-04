@@ -11,6 +11,7 @@ import scala.collection.mutable
 case class OperatorResult(operatorID: String, table: List[ObjectNode], chartType: String, totalRowCount: Int)
 
 object WorkflowCompletedEvent {
+  val defaultPageSize = 10
 
   // transform results in amber tuple format to the format accepted by frontend
   def apply(
@@ -20,7 +21,7 @@ object WorkflowCompletedEvent {
     val resultList = new mutable.MutableList[OperatorResult]
     workflowCompleted.result.foreach(pair => {
       val operatorID = pair._1
-      val table = pair._2.slice(0, 10).map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
+      val table = pair._2.slice(0, defaultPageSize).map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
 
       // add chartType to result
       val precedentOpID =

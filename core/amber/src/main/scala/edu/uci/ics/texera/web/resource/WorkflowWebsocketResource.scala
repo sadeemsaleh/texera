@@ -70,8 +70,6 @@ class WorkflowWebsocketResource {
         case breakpoint: AddBreakpointRequest =>
           addBreakpoint(session, breakpoint)
         case paginationRequest: ResultPaginationRequest =>
-          println("======getResultPage======")
-          println(paginationRequest)
           resultPagination(session, paginationRequest)
       }
     } catch {
@@ -108,8 +106,6 @@ class WorkflowWebsocketResource {
         PaginatedOperatorResult(operatorID, objNodes, completedResults(operatorID).size)
     }.toList)
 
-    println("======resultPagination======")
-    println(paginatedResultEvent)
     send(session, paginatedResultEvent)
   }
 
