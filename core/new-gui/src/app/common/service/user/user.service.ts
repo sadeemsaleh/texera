@@ -1,10 +1,10 @@
-import { User } from '../../type/user';
-import { AppSettings } from '../../app-setting';
-import { Subject } from 'rxjs/Subject';
-import { Injectable, Output } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Injectable, Output } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
+import { Subject } from 'rxjs/Subject';
 import { environment } from 'src/environments/environment';
+import { AppSettings } from '../../app-setting';
+import { User } from '../../type/user';
 
 /**
  * User Service contains the function of registering and logging the user.
@@ -96,11 +96,9 @@ export class UserService {
     return {result: true, message: 'userName frontend validation success'};
   }
 
-
   private loginFromSession(): void {
     this.http.get<User>(`${AppSettings.getApiEndpoint()}/${UserService.AUTH_STATUS_ENDPOINT}`).subscribe(user =>
       this.changeUser(user));
   }
-
 
 }

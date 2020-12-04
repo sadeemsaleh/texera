@@ -1,9 +1,9 @@
-import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { AppSettings } from '../../../app-setting';
-import { WorkflowInfo, Workflow } from '../../../type/workflow';
+import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { map } from 'rxjs/operators';
+import { AppSettings } from '../../../app-setting';
+import { Workflow, WorkflowInfo } from '../../../type/workflow';
 import { jsonCast } from '../../../util/storage';
 
 export const WORKFLOW_URL = 'workflow';

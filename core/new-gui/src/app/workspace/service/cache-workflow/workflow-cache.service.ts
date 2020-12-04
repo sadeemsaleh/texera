@@ -1,10 +1,10 @@
 import { Injectable, Output } from '@angular/core';
 import { Subject } from 'rxjs';
+import { Workflow, WorkflowInfo } from '../../../common/type/workflow';
+import { localGetObject, localSetObject } from '../../../common/util/storage';
 import { Breakpoint, OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
 import { OperatorMetadataService } from '../operator-metadata/operator-metadata.service';
 import { WorkflowActionService } from '../workflow-graph/model/workflow-action.service';
-import { WorkflowInfo, Workflow } from '../../../common/type/workflow';
-import { localGetObject, localSetObject } from '../../../common/util/storage';
 
 /**
  *  CacheWorkflowService is responsible for saving the existing workflow and

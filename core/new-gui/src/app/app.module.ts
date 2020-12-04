@@ -2,7 +2,7 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 import { HttpClientModule } from '@angular/common/http';
 import { AppRoutingModule } from './app-routing.module';
-import { environment } from './../environments/environment';
+import { environment } from '../environments/environment';
 
 import { CustomNgMaterialModule } from './common/custom-ng-material.module';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
@@ -96,7 +96,8 @@ import { UserDictionaryUploadService } from './common/service/user/user-dictiona
 import { UserDictionaryService } from './common/service/user/user-dictionary/user-dictionary.service';
 import { TEXERA_FORMLY_CONFIG } from './common/formly/formly-config';
 import { VisualizationPanelComponent } from './workspace/component/visualization-panel/visualization-panel.component';
-import { VisualizationPanelContentComponent } from './workspace/component/visualization-panel-content/visualization-panel-content.component';
+import { VisualizationPanelContentComponent
+} from './workspace/component/visualization-panel-content/visualization-panel-content.component';
 import { NgxAceModule } from 'ngx-ace-icy';
 import { CodeareaCustomTemplateComponent } from './workspace/component/codearea-custom-template/codearea-custom-template.component';
 import { CodeEditorDialogComponent } from './workspace/component/code-editor-dialog/code-editor-dialog.component';
@@ -172,7 +173,8 @@ registerLocaleData(en);
     FileUploadModule,
     FormsModule,
     ReactiveFormsModule,
-    LoggerModule.forRoot({ level: environment.production ? NgxLoggerLevel.ERROR : NgxLoggerLevel.DEBUG, serverLogLevel: NgxLoggerLevel.OFF }),
+    LoggerModule.forRoot(
+      { level: environment.production ? NgxLoggerLevel.ERROR : NgxLoggerLevel.DEBUG, serverLogLevel: NgxLoggerLevel.OFF }),
     FormlyModule.forRoot(TEXERA_FORMLY_CONFIG),
     FormlyNgZorroAntdModule,
 

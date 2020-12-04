@@ -1,12 +1,12 @@
-import { Command } from '../workflow-graph/model/workflow-action.service';
 import { Injectable } from '@angular/core';
-import { assertType } from '../../../common/util/assert';
 import { Observable, Subject } from 'rxjs';
+import { assertType } from '../../../common/util/assert';
+import { Command } from '../workflow-graph/model/workflow-action.service';
 
 /* TODO LIST FOR BUGS
-1. Problem with repeatedly adding and deleting a link without letting go, unintended behavior
-2. See if there's a way to only store a previous version of an operator's properties
-after a certain period of time so we don't undo one character at a time */
+ 1. Problem with repeatedly adding and deleting a link without letting go, unintended behavior
+ 2. See if there's a way to only store a previous version of an operator's properties
+ after a certain period of time so we don't undo one character at a time */
 
 @Injectable()
 export class UndoRedoService {

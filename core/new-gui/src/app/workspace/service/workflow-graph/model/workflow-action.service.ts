@@ -18,8 +18,11 @@ import * as joint from 'jointjs';
 
 export interface Command {
   modifiesWorkflow: boolean;
+
   execute(): void;
+
   undo(): void;
+
   redo?(): void;
 
 }

@@ -1,16 +1,16 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { WorkspaceComponent } from './workspace/component/workspace.component';
+import { environment } from '../environments/environment';
 import { DashboardComponent } from './dashboard/component/dashboard.component';
 import {
   SavedWorkflowSectionComponent
 } from './dashboard/component/feature-container/saved-workflow-section/saved-workflow-section.component';
-import { environment } from '../environments/environment';
+import { WorkspaceComponent } from './workspace/component/workspace.component';
 
 /*
-*  This file defines the url path
-*  The workflow workspace is set as default path
-*/
+ *  This file defines the url path
+ *  The workflow workspace is set as default path
+ */
 const routes: Routes = [
   {
     path: '',
