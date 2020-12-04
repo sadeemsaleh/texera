@@ -101,17 +101,14 @@ export class NavigationComponent implements OnInit {
       });
 
     // handle cached workflow change
-
-    console.log('handle cached workflow change registered');
     this.workflowCacheService.cachedWorkflowChanged.subscribe((workflow: Workflow) => {
       this.currentWorkflowName = workflow.name;
 
       if (environment.userSystemEnabled && this.userService.isLogin()) {
-        if (workflow.lastModifiedTime == null) {
-          this.autoSaveState = 'Not Saved';
-        } else {
-          this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM/dd/yyyy HH:mm:ss', 'UTC');
-        }
+        this.autoSaveState = workflow.lastModifiedTime == null ?
+          'Not Saved' :
+          'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM/dd/yyyy HH:mm:ss zzz', 'UTC');
+
       }
     });
 

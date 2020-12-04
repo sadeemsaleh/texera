@@ -1,20 +1,14 @@
-import { UndoRedoService } from '../../undo-redo/undo-redo.service';
-import { OperatorMetadataService } from '../../operator-metadata/operator-metadata.service';
-import { SyncTexeraModel } from './sync-texera-model';
-import { JointGraphWrapper } from './joint-graph-wrapper';
-import { JointUIService } from '../../joint-ui/joint-ui.service';
-import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
-import { Injectable, Output } from '@angular/core';
-import { BehaviorSubject, Observable, Subject } from 'rxjs';
-import {
-  Breakpoint,
-  OperatorLink,
-  OperatorPort,
-  OperatorPredicate,
-  Point
-} from '../../../types/workflow-common.interface';
+import { Injectable } from '@angular/core';
 
 import * as joint from 'jointjs';
+import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { Breakpoint, OperatorLink, OperatorPort, OperatorPredicate, Point } from '../../../types/workflow-common.interface';
+import { JointUIService } from '../../joint-ui/joint-ui.service';
+import { OperatorMetadataService } from '../../operator-metadata/operator-metadata.service';
+import { UndoRedoService } from '../../undo-redo/undo-redo.service';
+import { JointGraphWrapper } from './joint-graph-wrapper';
+import { SyncTexeraModel } from './sync-texera-model';
+import { WorkflowGraph, WorkflowGraphReadonly } from './workflow-graph';
 
 export interface Command {
   modifiesWorkflow: boolean;
@@ -49,7 +43,7 @@ type OperatorPosition = {
 @Injectable()
 export class WorkflowActionService {
 
-  @Output() public workflowChange: Subject<boolean> = new Subject<boolean>();
+  private workflowChange: Subject<void> = new Subject<void>();
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
@@ -79,7 +73,7 @@ export class WorkflowActionService {
       this.getTexeraGraph().getBreakpointChangeStream(),
       this.getJointGraphWrapper().getOperatorPositionChangeEvent()
     ).subscribe(_ => {
-      this.workflowChange.next(true); // surpass the actual event, only indicate if there is a change
+      this.workflowChange.next();
     });
   }
 
@@ -423,6 +417,10 @@ export class WorkflowActionService {
    */
   public removeLinkBreakpoint(linkID: string): void {
     this.setLinkBreakpoint(linkID, undefined);
+  }
+
+  public getWorkflowChange(): Observable<void> {
+    return this.workflowChange.asObservable();
   }
 
   private addOperatorInternal(operator: OperatorPredicate, point: Point): void {

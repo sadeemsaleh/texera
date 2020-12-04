@@ -1,7 +1,7 @@
-import { Subject } from 'rxjs/Subject';
-import { Observable } from 'rxjs/Observable';
-import { OperatorPredicate, OperatorLink, OperatorPort, Breakpoint } from '../../../types/workflow-common.interface';
 import { isEqual } from 'lodash';
+import { Observable } from 'rxjs/Observable';
+import { Subject } from 'rxjs/Subject';
+import { Breakpoint, OperatorLink, OperatorPort, OperatorPredicate } from '../../../types/workflow-common.interface';
 
 // define the restricted methods that could change the graph
 type restrictedMethods =
@@ -17,7 +17,7 @@ export type WorkflowGraphReadonly = Omit<WorkflowGraph, restrictedMethods>;
 
 /**
  * WorkflowGraph represents the Texera's logical WorkflowGraph,
- *  it's a graph consisted of operators <OperatorPredicate> and links <OpreatorLink>,
+ *  it's a graph consisted of operators <OperatorPredicate> and links <OperatorLink>,
  *  each operator and link has its own unique ID.
  *
  */

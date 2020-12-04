@@ -89,10 +89,6 @@ export class WorkspaceComponent implements OnInit {
       this.loadWorkflowFromID();
       this.registerWorkflowAutoPersist();
     }
-
-    this.operatorMetadataService.getOperatorMetadata()
-      .filter(metadata => metadata.operators.length !== 0)
-      .subscribe(() => this.loadWorkflow());
   }
 
   private loadWorkflowFromID(): void {
@@ -115,7 +111,7 @@ export class WorkspaceComponent implements OnInit {
   }
 
   private registerWorkflowAutoPersist(): void {
-    this.workflowActionService.workflowChange.debounceTime(100).subscribe(() => {
+    this.workflowActionService.getWorkflowChange().debounceTime(100).subscribe(() => {
         const cachedWorkflow: Workflow = this.workflowCacheService.getCachedWorkflow();
         this.workflowPersistService.persistWorkflow(cachedWorkflow)
           .subscribe((updatedWorkflow: Workflow) => {
