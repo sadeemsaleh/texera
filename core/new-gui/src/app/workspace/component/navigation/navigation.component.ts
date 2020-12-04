@@ -1,20 +1,19 @@
+import { DatePipe, Location } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
-import { ExecuteWorkflowService } from '../../service/execute-workflow/execute-workflow.service';
-import { UndoRedoService } from '../../service/undo-redo/undo-redo.service';
 import { TourService } from 'ngx-tour-ng-bootstrap';
-import { WorkflowActionService } from '../../service/workflow-graph/model/workflow-action.service';
-import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
-import { ValidationWorkflowService } from '../../service/validation/validation-workflow.service';
-import { ExecutionState } from '../../types/execute-workflow.interface';
-import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
+import { environment } from '../../../../environments/environment';
+import { Version } from '../../../../environments/version';
 import { UserService } from '../../../common/service/user/user.service';
 import { WorkflowPersistService } from '../../../common/service/user/workflow-persist/workflow-persist.service';
-import { WorkflowCacheService } from '../../service/cache-workflow/workflow-cache.service';
 import { Workflow } from '../../../common/type/workflow';
-import { Version } from '../../../../environments/version';
-import { environment } from '../../../../environments/environment';
-import { DatePipe } from '@angular/common';
-import { Location } from '@angular/common';
+import { WorkflowCacheService } from '../../service/cache-workflow/workflow-cache.service';
+import { ExecuteWorkflowService } from '../../service/execute-workflow/execute-workflow.service';
+import { UndoRedoService } from '../../service/undo-redo/undo-redo.service';
+import { ValidationWorkflowService } from '../../service/validation/validation-workflow.service';
+import { JointGraphWrapper } from '../../service/workflow-graph/model/joint-graph-wrapper';
+import { WorkflowActionService } from '../../service/workflow-graph/model/workflow-action.service';
+import { WorkflowStatusService } from '../../service/workflow-status/workflow-status.service';
+import { ExecutionState } from '../../types/execute-workflow.interface';
 
 /**
  * NavigationComponent is the top level navigation bar that shows
@@ -102,14 +101,20 @@ export class NavigationComponent implements OnInit {
       });
 
     // handle cached workflow change
+
+    console.log('handle cached workflow change registered');
     this.workflowCacheService.cachedWorkflowChanged.subscribe((workflow: Workflow) => {
       this.currentWorkflowName = workflow.name;
-      if (workflow.lastModifiedTime == null) {
-        this.autoSaveState = 'Not Saved';
-      } else {
-        this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM/dd/yyyy HH:mm:ss', 'UTC');
+
+      if (environment.userSystemEnabled && this.userService.isLogin()) {
+        if (workflow.lastModifiedTime == null) {
+          this.autoSaveState = 'Not Saved';
+        } else {
+          this.autoSaveState = 'Saved at  ' + this.datePipe.transform(workflow.lastModifiedTime, 'MM/dd/yyyy HH:mm:ss', 'UTC');
+        }
       }
     });
+
   }
 
   // apply a behavior to the run button via bound variables
@@ -293,7 +298,10 @@ export class NavigationComponent implements OnInit {
    */
   onWorkflowNameChange() {
     this.workflowCacheService.setCachedWorkflowName(this.currentWorkflowName);
-    this.persistCachedWorkflow();
+    if (this.userService.isLogin()) {
+      this.persistCachedWorkflow();
+    }
+
   }
 
   /**

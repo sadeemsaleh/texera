@@ -25,10 +25,8 @@ import { WorkflowActionService } from '../workflow-graph/model/workflow-action.s
   providedIn: 'root'
 })
 export class WorkflowCacheService {
-
   private static readonly LOCAL_STORAGE_KEY: string = 'workflow';
   private static readonly DEFAULT_WORKFLOW_NAME: string = 'Untitled Workflow';
-
   private static readonly DEFAULT_WORKFLOW: Workflow = {
     wid: undefined,
     name: WorkflowCacheService.DEFAULT_WORKFLOW_NAME,
@@ -41,7 +39,6 @@ export class WorkflowCacheService {
     creationTime: 0,
     lastModifiedTime: 0
   };
-
   @Output() public cachedWorkflowChanged: Subject<Workflow> = new Subject<Workflow>();
 
   constructor(
@@ -49,7 +46,7 @@ export class WorkflowCacheService {
     private operatorMetadataService: OperatorMetadataService
   ) {
 
-    this.handleAutoCacheWorkFlow();
+    this.registerAutoCacheWorkFlow();
 
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
@@ -98,7 +95,7 @@ export class WorkflowCacheService {
    * This method will listen to all the workflow change event happening
    *  on the property panel and the workflow editor paper.
    */
-  public handleAutoCacheWorkFlow(): void {
+  public registerAutoCacheWorkFlow(): void {
     this.workflowActionService.workflowChange.debounceTime(100).subscribe(() => {
 
       // collect workflow info

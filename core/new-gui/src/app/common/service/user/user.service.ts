@@ -97,8 +97,12 @@ export class UserService {
   }
 
   private loginFromSession(): void {
-    this.http.get<User>(`${AppSettings.getApiEndpoint()}/${UserService.AUTH_STATUS_ENDPOINT}`).subscribe(user =>
-      this.changeUser(user));
+    this.http.get<User>(`${AppSettings.getApiEndpoint()}/${UserService.AUTH_STATUS_ENDPOINT}`).subscribe(user => {
+        if (user) {
+          this.changeUser(user);
+        }
+      }
+    );
   }
 
 }
