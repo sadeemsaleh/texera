@@ -153,7 +153,8 @@ export class ResultPanelComponent {
       if (highlightedOperators.length === 1 && highlightedOperators[0] === breakpointTriggerInfo?.operatorID) {
         this.breakpointTriggerInfo = breakpointTriggerInfo;
         this.breakpointAction = true;
-        this.setupResultTable(breakpointTriggerInfo.report.map(r => r.faultedTuple.tuple).filter(t => t !== undefined));
+        const result = breakpointTriggerInfo.report.map(r => r.faultedTuple.tuple).filter(t => t !== undefined);
+        this.setupResultTable(result, result.length);
         const errorsMessages: Record<string, string> = {};
         breakpointTriggerInfo.report.forEach(r => {
           const pathsplitted = r.actorPath.split('/');
@@ -185,7 +186,7 @@ export class ResultPanelComponent {
             updatedTuple.push(...workerTuple.tuple);
             resultTable.push(updatedTuple);
           });
-          this.setupResultTable(resultTable);
+          this.setupResultTable(resultTable, resultTable.length);
         }
       }
     }
@@ -304,9 +305,9 @@ export class ResultPanelComponent {
    *  displays a new data table with a new paginator on the result panel.
    *
    * @param resultData rows of the result (may not be all rows if displaying result for workflow completed event)
-   * @param totalRowCount if present, is the total number of rows for the result; otherwise, use length of resultData
+   * @param totalRowCount the total number of rows for the result
    */
-  private setupResultTable(resultData: ReadonlyArray<object>, totalRowCount?: number) {
+  private setupResultTable(resultData: ReadonlyArray<object>, totalRowCount: number) {
 
     if (resultData.length < 1) {
       return;
