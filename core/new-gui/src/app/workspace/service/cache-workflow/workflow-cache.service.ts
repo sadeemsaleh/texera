@@ -1,5 +1,7 @@
 import { Injectable, Output } from '@angular/core';
 import { Subject } from 'rxjs';
+import { UserService } from '../../../common/service/user/user.service';
+import { User } from '../../../common/type/user';
 import { Workflow, WorkflowInfo } from '../../../common/type/workflow';
 import { localGetObject, localSetObject } from '../../../common/util/storage';
 import { Breakpoint, OperatorLink, OperatorPredicate, Point } from '../../types/workflow-common.interface';
@@ -42,8 +44,9 @@ export class WorkflowCacheService {
   @Output() public cachedWorkflowChanged: Subject<Workflow> = new Subject<Workflow>();
 
   constructor(
+    private operatorMetadataService: OperatorMetadataService,
     private workflowActionService: WorkflowActionService,
-    private operatorMetadataService: OperatorMetadataService
+    private userService: UserService
   ) {
 
     this.registerAutoCacheWorkFlow();
@@ -51,6 +54,13 @@ export class WorkflowCacheService {
     this.operatorMetadataService.getOperatorMetadata()
       .filter(metadata => metadata.operators.length !== 0)
       .subscribe(() => this.loadWorkflow());
+
+    this.userService.userChange.subscribe((user: User | undefined) => {
+      if (user === undefined) {
+        this.resetCachedWorkflow();
+      }
+
+    });
 
   }
 

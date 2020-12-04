@@ -63,7 +63,9 @@ export class UserService {
    */
   public logOut(): void {
     this.http.get<Response>(`${AppSettings.getApiEndpoint()}/${UserService.LOG_OUT_ENDPOINT}`)
-      .subscribe(() => this.changeUser(undefined));
+      .subscribe(() => {
+        this.changeUser(undefined);
+      });
   }
 
   public getUser(): User | undefined {
