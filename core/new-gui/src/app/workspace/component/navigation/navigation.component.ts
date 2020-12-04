@@ -42,6 +42,7 @@ export class NavigationComponent implements OnInit {
   public ExecutionState = ExecutionState; // make Angular HTML access enum definition
   public isWorkflowValid: boolean = true; // this will check whether the workflow error or not
   public isSaving: boolean = false;
+  public isAutoSaving: boolean = false;
   @Input() public currentWorkflowName: string;  // reset workflowName
 
   // variable bound with HTML to decide if the running spinner should show
@@ -282,6 +283,32 @@ export class NavigationComponent implements OnInit {
         alert('No workflow found in cache.');
       }
     }
+  }
+  public AutoSaving(): void {
+    //handle workflow auto persist
+    this.workflowActionService.workflowChange.subscribe(
+      ()=>{
+        const workflow = this.cachedWorkflowService.getCachedWorkflow();
+        if (workflow != null){
+          this.isAutoSaving= true;
+          this.workflowPersistService.persistWorkflow(workflow).subscribe(
+            ()=>{
+              this.cachedWorkflowService.cacheWorkflow;
+              this.isAutoSaving= false;
+            }
+          )
+        }
+      }
+    )
+  }
+  public getAutoSavingStatusText() {
+    if (!this.userService.isLogin()) {
+      return "Unsaved";}
+    if (this.isAutoSaving){
+      const currenttime= Date.now;
+      return `Saved ${currenttime}`;
+    }
+    return  'Saving...' ;
   }
 
   onWorkflowNameChange() {

@@ -5,7 +5,7 @@ import { WorkflowInfo, Workflow } from '../../../type/workflow';
 import { Observable } from 'rxjs/Observable';
 import { map } from 'rxjs/operators';
 import { jsonCast } from '../../../util/storage';
-import { WorkflowActionService } from 'src/app/workspace/service/workflow-graph/model/workflow-action.service';
+// import { WorkflowActionService } from 'src/app/workspace/service/workflow-graph/model/workflow-action.service';
 
 
 export const WORKFLOW_URL = 'user/dictionary/validate';
@@ -15,8 +15,9 @@ export const WORKFLOW_URL = 'user/dictionary/validate';
 })
 
 export class WorkflowPersistService {
-  constructor(public http: HttpClient,
-    private workflowActionService : WorkflowActionService) {
+  constructor(public http: HttpClient
+    // private workflowActionService : WorkflowActionService
+    ) {
   }
 
   public persistWorkflow(workflow: Workflow): Observable<Workflow> {
@@ -41,13 +42,15 @@ export class WorkflowPersistService {
     return null;
   }
 
-  public handleAutoPersist(){
-    this.workflowActionService.workflowChange;
-  }
+  // public handleAutoPersist(){
+  //   this.workflowActionService.workflowChange;
+  // }
 
   private static parseWorkflowInfo(workflow: Workflow): Workflow {
-    if (typeof workflow.content === 'string') {
-      workflow.content = jsonCast<WorkflowInfo>(workflow.content);
+    if (workflow!=null){
+      if (typeof workflow.content === 'string') {
+          workflow.content = jsonCast<WorkflowInfo>(workflow.content);
+        }
     }
     return workflow;
   }

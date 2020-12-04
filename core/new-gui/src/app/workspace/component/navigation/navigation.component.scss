@@ -34,10 +34,18 @@
       font-size: 7px;
     }
   }
-
   .texera-navigation-utilities {
     grid-column: 2/2;
     grid-row: 1/1;
+    .AutoSaveState{
+      color: #5081f3;
+      display: inline-flex;
+      justify-content: center;
+      line-height:150%;
+      font-size:.85em;
+      padding-left: 8px;
+      padding-top: 10px;
+    }
   }
 
   .texera-navigation-workflow-name {
@@ -73,6 +81,7 @@
       transition: translate 0.3s ease-out;
       transition-delay: 0.1s;
     }
+
   }
 
   .reveal-stop-button {

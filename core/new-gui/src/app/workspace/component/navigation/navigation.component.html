@@ -34,6 +34,7 @@
                 id="downloadExcelOptions" nz-dropdown title="download execution result">
           <i nz-icon nzType="cloud-download" nzTheme="outline"></i>
         </button>
+        <p class= "AutoSaveState">{{getAutoSavingStatusText()}}</p>
         <nz-dropdown-menu #menu="nzDropdownMenu">
           <ul nz-menu nzSelectable>
             <li nz-menu-item class="drop-down-item" (click)="onClickDownloadExecutionResult('json')">Json File

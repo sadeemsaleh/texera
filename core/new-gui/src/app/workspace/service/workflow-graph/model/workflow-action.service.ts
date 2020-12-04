@@ -49,22 +49,14 @@ type OperatorPosition = {
 
 @Injectable()
 export class WorkflowActionService {
-
   private readonly texeraGraph: WorkflowGraph;
   private readonly jointGraph: joint.dia.Graph;
   private readonly jointGraphWrapper: JointGraphWrapper;
   private readonly syncTexeraModel: SyncTexeraModel;
   private workflowModificationEnabled = true;
   private enableModificationStream = new BehaviorSubject<boolean>(true);
-  @Output() workflowChange = Subject.merge(
-    this.getTexeraGraph().getOperatorAddStream(),
-    this.getTexeraGraph().getOperatorDeleteStream(),
-    this.getTexeraGraph().getLinkAddStream(),
-    this.getTexeraGraph().getLinkDeleteStream(),
-    this.getTexeraGraph().getOperatorPropertyChangeStream(),
-    this.getTexeraGraph().getBreakpointChangeStream(),
-    this.getJointGraphWrapper().getOperatorPositionChangeEvent()
-  ).debounceTime(100);
+
+  @Output() workflowChange = new Observable();
 
   constructor(
     private operatorMetadataService: OperatorMetadataService,
@@ -72,6 +64,7 @@ export class WorkflowActionService {
     private undoRedoService: UndoRedoService,
 
   ) {
+    // debugger;
     this.texeraGraph = new WorkflowGraph();
     this.jointGraph = new joint.dia.Graph();
     this.jointGraphWrapper = new JointGraphWrapper(this.jointGraph, this.undoRedoService);
@@ -81,6 +74,20 @@ export class WorkflowActionService {
     this.handleJointOperatorDrag();
   }
 
+  public WorkflowChange () {
+    if (this.getTexeraGraph()==null){
+      return this.workflowChange;
+    }
+    return this.workflowChange = Observable.merge(
+      this.getTexeraGraph().getOperatorAddStream(),
+      this.getTexeraGraph().getOperatorDeleteStream(),
+      this.getTexeraGraph().getLinkAddStream(),
+      this.getTexeraGraph().getLinkDeleteStream(),
+      this.getTexeraGraph().getOperatorPropertyChangeStream(),
+      this.getTexeraGraph().getBreakpointChangeStream(),
+      this.getJointGraphWrapper().getOperatorPositionChangeEvent()
+    ).debounceTime(100);
+  }
   public enableWorkflowModification() {
     this.workflowModificationEnabled = true;
     this.enableModificationStream.next(true);

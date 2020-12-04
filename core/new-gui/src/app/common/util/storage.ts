@@ -12,6 +12,9 @@ export function localSetObject<T>(key: string, object: T): void {
   localStorage.setItem(key, JSON.stringify(object));
 }
 
+export function localRemoveObject(key: string): void {
+  localStorage.removeItem(key);
+}
 
 /**
  * Retrieves an object from the localStorage, converted from the JSON format into its original type (provided).
