@@ -110,6 +110,23 @@ export class ResultPanelComponent {
       }
     });
 
+    this.workflowWebsocketService.websocketEvent().subscribe(websocketEvent => {
+      if (websocketEvent.type !== 'PaginatedResultEvent') {
+        return;
+      }
+
+      const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
+
+      for (const result of websocketEvent.paginatedResults) {
+        if (result.operatorID === highlightedOperators[0]) {
+          this.total = result.totalRowCount;
+          this.currentResult = result.table.slice();
+          this.isLoadingResult = false;
+          return;
+        }
+      }
+    });
+
     // clear session storage for refresh
     sessionStorage.removeItem('newWorkflowExecuted');
     sessionStorage.removeItem('currentResult');
@@ -281,22 +298,6 @@ export class ResultPanelComponent {
 
     this.isLoadingResult = true;
     this.workflowWebsocketService.send('ResultPaginationRequest', { pageSize: newPageSize, pageIndex: newPageIndex });
-    this.workflowWebsocketService.websocketEvent().subscribe(websocketEvent => {
-      if (websocketEvent.type !== 'PaginatedResultEvent') {
-        return;
-      }
-
-      const highlightedOperators = this.workflowActionService.getJointGraphWrapper().getCurrentHighlightedOperatorIDs();
-
-      for (const result of websocketEvent.paginatedResults) {
-        if (result.operatorID === highlightedOperators[0]) {
-          this.total = result.totalRowCount;
-          this.currentResult = result.table.slice();
-          this.isLoadingResult = false;
-          return;
-        }
-      }
-    });
   }
 
   /**
