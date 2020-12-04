@@ -101,8 +101,10 @@ class WorkflowWebsocketResource {
             (
               operatorID,
               table
-                .slice(request.pageSize * (request.pageIndex - 1),
-                       request.pageSize * request.pageIndex)
+                .slice(
+                  request.pageSize * (request.pageIndex - 1),
+                  request.pageSize * request.pageIndex
+                )
                 .map(tuple => tuple.asInstanceOf[Tuple].asKeyValuePairJson())
             )
         }
@@ -110,7 +112,8 @@ class WorkflowWebsocketResource {
           case (operatorID, objNodes) =>
             PaginatedOperatorResult(operatorID, objNodes, completedResults(operatorID).size)
         }
-        .toList)
+        .toList
+    )
 
     send(session, paginatedResultEvent)
   }

@@ -8,10 +8,12 @@ import edu.uci.ics.texera.workflow.operators.visualization.VisualizationOperator
 
 import scala.collection.mutable
 
-case class OperatorResult(operatorID: String,
-                          table: List[ObjectNode],
-                          chartType: String,
-                          totalRowCount: Int)
+case class OperatorResult(
+    operatorID: String,
+    table: List[ObjectNode],
+    chartType: String,
+    totalRowCount: Int
+)
 
 object WorkflowCompletedEvent {
   val defaultPageSize = 10
