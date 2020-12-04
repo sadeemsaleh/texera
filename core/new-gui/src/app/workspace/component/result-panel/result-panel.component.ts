@@ -4,7 +4,7 @@ import { Observable } from 'rxjs/Observable';
 
 import { NzModalRef, NzModalService } from 'ng-zorro-antd/modal';
 import { ExecutionResult, SuccessExecutionResult, ExecutionState, ExecutionStateInfo } from './../../types/execute-workflow.interface';
-import { TableColumn, IndexableObject } from './../../types/result-table.interface';
+import { TableColumn, IndexableObject, PAGINATION_INFO_STORAGE_KEY } from './../../types/result-table.interface';
 import { ResultPanelToggleService } from './../../service/result-panel-toggle/result-panel-toggle.service';
 import deepMap from 'deep-map';
 import { isEqual, repeat, range } from 'lodash';
@@ -18,6 +18,8 @@ import { OperatorMetadataService } from '../../service/operator-metadata/operato
 import { DynamicSchemaService } from '../../service/dynamic-schema/dynamic-schema.service';
 import { environment } from 'src/environments/environment';
 import { assertType } from 'src/app/common/util/assert';
+import { ResultPaginationInfo } from '../../types/result-table.interface';
+import { sessionGetObject, sessionRemoveObject, sessionSetObject } from 'src/app/common/util/storage';
 
 /**
  * ResultPanelCompoent is the bottom level area that displays the
@@ -128,12 +130,7 @@ export class ResultPanelComponent {
     });
 
     // clear session storage for refresh
-    sessionStorage.removeItem('newWorkflowExecuted');
-    sessionStorage.removeItem('currentResult');
-    sessionStorage.removeItem('currentPageIndex');
-    sessionStorage.removeItem('currentPageSize');
-    sessionStorage.removeItem('total');
-    sessionStorage.removeItem('columnKeys');
+    sessionRemoveObject(PAGINATION_INFO_STORAGE_KEY);
   }
 
   public displayResultPanel(): void {
@@ -197,11 +194,13 @@ export class ResultPanelComponent {
   public clearResultPanel(): void {
     // store result into session storage so that they could be restored
     //   when user click the "view result" operator again
-    if (sessionStorage.getItem('newWorkflowExecuted') === 'false' && this.currentResult.length > 0) {
-      sessionStorage.setItem('currentResult', JSON.stringify(this.currentResult));
-      sessionStorage.setItem('currentPageIndex', JSON.stringify(this.currentPageIndex));
-      sessionStorage.setItem('currentPageSize', JSON.stringify(this.currentPageSize));
-      sessionStorage.setItem('total', JSON.stringify(this.total));
+    const resultPaginationInfo = sessionGetObject<ResultPaginationInfo>(PAGINATION_INFO_STORAGE_KEY);
+    if (resultPaginationInfo && !resultPaginationInfo.newWorkflowExecuted && this.currentResult.length > 0) {
+      resultPaginationInfo.currentResult = this.currentResult;
+      resultPaginationInfo.currentPageIndex = this.currentPageIndex;
+      resultPaginationInfo.currentPageSize = this.currentPageSize;
+      resultPaginationInfo.total = this.total;
+      sessionSetObject(PAGINATION_INFO_STORAGE_KEY, resultPaginationInfo);
     }
 
     this.errorMessages = undefined;
@@ -315,19 +314,18 @@ export class ResultPanelComponent {
 
     // if there is no new result
     //   then restore the previous paginated result data from session storage
-    if (sessionStorage.getItem('newWorkflowExecuted') === 'false') {
+    let resultPaginationInfo = sessionGetObject<ResultPaginationInfo>(PAGINATION_INFO_STORAGE_KEY);
+    if (resultPaginationInfo && !resultPaginationInfo.newWorkflowExecuted) {
       this.isFrontPagination = false;
-      this.currentResult = JSON.parse(sessionStorage.getItem('currentResult') ?? '[]');
-      this.currentPageIndex = JSON.parse(sessionStorage.getItem('currentPageIndex') ?? '1');
-      this.currentPageSize = JSON.parse(sessionStorage.getItem('currentPageSize') ?? '10');
-      this.total = JSON.parse(sessionStorage.getItem('total') ?? '0');
-
-      const columnKeys1 = JSON.parse(sessionStorage.getItem('columnKeys') ?? '[]') as string[];
-      this.currentDisplayColumns = columnKeys1;
-      const columns1 = columnKeys1.map(v => ({columnKey: v, columnText: v}));
+      this.currentResult = resultPaginationInfo.currentResult;
+      this.currentPageIndex = resultPaginationInfo.currentPageIndex;
+      this.currentPageSize = resultPaginationInfo.currentPageSize;
+      this.total = resultPaginationInfo.total;
+      this.currentDisplayColumns = resultPaginationInfo.columnKeys;
       // generate columnDef from first row, column definition is in order
-      this.currentColumns = ResultPanelComponent.generateColumns(columns1);
-
+      this.currentColumns = ResultPanelComponent.generateColumns(
+        this.currentDisplayColumns.map(v => ({columnKey: v, columnText: v}))
+      );
       return;
     }
     // creates a shallow copy of the readonly response.result,
@@ -360,12 +358,15 @@ export class ResultPanelComponent {
     this.currentPageSize = Math.min(this.total, this.currentPageSize);
 
     // save paginated result into session storage
-    sessionStorage.setItem('newWorkflowExecuted', 'false');
-    sessionStorage.setItem('currentResult', JSON.stringify(this.currentResult));
-    sessionStorage.setItem('currentPageIndex', JSON.stringify(this.currentPageIndex));
-    sessionStorage.setItem('currentPageSize', JSON.stringify(this.currentPageSize));
-    sessionStorage.setItem('total', JSON.stringify(this.total));
-    sessionStorage.setItem('columnKeys', JSON.stringify(columnKeys));
+    resultPaginationInfo = {
+      newWorkflowExecuted: false,
+      currentResult: this.currentResult,
+      currentPageIndex: this.currentPageIndex,
+      currentPageSize: this.currentPageSize,
+      total: this.total,
+      columnKeys: columnKeys
+    };
+    sessionSetObject(PAGINATION_INFO_STORAGE_KEY, resultPaginationInfo);
   }
 
   /**

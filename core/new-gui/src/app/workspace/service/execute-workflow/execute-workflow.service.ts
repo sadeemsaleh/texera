@@ -19,6 +19,8 @@ import { WorkflowWebsocketService } from '../workflow-websocket/workflow-websock
 import { OperatorPredicate, BreakpointTriggerInfo, BreakpointRequest, Breakpoint } from '../../types/workflow-common.interface';
 import { TexeraWebsocketEvent, WorkerTuples, OperatorCurrentTuples } from '../../types/workflow-websocket.interface';
 import { isEqual } from 'lodash';
+import { PAGINATION_INFO_STORAGE_KEY, ResultPaginationInfo } from '../../types/result-table.interface';
+import { sessionGetObject, sessionSetObject } from 'src/app/common/util/storage';
 
 export const FORM_DEBOUNCE_TIME_MS = 150;
 
@@ -181,7 +183,11 @@ export class ExecuteWorkflowService {
     // add flag for new execution of workflow
     // so when next time the result panel is displayed, it will use new data
     // instead of those stored in the session storage
-    sessionStorage.setItem('newWorkflowExecuted', 'true');
+    const resultPaginationInfo = sessionGetObject<ResultPaginationInfo>(PAGINATION_INFO_STORAGE_KEY);
+    if (resultPaginationInfo) {
+      resultPaginationInfo.newWorkflowExecuted = true;
+      sessionSetObject(PAGINATION_INFO_STORAGE_KEY, resultPaginationInfo);
+    }
   }
 
   public pauseWorkflow(): void {
